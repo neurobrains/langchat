@@ -79,7 +79,13 @@ src/langchat/
 
 ## Installation
 
-Install the package in development mode:
+Install LangChat from PyPI:
+
+```bash
+pip install langchat
+```
+
+Or install in development mode:
 
 ```bash
 pip install -e .
@@ -95,12 +101,10 @@ pip install -r requirements.txt
 
 ### Installation
 
-```bash
-# Install in development mode
-pip install -e .
+Install LangChat from PyPI:
 
-# Or install dependencies directly
-pip install -r requirements.txt
+```bash
+pip install langchat
 ```
 
 ### Basic Usage

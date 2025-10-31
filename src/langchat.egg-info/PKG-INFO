@@ -2,9 +2,9 @@ Metadata-Version: 2.1
 Name: langchat
 Version: 0.0.1
 Summary: A conversational AI library with vector search capabilities
-Home-page: 
-Author: LangChat Team
-Author-email: 
+Home-page: https://github.com/neurobrains/langchat
+Author: Sifat Hasan <sihabhossan633@gmail.com>, NeuroBrain <contact@neurobrain.co>
+Author-email: contact@neurobrain.co
 License: MIT
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers

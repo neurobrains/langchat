@@ -10,12 +10,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="langchat",
     version="0.0.1",
-    author="LangChat Team",
-    author_email="",
+    author="Sifat Hasan <sihabhossan633@gmail.com>, NeuroBrain <contact@neurobrain.co>",
+    author_email="contact@neurobrain.co",
     description="A conversational AI library with vector search capabilities",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="",
+    url="https://github.com/neurobrains/langchat",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     classifiers=[
