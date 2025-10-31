@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "LangChat Team"}
+    {name = "Sifat Hasan, NeuroBrain"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
