@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "langchat"
+version = "0.0.1"
+description = "A conversational AI library with vector search capabilities"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "LangChat Team"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "fastapi>=0.115.14",
+    "uvicorn>=0.34.3",
+    "starlette>=0.46.2",
+    "pydantic>=2.11.7",
+    "python-multipart>=0.0.20",
+    "pytz>=2022.7",
+    "requests>=2.32.3",
+    "langchain==0.3.27",
+    "langchain-core>=0.3.72,<1.0.0",
+    "langchain-pinecone>=0.1.0,<0.3.0",
+    "langchain-community>=0.3.0,<0.4.0",
+    "langchain-openai>=0.2.0,<0.3.0",
+    "openai",
+    "tiktoken>=0.9.0",
+    "pinecone-client",
+    "flashrank>=0.2.10",
+    "supabase>=2.15.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
