@@ -1,31 +1,36 @@
 # LangChat Documentation
 
-## Overview
+## Overview   
 
 LangChat is a powerful, modular conversational AI library with vector search capabilities. It's designed to be easily customizable and developer-friendly.
 
 ## Features
 
 ### 🤖 LLM Integration
+
 - **OpenAI**: Native OpenAI API support with automatic API key rotation
 - **Fault Tolerant**: Automatic retry logic with multiple API keys
 
 ### 🔍 Vector Search
+
 - **Pinecone Integration**: Seamless vector database integration
 - **Reranking**: Flashrank reranker for improved search results
 - **Configurable Retrieval**: Adjustable document retrieval and reranking
 
 ### 💾 Database Management
+
 - **Supabase**: Built-in Supabase integration
 - **ID Management**: Automatic ID generation with conflict resolution
 - **Session Management**: User-specific chat history and memory
 
 ### 🎨 Customization
+
 - **Custom Prompts**: Configure both system prompts and standalone question prompts
 - **Flexible Configuration**: Environment variables or direct configuration
 - **Modular Architecture**: Use components independently or together
 
 ### 🚀 Developer Experience
+
 - **Auto-Generated Interface**: Chat interface HTML auto-created on startup
 - **Auto-Generated Dockerfile**: Dockerfile auto-created with correct port
 - **Easy Setup**: Simple configuration and initialization
@@ -37,6 +42,7 @@ pip install -e .
 ```
 
 Or install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -94,12 +100,12 @@ See [Configuration Guide](configuration.md) for detailed configuration options.
 
 Comprehensive documentation for all LangChat adapters:
 
-- **[Adapters Overview](adapters/README.md)** - Overview of all adapters
-- **[OpenAI Service](adapters/openai_service.md)** - OpenAI API integration with key rotation
-- **[Pinecone Adapter](adapters/pinecone_adapter.md)** - Vector database integration
-- **[Flashrank Reranker](adapters/flashrank_adapter.md)** - Document reranking
-- **[Supabase Adapter](adapters/supabase_adapter.md)** - Database operations
-- **[ID Manager](adapters/id_manager.md)** - Sequential ID generation
+- [**Adapters Overview**](adapters/README.md) - Overview of all adapters
+- [**OpenAI Service**](adapters/openai_service.md) - OpenAI API integration with key rotation
+- [**Pinecone Adapter**](adapters/pinecone_adapter.md) - Vector database integration
+- [**Flashrank Reranker**](adapters/flashrank_adapter.md) - Document reranking
+- [**Supabase Adapter**](adapters/supabase_adapter.md) - Database operations
+- [**ID Manager**](adapters/id_manager.md) - Sequential ID generation
 
 ## API Reference
 
