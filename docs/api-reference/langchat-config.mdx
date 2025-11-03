@@ -3,7 +3,7 @@ title: LangChatConfig
 description: Configuration class API reference with all LangChat configuration options
 ---
 
-import { Param } from 'mintlify';
+import { ParamField } from 'mintlify';
 
 ## Class: LangChatConfig
 
@@ -37,81 +37,81 @@ LangChatConfig(
 
 **Parameters:**
 
-<Param name="openai_api_keys" type="List[str]" required>
+<ParamField path="openai_api_keys" type="List[str]" required>
   List of OpenAI API keys. Can provide multiple keys for automatic rotation.
-</Param>
+</ParamField>
 
-<Param name="openai_model" type="str" default="gpt-4o-mini">
+<ParamField path="openai_model" type="str" default="gpt-4o-mini">
   OpenAI model to use. Options: "gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"
-</Param>
+</ParamField>
 
-<Param name="openai_temperature" type="float" default="1.0">
+<ParamField path="openai_temperature" type="float" default="1.0">
   Model temperature (0.0-2.0). Higher = more creative, lower = more focused
-</Param>
+</ParamField>
 
-<Param name="openai_embedding_model" type="str" default="text-embedding-3-large">
+<ParamField path="openai_embedding_model" type="str" default="text-embedding-3-large">
   OpenAI embedding model. Options: "text-embedding-3-large", "text-embedding-3-small", "text-embedding-ada-002"
-</Param>
+</ParamField>
 
-<Param name="pinecone_api_key" type="str | None" default="None">
+<ParamField path="pinecone_api_key" type="str | None" default="None">
   Pinecone API key
-</Param>
+</ParamField>
 
-<Param name="pinecone_index_name" type="str | None" default="None">
+<ParamField path="pinecone_index_name" type="str | None" default="None">
   Pinecone index name (must be pre-created)
-</Param>
+</ParamField>
 
-<Param name="supabase_url" type="str | None" default="None">
+<ParamField path="supabase_url" type="str | None" default="None">
   Supabase project URL
-</Param>
+</ParamField>
 
-<Param name="supabase_key" type="str | None" default="None">
+<ParamField path="supabase_key" type="str | None" default="None">
   Supabase API key (anon or service role)
-</Param>
+</ParamField>
 
-<Param name="retrieval_k" type="int" default="5">
+<ParamField path="retrieval_k" type="int" default="5">
   Number of documents to retrieve from vector search
-</Param>
+</ParamField>
 
-<Param name="reranker_top_n" type="int" default="3">
+<ParamField path="reranker_top_n" type="int" default="3">
   Number of top documents after reranking
-</Param>
+</ParamField>
 
-<Param name="reranker_model" type="str" default="ms-marco-MiniLM-L-12-v2">
+<ParamField path="reranker_model" type="str" default="ms-marco-MiniLM-L-12-v2">
   Flashrank reranker model name
-</Param>
+</ParamField>
 
-<Param name="reranker_cache_dir" type="str" default="rerank_models">
+<ParamField path="reranker_cache_dir" type="str" default="rerank_models">
   Directory to cache reranker models
-</Param>
+</ParamField>
 
-<Param name="max_chat_history" type="int" default="20">
+<ParamField path="max_chat_history" type="int" default="20">
   Maximum chat history messages to keep in memory
-</Param>
+</ParamField>
 
-<Param name="memory_window" type="int" default="20">
+<ParamField path="memory_window" type="int" default="20">
   Conversation buffer window size
-</Param>
+</ParamField>
 
-<Param name="timezone" type="str" default="Asia/Dhaka">
+<ParamField path="timezone" type="str" default="Asia/Dhaka">
   Timezone for date/time formatting
-</Param>
+</ParamField>
 
-<Param name="system_prompt_template" type="str | None" default="None">
+<ParamField path="system_prompt_template" type="str | None" default="None">
   Custom system prompt template. Uses default if None.
-</Param>
+</ParamField>
 
-<Param name="standalone_question_prompt" type="str | None" default="None">
+<ParamField path="standalone_question_prompt" type="str | None" default="None">
   Custom standalone question prompt. Uses default if None.
-</Param>
+</ParamField>
 
-<Param name="max_llm_retries" type="int" default="2">
+<ParamField path="max_llm_retries" type="int" default="2">
   Maximum retry attempts per API key
-</Param>
+</ParamField>
 
-<Param name="server_port" type="int" default="8000">
+<ParamField path="server_port" type="int" default="8000">
   Port for API server
-</Param>
+</ParamField>
 
 ### Class Methods
 
@@ -208,7 +208,7 @@ from langchat import LangChatConfig
 config = LangChatConfig(
     openai_api_keys=["sk-..."],
     pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
+    pinecone_index_path="my-index",
     supabase_url="https://xxxxx.supabase.co",
     supabase_key="eyJ..."
 )

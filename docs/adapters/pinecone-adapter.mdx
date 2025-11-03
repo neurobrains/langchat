@@ -3,7 +3,7 @@ title: Pinecone Adapter
 description: Pinecone vector database integration for semantic search and document retrieval
 ---
 
-import { Param } from 'mintlify';
+import { ParamField } from 'mintlify';
 
 ## Overview
 
@@ -23,7 +23,7 @@ from langchat.config import LangChatConfig
 
 config = LangChatConfig(
     pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
+    pinecone_index_path="my-index",
     openai_embedding_model="text-embedding-3-large",
     retrieval_k=5  # Number of documents to retrieve
 )
@@ -40,7 +40,7 @@ from langchat import LangChat, LangChatConfig
 
 config = LangChatConfig(
     pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
+    pinecone_index_path="my-index",
     openai_api_keys=["sk-..."],
     # ... other config
 )
@@ -72,9 +72,9 @@ Get a LangChain retriever from the vector store.
 
 **Parameters:**
 
-<Param name="k" type="int" default="5">
+<ParamField path="k" type="int" default="5">
   Number of documents to retrieve
-</Param>
+</ParamField>
 
 **Returns:**
 - `Retriever`: LangChain retriever instance

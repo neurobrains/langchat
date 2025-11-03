@@ -3,7 +3,7 @@ title: LangChatEngine
 description: LangChatEngine API reference - core orchestrator for all LangChat components
 ---
 
-import { Param } from 'mintlify';
+import { ParamField } from 'mintlify';
 
 ## Class: LangChatEngine
 
@@ -17,9 +17,9 @@ LangChatEngine(config: Optional[LangChatConfig] = None)
 
 **Parameters:**
 
-<Param name="config" type="LangChatConfig | None" default="None">
+<ParamField path="config" type="LangChatConfig | None" default="None">
   LangChat configuration. If None, uses default config.
-</Param>
+</ParamField>
 
 ### Methods
 
@@ -39,21 +39,21 @@ async def chat(
 
 **Parameters:**
 
-<Param name="query" type="str" required>
+<ParamField path="query" type="str" required>
   User query text
-</Param>
+</ParamField>
 
-<Param name="user_id" type="str" required>
+<ParamField path="user_id" type="str" required>
   User identifier
-</Param>
+</ParamField>
 
-<Param name="domain" type="str" default="default">
+<ParamField path="domain" type="str" default="default">
   User domain
-</Param>
+</ParamField>
 
-<Param name="standalone_question" type="str | None" default="None">
+<ParamField path="standalone_question" type="str | None" default="None">
   Optional standalone question (if already generated)
-</Param>
+</ParamField>
 
 **Returns:**
 
@@ -73,13 +73,13 @@ def get_session(
 
 **Parameters:**
 
-<Param name="user_id" type="str" required>
+<ParamField path="user_id" type="str" required>
   User identifier
-</Param>
+</ParamField>
 
-<Param name="domain" type="str" default="default">
+<ParamField path="domain" type="str" default="default">
   User domain
-</Param>
+</ParamField>
 
 **Returns:**
 

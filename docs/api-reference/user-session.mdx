@@ -3,7 +3,7 @@ title: UserSession
 description: UserSession API reference. The UserSession class manages user conversation history and context.
 ---
 
-import { Param } from 'mintlify';
+import { ParamField } from 'mintlify';
 
 ## Class: UserSession
 
@@ -57,13 +57,13 @@ def save_message(self, query: str, response: str) -> None
 
 **Parameters:**
 
-<Param name="query" type="str" required>
+<ParamField path="query" type="str" required>
   User query
-</Param>
+</ParamField>
 
-<Param name="response" type="str" required>
+<ParamField path="response" type="str" required>
   AI response
-</Param>
+</ParamField>
 
 ## Related Documentation
 

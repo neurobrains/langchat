@@ -3,7 +3,7 @@ title: OpenAI Service
 description: OpenAI API integration with automatic key rotation and fault-tolerant retry logic
 ---
 
-import { Param } from 'mintlify';
+import { ParamField } from 'mintlify';
 
 ## Overview
 
@@ -111,21 +111,21 @@ OpenAILLMService(
 
 **Parameters:**
 
-<Param name="model" type="str" required>
+<ParamField path="model" type="str" required>
   OpenAI model name (e.g., "gpt-4o-mini", "gpt-4", "gpt-3.5-turbo")
-</Param>
+</ParamField>
 
-<Param name="temperature" type="float" required>
+<ParamField path="temperature" type="float" required>
   Model temperature (0.0-2.0)
-</Param>
+</ParamField>
 
-<Param name="api_keys" type="List[str]" required>
+<ParamField path="api_keys" type="List[str]" required>
   List of OpenAI API keys for rotation
-</Param>
+</ParamField>
 
-<Param name="max_retries_per_key" type="int" default="2">
+<ParamField path="max_retries_per_key" type="int" default="2">
   Maximum retries per API key (default: 2)
-</Param>
+</ParamField>
 
 #### Methods
 

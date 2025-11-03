@@ -3,7 +3,7 @@ title: LangChat
 description: Main LangChat class API reference for creating conversational AI applications
 ---
 
-import { Param } from 'mintlify';
+import { ParamField } from 'mintlify';
 import { Callout } from 'mintlify';
 
 ## Class: LangChat
@@ -20,9 +20,9 @@ Creates a new LangChat instance.
 
 **Parameters:**
 
-<Param name="config" type="LangChatConfig | None" default="None">
+<ParamField path="config" type="LangChatConfig | None" default="None">
   LangChat configuration. If None, creates config from environment variables using `LangChatConfig.from_env()`.
-</Param>
+</ParamField>
 
 **Example:**
 
@@ -33,7 +33,7 @@ from langchat import LangChat, LangChatConfig
 config = LangChatConfig(
     openai_api_keys=["sk-..."],
     pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
+    pinecone_index_path="my-index",
     supabase_url="https://xxxxx.supabase.co",
     supabase_key="eyJ..."
 )
@@ -64,17 +64,17 @@ async def chat(
 
 **Parameters:**
 
-<Param name="query" type="str" required>
+<ParamField path="query" type="str" required>
   User query text
-</Param>
+</ParamField>
 
-<Param name="user_id" type="str" required>
+<ParamField path="user_id" type="str" required>
   User identifier. Used for session management and chat history.
-</Param>
+</ParamField>
 
-<Param name="domain" type="str" default="default">
+<ParamField path="domain" type="str" default="default">
   User domain. Used to separate different conversation contexts (e.g., "education", "travel", "support").
-</Param>
+</ParamField>
 
 **Returns:**
 
@@ -135,17 +135,17 @@ def chat_sync(
 
 **Parameters:**
 
-<Param name="query" type="str" required>
+<ParamField path="query" type="str" required>
   User query text
-</Param>
+</ParamField>
 
-<Param name="user_id" type="str" required>
+<ParamField path="user_id" type="str" required>
   User identifier
-</Param>
+</ParamField>
 
-<Param name="domain" type="str" default="default">
+<ParamField path="domain" type="str" default="default">
   User domain
-</Param>
+</ParamField>
 
 **Returns:**
 
@@ -186,13 +186,13 @@ def get_session(
 
 **Parameters:**
 
-<Param name="user_id" type="str" required>
+<ParamField path="user_id" type="str" required>
   User identifier
-</Param>
+</ParamField>
 
-<Param name="domain" type="str" default="default">
+<ParamField path="domain" type="str" default="default">
   User domain
-</Param>
+</ParamField>
 
 **Returns:**
 
@@ -285,7 +285,7 @@ config = LangChatConfig(
     openai_api_keys=["sk-key1", "sk-key2"],
     openai_model="gpt-4o",
     pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
+    pinecone_index_path="my-index",
     supabase_url="https://xxxxx.supabase.co",
     supabase_key="eyJ...",
     retrieval_k=10,
