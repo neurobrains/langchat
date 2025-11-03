@@ -12,17 +12,17 @@ def generate_dockerfile(
     output_path: str = "Dockerfile",
     port: int = 8000,
     python_version: str = "3.11",
-    app_file: str = "main.py"
+    app_file: str = "main.py",
 ) -> str:
     """
     Generate Dockerfile for LangChat.
-    
+
     Args:
         output_path: Path to save the Dockerfile
         port: Port number for the application
         python_version: Python version to use
         app_file: Main application file
-    
+
     Returns:
         Path to generated file
     """
@@ -56,20 +56,20 @@ ENV PORT={port}
 # Run the application
 CMD ["python", "{app_file}"]
 """
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
+
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(dockerfile_content)
-    
+
     return output_path
 
 
 def generate_dockerignore(output_path: str = ".dockerignore") -> str:
     """
     Generate .dockerignore file for LangChat.
-    
+
     Args:
         output_path: Path to save the .dockerignore file
-    
+
     Returns:
         Path to generated file
     """
@@ -146,47 +146,55 @@ tests/
 README.md
 LICENSE
 """
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
+
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(dockerignore_content)
-    
+
     return output_path
 
 
 def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
     """
     Extract dependencies from setup.py file.
-    
+
     Args:
         setup_path: Path to setup.py file
-    
+
     Returns:
         List of dependency strings
     """
     dependencies = []
-    
+
     try:
         if os.path.exists(setup_path):
-            with open(setup_path, 'r', encoding='utf-8') as f:
+            with open(setup_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            
+
             # Parse setup.py to extract install_requires
             tree = ast.parse(content)
-            
+
             for node in ast.walk(tree):
-                if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == 'setup':
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "setup"
+                ):
                     for keyword in node.keywords:
-                        if keyword.arg == 'install_requires':
+                        if keyword.arg == "install_requires":
                             if isinstance(keyword.value, ast.List):
                                 for item in keyword.value.elts:
                                     # Skip comments (they appear as Constant or Str with #)
                                     if isinstance(item, ast.Constant):
                                         value = item.value
-                                        if isinstance(value, str) and not value.strip().startswith('#'):
+                                        if isinstance(
+                                            value, str
+                                        ) and not value.strip().startswith("#"):
                                             dependencies.append(value)
-                                    elif isinstance(item, ast.Str):  # Python < 3.8 compatibility
+                                    elif isinstance(
+                                        item, ast.Str
+                                    ):  # Python < 3.8 compatibility
                                         value = item.s
-                                        if not value.strip().startswith('#'):
+                                        if not value.strip().startswith("#"):
                                             dependencies.append(value)
         else:
             # If setup.py doesn't exist, use default dependencies
@@ -230,23 +238,25 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
             "flashrank==0.2.10",
             "supabase==2.15.2",
         ]
-    
+
     return dependencies
 
 
-def generate_requirements_txt(output_path: str = "requirements.txt", setup_path: str = "setup.py") -> str:
+def generate_requirements_txt(
+    output_path: str = "requirements.txt", setup_path: str = "setup.py"
+) -> str:
     """
     Generate requirements.txt file from setup.py or use defaults.
-    
+
     Args:
         output_path: Path to save the requirements.txt file
         setup_path: Path to setup.py file to read dependencies from
-    
+
     Returns:
         Path to generated file
     """
     dependencies = extract_dependencies_from_setup(setup_path)
-    
+
     # Format dependencies with comments - organize by category
     web_framework = []
     core_func = []
@@ -255,61 +265,64 @@ def generate_requirements_txt(output_path: str = "requirements.txt", setup_path:
     reranker = []
     supabase = []
     other = []
-    
+
     for dep in dependencies:
         dep_lower = dep.lower()
-        if any(kw in dep_lower for kw in ['fastapi', 'uvicorn', 'starlette', 'pydantic', 'multipart']):
+        if any(
+            kw in dep_lower
+            for kw in ["fastapi", "uvicorn", "starlette", "pydantic", "multipart"]
+        ):
             web_framework.append(dep)
-        elif any(kw in dep_lower for kw in ['pytz', 'requests']):
+        elif any(kw in dep_lower for kw in ["pytz", "requests"]):
             core_func.append(dep)
-        elif any(kw in dep_lower for kw in ['langchain', 'openai', 'tiktoken']):
+        elif any(kw in dep_lower for kw in ["langchain", "openai", "tiktoken"]):
             langchain_openai.append(dep)
-        elif 'pinecone' in dep_lower:
+        elif "pinecone" in dep_lower:
             vector_db.append(dep)
-        elif 'flashrank' in dep_lower:
+        elif "flashrank" in dep_lower:
             reranker.append(dep)
-        elif 'supabase' in dep_lower:
+        elif "supabase" in dep_lower:
             supabase.append(dep)
         else:
             other.append(dep)
-    
+
     # Build requirements content
     requirements_content = ""
-    
+
     if web_framework:
         requirements_content += "# Core app & web framework\n"
         requirements_content += "\n".join(web_framework) + "\n\n"
-    
+
     if core_func:
         requirements_content += "# Core functionality\n"
         requirements_content += "\n".join(core_func) + "\n\n"
-    
+
     if langchain_openai:
         requirements_content += "# LangChain & OpenAI\n"
         requirements_content += "\n".join(langchain_openai) + "\n\n"
-    
+
     if vector_db:
         requirements_content += "# Vector DBs\n"
         requirements_content += "\n".join(vector_db) + "\n\n"
-    
+
     if reranker:
         requirements_content += "# Flashrank reranker\n"
         requirements_content += "\n".join(reranker) + "\n\n"
-    
+
     if supabase:
         requirements_content += "# Supabase\n"
         requirements_content += "\n".join(supabase) + "\n\n"
-    
+
     if other:
         requirements_content += "# Other dependencies\n"
         requirements_content += "\n".join(other) + "\n"
-    
+
     # Remove trailing newlines
     requirements_content = requirements_content.strip() + "\n"
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
+
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(requirements_content)
-    
+
     return output_path
 
 
@@ -317,40 +330,40 @@ def generate_all_docker_files(
     output_dir: str = ".",
     port: int = 8000,
     python_version: str = "3.11",
-    app_file: str = "main.py"
+    app_file: str = "main.py",
 ) -> dict:
     """
     Generate all Docker-related files: Dockerfile, .dockerignore, and requirements.txt.
-    
+
     Args:
         output_dir: Directory to save the files
         port: Port number for the application
         python_version: Python version to use
         app_file: Main application file
-    
+
     Returns:
         Dictionary with paths to generated files
     """
     output_dir = Path(output_dir)
-    
+
     dockerfile_path = generate_dockerfile(
         output_path=str(output_dir / "Dockerfile"),
         port=port,
         python_version=python_version,
-        app_file=app_file
+        app_file=app_file,
     )
-    
+
     dockerignore_path = generate_dockerignore(
         output_path=str(output_dir / ".dockerignore")
     )
-    
+
     requirements_path = generate_requirements_txt(
         output_path=str(output_dir / "requirements.txt"),
-        setup_path=str(output_dir / "setup.py")
+        setup_path=str(output_dir / "setup.py"),
     )
-    
+
     return {
         "dockerfile": dockerfile_path,
         "dockerignore": dockerignore_path,
-        "requirements": requirements_path
+        "requirements": requirements_path,
     }

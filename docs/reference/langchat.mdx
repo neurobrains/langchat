@@ -96,13 +96,15 @@ async def main():
     config = LangChatConfig.from_env()
     langchat = LangChat(config=config)
     
+    # Response is automatically displayed in a Rich panel box
     result = await langchat.chat(
         query="What are the best universities in Europe?",
         user_id="user123",
         domain="education"
     )
     
-    print(f"Response: {result['response']}")
+    # Response already shown in panel above
+    # Access response data programmatically if needed:
     print(f"Status: {result['status']}")
     print(f"Response Time: {result['response_time']:.2f}s")
 

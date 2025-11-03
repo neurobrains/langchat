@@ -64,10 +64,18 @@ config = LangChatConfig(
 
 Your system prompt template can use these variables:
 
-- `{domain}` - The user's domain (e.g., "education", "travel")
 - `{context}` - Retrieved context from vector search
 - `{chat_history}` - Previous conversation history
 - `{question}` - Current user question
+
+<Callout type="important">
+**Important**: Use single braces `{context}` in your prompt templates, NOT double braces `{{context}}`. LangChain's `PromptTemplate` handles the variable substitution automatically.
+
+- ✅ Correct: `{context}`, `{chat_history}`, `{question}`
+- ❌ Incorrect: `{{context}}`, `{{chat_history}}`, `{{question}}`
+
+Double braces `{{}}` are only needed when using f-strings or `.format()` directly. Since LangChat uses `PromptTemplate`, use single braces.
+</Callout>
 
 <Callout type="info">
 All variables are automatically filled by LangChat when processing queries.

@@ -10,11 +10,11 @@ class SupabaseAdapter:
     """
     Adapter for Supabase database operations.
     """
-    
+
     def __init__(self, url: str, key: str):
         """
         Initialize Supabase client.
-        
+
         Args:
             url: Supabase project URL
             key: Supabase API key
@@ -22,7 +22,7 @@ class SupabaseAdapter:
         self.url = url
         self.key = key
         self._client: Optional[Client] = None
-    
+
     @property
     def client(self) -> Client:
         """
@@ -31,16 +31,16 @@ class SupabaseAdapter:
         if self._client is None:
             self._client = create_client(self.url, self.key)
         return self._client
-    
+
     @classmethod
     def from_config(cls, supabase_url: str, supabase_key: str) -> "SupabaseAdapter":
         """
         Create adapter from configuration.
-        
+
         Args:
             supabase_url: Supabase project URL
             supabase_key: Supabase API key
-            
+
         Returns:
             SupabaseAdapter instance
         """

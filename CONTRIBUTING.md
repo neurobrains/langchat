@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing to LangChat! We welcome contributions from the community.
 
+> **Important**: All contributions require a [Developer Certificate of Origin (DCO)](DCO.md) sign-off. See [Sign-off Process](#sign-off-process) below for details.
+
 ## How to Contribute
 
 ### Reporting Bugs
@@ -70,11 +72,13 @@ We welcome feature suggestions! Please open an issue with:
    flake8 src/
    ```
 
-6. Commit your changes:
+6. Commit your changes with DCO sign-off:
    ```bash
    git add .
-   git commit -m "Description of your changes"
+   git commit -m "Description of your changes" -s
    ```
+   
+   **Important**: All commits must be signed off using the `-s` or `--signoff` flag to certify that you have the right to submit the code under the project's license. See [Sign-off Process](#sign-off-process) below for more details.
 
 7. Push to your fork:
    ```bash
@@ -163,12 +167,116 @@ Adds support for custom reranker models.
 - [x] Updated config documentation
 ```
 
+### Sign-off Process
+
+All contributions to LangChat must include a Developer Certificate of Origin (DCO) sign-off. This certifies that you have the right to submit the code under the project's license.
+
+#### What is DCO?
+
+The Developer Certificate of Origin (DCO) is a lightweight way to certify that you wrote or have the right to submit the code you're contributing. It's based on the Linux Foundation's DCO, which is used by many open-source projects.
+
+#### How to Sign Off Your Commits
+
+**Option 1: Sign off when committing**
+```bash
+git commit -s -m "Your commit message"
+```
+
+**Option 2: Use --signoff flag**
+```bash
+git commit --signoff -m "Your commit message"
+```
+
+**Option 3: Add sign-off to the last commit**
+If you forgot to sign off:
+```bash
+git commit --amend --signoff
+```
+
+**Option 4: Configure Git to auto-sign off**
+```bash
+git config --global commit.gpgsign false
+git config --global format.signOff true
+```
+
+#### What Gets Added
+
+When you sign off, Git automatically adds a "Signed-off-by" line to your commit message:
+
+```
+Your commit message
+
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+#### Example
+
+```bash
+git commit -s -m "Add feature to support custom reranker models"
+```
+
+This creates a commit message like:
+```
+Add feature to support custom reranker models
+
+Signed-off-by: John Doe <john.doe@example.com>
+```
+
+#### Why is DCO Required?
+
+- **Legal Protection**: Ensures you have the right to contribute the code
+- **License Compliance**: Certifies the contribution meets license requirements
+- **Project Integrity**: Maintains a clear chain of ownership
+- **Industry Standard**: Used by many major open-source projects (Linux Kernel, Kubernetes, etc.)
+
+#### DCO Verification
+
+Your Pull Request will be checked for DCO sign-off. If your commits don't have sign-off, you'll need to add it before the PR can be merged.
+
+**Check if your commits are signed off:**
+```bash
+git log --show-signature
+```
+
+**Fix unsigned commits:**
+```bash
+# For the last commit
+git commit --amend --signoff --no-edit
+
+# For multiple commits (interactive rebase)
+git rebase -i HEAD~n  # Replace n with number of commits
+# Change 'pick' to 'edit' for commits that need sign-off
+# Then for each commit:
+git commit --amend --signoff --no-edit
+git rebase --continue
+```
+
+#### Troubleshooting
+
+**Q: I forgot to sign off a commit, what do I do?**
+A: Use `git commit --amend --signoff --no-edit` for the last commit, or rebase to fix multiple commits.
+
+**Q: Can I sign off on behalf of someone else?**
+A: No, only the author of the code can sign off. If you're incorporating someone else's work, they must sign off first, or you must have explicit permission.
+
+**Q: Do I need to sign off on every commit?**
+A: Yes, every commit in your PR must be signed off.
+
+**Q: What if I'm contributing a small fix?**
+A: Even small fixes require sign-off. It's a quick process - just add `-s` to your commit command.
+
+#### More Information
+
+- Read the full [DCO.md](DCO.md) document
+- Learn more at [developercertificate.org](https://developercertificate.org/)
+
 ### Review Process
 
 1. Maintainers will review your PR
-2. We may request changes or provide feedback
-3. Once approved, your PR will be merged
-4. Thank you for contributing! 🎉
+2. DCO sign-off will be verified on all commits
+3. We may request changes or provide feedback
+4. Once approved, your PR will be merged
+5. Thank you for contributing! 🎉
 
 ## Questions?
 

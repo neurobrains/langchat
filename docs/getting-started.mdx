@@ -69,13 +69,16 @@ async def main():
     langchat = LangChat(config=config)
     
     # Chat with the AI
+    # Note: Response is automatically displayed in a Rich panel box in the console
+    # You don't need to print it manually
     result = await langchat.chat(
         query="Hello! What can you help me with?",
         user_id="user123",
         domain="general"
     )
     
-    print(f"Response: {result['response']}")
+    # Response already shown in panel above
+    # Access response data programmatically if needed:
     print(f"Status: {result['status']}")
     print(f"Response Time: {result.get('response_time', 0):.2f}s")
 

@@ -12,11 +12,11 @@ def generate_chat_interface(
     title: str = "LangChat AI",
     subtitle: str = "Your intelligent AI assistant",
     default_user_id: str = "user123",
-    default_domain: str = "default"
+    default_domain: str = "default",
 ) -> str:
     """
     Generate chat interface HTML file.
-    
+
     Args:
         output_path: Path to save the HTML file
         api_url: Default API URL (defaults to http://localhost:8000)
@@ -24,13 +24,13 @@ def generate_chat_interface(
         subtitle: Chat interface subtitle
         default_user_id: Default user ID
         default_domain: Default domain
-    
+
     Returns:
         Path to generated file
     """
     if api_url is None:
         api_url = os.getenv("LANGCHAT_API_URL", "http://localhost:8000")
-    
+
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -466,8 +466,8 @@ def generate_chat_interface(
     </script>
 </body>
 </html>"""
-    
-    with open(output_path, 'w', encoding='utf-8') as f:
+
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
-    
+
     return output_path

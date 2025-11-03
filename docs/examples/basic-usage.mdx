@@ -22,13 +22,16 @@ async def main():
     langchat = LangChat(config=config)
     
     # Chat with the AI
+    # Note: The response is automatically displayed in a Rich panel box in the console
+    # You don't need to print it manually
     result = await langchat.chat(
         query="Hello! What can you help me with?",
         user_id="user123",
         domain="general"
     )
     
-    print(f"Response: {result['response']}")
+    # The response is already shown in a panel above
+    # Access response data programmatically if needed:
     print(f"Status: {result['status']}")
     print(f"Time: {result['response_time']:.2f}s")
 
@@ -52,13 +55,15 @@ async def main():
     
     langchat = LangChat(config=config)
     
+    # Response is automatically displayed in a Rich panel
     result = await langchat.chat(
         query="What are the best universities?",
         user_id="user123",
         domain="education"
     )
     
-    print(result["response"])
+    # Response already shown in panel - access programmatically if needed
+    response_text = result["response"]
 
 asyncio.run(main())
 ```
@@ -70,13 +75,15 @@ config = LangChatConfig.from_env()
 langchat = LangChat(config=config)
 
 # Synchronous version
+# Response is automatically displayed in a Rich panel
 result = langchat.chat_sync(
     query="Hello!",
     user_id="user123",
     domain="general"
 )
 
-print(result["response"])
+# Response already shown in panel - access programmatically if needed
+response_text = result["response"]
 ```
 </CodeGroup>
 
@@ -97,13 +104,13 @@ async def conversation():
     domain = "education"
     
     # First message
+    # Responses are automatically displayed in Rich panels
     result1 = await langchat.chat(
         query="What universities offer computer science?",
         user_id=user_id,
         domain=domain
     )
-    print(f"User: What universities offer computer science?")
-    print(f"AI: {result1['response']}\n")
+    # Response shown in panel above
     
     # Second message (has context from first)
     result2 = await langchat.chat(
@@ -111,8 +118,7 @@ async def conversation():
         user_id=user_id,
         domain=domain
     )
-    print(f"User: What about in Europe?")
-    print(f"AI: {result2['response']}\n")
+    # Response shown in panel above
     
     # Third message (continues conversation)
     result3 = await langchat.chat(
@@ -120,8 +126,7 @@ async def conversation():
         user_id=user_id,
         domain=domain
     )
-    print(f"User: Which ones accept IELTS 6.5?")
-    print(f"AI: {result3['response']}")
+    # Response shown in panel above
 
 asyncio.run(conversation())
 ```

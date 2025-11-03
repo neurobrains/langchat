@@ -138,6 +138,8 @@ config = LangChatConfig(
 ```python
 config = LangChatConfig(
     # Custom system prompt template
+    # Use single braces {context}, {chat_history}, {question} for variables
+    # LangChain's PromptTemplate handles substitution automatically
     system_prompt_template="""You are a helpful assistant.
     
     Use the following context to answer questions:
@@ -153,7 +155,11 @@ config = LangChatConfig(
     
     Chat History: {chat_history}
     Question: {question}
-    Standalone query:"""
+    Standalone query:""",
+    
+    # Enable verbose chain output for debugging
+    # Shows detailed prompt formatting and chain execution in Rich panels
+    verbose_chains=False  # Set to True for debugging
 )
 ```
 
@@ -197,6 +203,9 @@ export PORT="8000"  # Alternative
 
 # Timezone
 export TIMEZONE="Asia/Dhaka"
+
+# Debugging
+export VERBOSE_CHAINS="False"  # Set to "True" to enable verbose chain output
 ```
 
 Then load:
@@ -263,6 +272,7 @@ config = LangChatConfig(
     # ... other config ...
     
     # Custom prompts for education domain
+    # Use single braces for template variables
     system_prompt_template="""You are an expert education consultant.
     
     Help students find the best universities based on their profiles.
@@ -276,7 +286,10 @@ config = LangChatConfig(
     
     Chat History: {chat_history}
     Question: {question}
-    Standalone query:"""
+    Standalone query:""",
+    
+    # Enable verbose output for debugging chains
+    verbose_chains=False
 )
 ```
 

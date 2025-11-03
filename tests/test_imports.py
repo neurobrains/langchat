@@ -17,12 +17,9 @@ LangChatConfig = config_module.LangChatConfig
 
 def test_import_config():
     """Test that LangChatConfig can be imported and instantiated."""
-    
-    config = LangChatConfig(
-        openai_api_keys=["test-key"],
-        openai_model="gpt-4o-mini"
-    )
-    
+
+    config = LangChatConfig(openai_api_keys=["test-key"], openai_model="gpt-4o-mini")
+
     assert config.openai_api_keys == ["test-key"]
     assert config.openai_model == "gpt-4o-mini"
     assert config.timezone == "Asia/Dhaka"
@@ -30,11 +27,8 @@ def test_import_config():
 
 def test_config_get_formatted_time():
     """Test that config can get formatted time."""
-    config = LangChatConfig(
-        openai_api_keys=["test-key"],
-        timezone="UTC"
-    )
-    
+    config = LangChatConfig(openai_api_keys=["test-key"], timezone="UTC")
+
     time_str = config.get_formatted_time()
     assert isinstance(time_str, str)
     assert len(time_str) > 0
@@ -49,7 +43,7 @@ def test_dependencies_import():
     import requests
     import langchain
     import openai
-    
+
     assert fastapi is not None
     assert uvicorn is not None
     assert starlette is not None
@@ -57,4 +51,3 @@ def test_dependencies_import():
     assert requests is not None
     assert langchain is not None
     assert openai is not None
-

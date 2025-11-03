@@ -39,17 +39,16 @@ Chat History: {chat_history}
 Question: {question}
 Standalone query:"""
 
+
 def main():
     """Main function to start the LangChat API server"""
     from langchat.api.app import create_app
     import uvicorn
-        
+
     # Create configuration
     # You can customize this or use environment variables
     config = LangChatConfig(
-        openai_api_keys=[
-            "your-openai-api-key"
-        ],
+        openai_api_keys=["your-openai-api-key"],
         pinecone_api_key="your-pinecone-api-key",
         pinecone_index_name="your-pinecone-index-name",
         supabase_url="your-supabase-url",
@@ -57,15 +56,18 @@ def main():
         # Custom Prompts
         system_prompt_template=TRAVEL_SYSTEM_PROMPT,
         standalone_question_prompt=TRAVEL_STANDALONE_PROMPT,
-        server_port=8007  # Configure your port
+        server_port=8007,  # Configure your port
     )
-    
+
     # Create FastAPI app
-    app = create_app(config=config, auto_generate_interface=True, auto_generate_docker=True)
-    
+    app = create_app(
+        config=config, auto_generate_interface=True, auto_generate_docker=True
+    )
+
     # Start the server
     logger.info(f"🚀 Starting LangChat API server on port {config.server_port}")
     uvicorn.run(app, host="0.0.0.0", port=config.server_port, reload=False)
+
 
 # Running the Server
 if __name__ == "__main__":

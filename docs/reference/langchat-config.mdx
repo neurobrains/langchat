@@ -31,7 +31,8 @@ LangChatConfig(
     system_prompt_template: Optional[str] = None,
     standalone_question_prompt: Optional[str] = None,
     max_llm_retries: int = 2,
-    server_port: int = 8000
+    server_port: int = 8000,
+    verbose_chains: bool = False
 )
 ```
 
@@ -113,6 +114,10 @@ LangChatConfig(
   Port for API server
 </Param>
 
+<Param name="verbose_chains" type="bool" default="False">
+  Show LangChain verbose output for debugging chains (standalone question chain and main QA chain). When enabled, shows detailed prompt formatting and chain execution logs in Rich panels.
+</Param>
+
 ### Class Methods
 
 #### `from_env()`
@@ -155,6 +160,7 @@ config = LangChatConfig.from_env()
 - `MAX_CHAT_HISTORY` - Max history (default: "20")
 - `SERVER_PORT` or `PORT` - Server port (default: "8000")
 - `TIMEZONE` - Timezone (default: "Asia/Dhaka")
+- `VERBOSE_CHAINS` - Enable verbose chain output for debugging (default: "False")
 
 ### Instance Methods
 
@@ -275,6 +281,8 @@ config = LangChatConfig(
     # ... other config ...
     
     # Custom system prompt
+    # Note: Use single braces {context}, {chat_history}, {question} for template variables
+    # LangChain's PromptTemplate will handle the variable substitution
     system_prompt_template="""You are a helpful assistant.
     
     Use the following context:
@@ -289,7 +297,10 @@ config = LangChatConfig(
     
     Chat History: {chat_history}
     Question: {question}
-    Standalone query:"""
+    Standalone query:""",
+    
+    # Enable verbose chain output for debugging
+    verbose_chains=True
 )
 ```
 

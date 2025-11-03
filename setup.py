@@ -47,6 +47,7 @@ setup(
         "pinecone-client>=3.0.0",
         "flashrank==0.2.10",
         "supabase==2.15.2",
+        "rich>=13.0.0",
     ],
     extras_require={
         "dev": [

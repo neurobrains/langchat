@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: langchat
 Version: 0.0.1
 Summary: A conversational AI library with vector search capabilities
@@ -15,8 +15,34 @@ Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
-Provides-Extra: dev
 License-File: LICENSE
+Requires-Dist: fastapi>=0.115.14
+Requires-Dist: uvicorn>=0.34.3
+Requires-Dist: starlette>=0.46.2
+Requires-Dist: pydantic>=2.11.7
+Requires-Dist: python-multipart>=0.0.20
+Requires-Dist: pytz>=2022.7
+Requires-Dist: requests>=2.32.3
+Requires-Dist: langchain==0.3.27
+Requires-Dist: langchain-core<1.0.0,>=0.3.72
+Requires-Dist: langchain-pinecone<0.3.0,>=0.1.0
+Requires-Dist: langchain-community<0.4.0,>=0.3.0
+Requires-Dist: langchain-openai<0.3.0,>=0.2.0
+Requires-Dist: openai
+Requires-Dist: tiktoken>=0.9.0
+Requires-Dist: pinecone-client
+Requires-Dist: flashrank>=0.2.10
+Requires-Dist: supabase>=2.15.2
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Dynamic: author-email
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
 
 # LangChat
 
@@ -99,7 +125,13 @@ src/langchat/
 
 ## Installation
 
-Install the package in development mode:
+Install LangChat from PyPI:
+
+```bash
+pip install langchat
+```
+
+Or install in development mode:
 
 ```bash
 pip install -e .
@@ -115,12 +147,10 @@ pip install -r requirements.txt
 
 ### Installation
 
-```bash
-# Install in development mode
-pip install -e .
+Install LangChat from PyPI:
 
-# Or install dependencies directly
-pip install -r requirements.txt
+```bash
+pip install langchat
 ```
 
 ### Basic Usage

@@ -28,6 +28,9 @@ src/langchat/core/__init__.py
 src/langchat/core/engine.py
 src/langchat/core/prompts.py
 src/langchat/core/session.py
+src/langchat/logger/__init__.py
 src/langchat/utils/__init__.py
 src/langchat/utils/docker_generator.py
 src/langchat/utils/interface_generator.py
+tests/test_config.py
+tests/test_imports.py
