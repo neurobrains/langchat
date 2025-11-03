@@ -18,8 +18,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: DCO Check
-        uses: tisonkun/actions-dco@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup script permissions
+        run: chmod +x .github/scripts/check-dco.sh
+
+      - name: Run DCO Check
+        run: ./.github/scripts/check-dco.sh
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_BEFORE: ${{ github.event.before }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
 
