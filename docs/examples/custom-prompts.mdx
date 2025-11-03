@@ -1,0 +1,135 @@
+---
+title: Custom Prompts
+description: Examples of customizing prompts for your use case
+---
+
+# Custom Prompts Examples
+
+Learn how to customize prompts for your specific use case.
+
+## Education Chatbot
+
+```python
+from langchat import LangChat, LangChatConfig
+
+EDUCATION_PROMPT = """You are an expert education consultant specializing in study abroad programs.
+
+Your expertise includes:
+- University and program recommendations
+- Admission requirements and procedures
+- Application deadlines and timelines
+- Scholarship and funding opportunities
+- Student visa requirements
+
+Communication Style:
+- Friendly and professional
+- Concise and actionable
+- Use emojis appropriately (👋 👍 ✨)
+- Break down complex information
+
+Use the following context to answer questions:
+{context}
+
+Previous conversation:
+{chat_history}
+
+Student's question: {question}
+
+Provide a helpful response:"""
+
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="education-index",
+    supabase_url="https://...",
+    supabase_key="eyJ...",
+    system_prompt_template=EDUCATION_PROMPT
+)
+
+langchat = LangChat(config=config)
+```
+
+## Travel Assistant
+
+```python
+from langchat import LangChat, LangChatConfig
+
+TRAVEL_PROMPT = """You are a helpful travel assistant specializing in trip planning.
+
+Your expertise includes:
+- Destination recommendations
+- Flight and hotel booking
+- Local attractions
+- Travel tips and safety
+- Cultural insights
+
+Be friendly, concise, and helpful.
+
+Use the following context:
+{context}
+
+Chat history: {chat_history}
+Question: {question}
+Answer:"""
+
+TRAVEL_STANDALONE = """Convert this travel question to a standalone search query.
+
+Chat History: {chat_history}
+Question: {question}
+Standalone query:"""
+
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="travel-index",
+    supabase_url="https://...",
+    supabase_key="eyJ...",
+    system_prompt_template=TRAVEL_PROMPT,
+    standalone_question_prompt=TRAVEL_STANDALONE
+)
+
+langchat = LangChat(config=config)
+```
+
+## Customer Support
+
+```python
+from langchat import LangChat, LangChatConfig
+
+SUPPORT_PROMPT = """You are a customer support agent for TechCorp products.
+
+Your responsibilities:
+- Answer product questions accurately
+- Help troubleshoot technical issues
+- Guide users through features
+- Escalate complex issues when needed
+
+Communication Guidelines:
+- Be professional and empathetic
+- Acknowledge user concerns
+- Provide step-by-step solutions
+- Ask clarifying questions when needed
+
+Product Context:
+{context}
+
+Previous conversation:
+{chat_history}
+
+Customer inquiry: {question}
+
+Provide a helpful response:"""
+
+config = LangChatConfig(
+    # ... other config ...
+    system_prompt_template=SUPPORT_PROMPT
+)
+
+langchat = LangChat(config=config)
+```
+
+## Next Steps
+
+- **[API Server](/examples/api-server)** - Deploy as API server
+- **[Prompts Guide](/guides/prompts)** - Learn more about prompts
+

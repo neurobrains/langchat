@@ -1,0 +1,251 @@
+---
+title: Troubleshooting
+description: Common issues and solutions for LangChat
+---
+
+import { Callout } from 'mintlify';
+
+# Troubleshooting Guide
+
+Common issues and their solutions when using LangChat.
+
+## Configuration Issues
+
+### Issue: "OpenAI API keys must be provided"
+
+**Solution**: Make sure you've set `OPENAI_API_KEYS` or `OPENAI_API_KEY` environment variable:
+
+```bash
+export OPENAI_API_KEYS="sk-key1,sk-key2"
+```
+
+Or in code:
+
+```python
+config = LangChatConfig(
+    openai_api_keys=["sk-..."]  # At least one key required
+)
+```
+
+### Issue: "Supabase URL and key must be provided"
+
+**Solution**: Set Supabase credentials:
+
+```bash
+export SUPABASE_URL="https://xxxxx.supabase.co"
+export SUPABASE_KEY="eyJ..."
+```
+
+### Issue: "Pinecone API key must be provided"
+
+**Solution**: Set Pinecone credentials:
+
+```bash
+export PINECONE_API_KEY="pcsk-..."
+export PINECONE_INDEX_NAME="your-index-name"
+```
+
+<Callout type="warning">
+Make sure your Pinecone index is created before using LangChat.
+</Callout>
+
+## Runtime Issues
+
+### Issue: All API Keys Exhausted
+
+**Error**: `All API keys exhausted`
+
+**Solutions**:
+- Add more API keys: `openai_api_keys=["sk-1", "sk-2", "sk-3"]`
+- Increase retry count: `max_llm_retries=3`
+- Check API key validity
+- Wait for rate limit reset
+
+### Issue: Rate Limit Errors
+
+**Error**: `Rate limit exceeded`
+
+**Solutions**:
+- Use multiple API keys from different organizations
+- Reduce request frequency
+- Implement request queuing
+- Upgrade OpenAI plan
+
+### Issue: Model Not Found
+
+**Error**: `Model not found`
+
+**Solutions**:
+- Verify model name: `"gpt-4o-mini"`, `"gpt-4o"`, etc.
+- Check if model is available in your region
+- Ensure you have access to the model
+
+## Vector Search Issues
+
+### Issue: No Relevant Results
+
+**Solutions**:
+- Increase `retrieval_k`: `retrieval_k=10`
+- Check Pinecone index has documents
+- Verify embeddings are generated correctly
+- Try different embedding model
+
+### Issue: Index Not Found
+
+**Error**: `Index 'xxx' not found`
+
+**Solutions**:
+- Check index name spelling
+- Verify index exists in Pinecone console
+- Check API key permissions
+- Create index first
+
+### Issue: Dimension Mismatch
+
+**Error**: `Dimension mismatch`
+
+**Solutions**:
+- Ensure embedding model dimension matches index dimension
+- Recreate index with correct dimension:
+  - `text-embedding-3-large`: 3072 dimensions
+  - `text-embedding-3-small`: 1536 dimensions
+  - `text-embedding-ada-002`: 1536 dimensions
+
+## Database Issues
+
+### Issue: Connection Failed
+
+**Error**: `Failed to connect to Supabase`
+
+**Solutions**:
+- Verify URL includes `https://`
+- Check internet connection
+- Verify project is active
+- Check API key validity
+
+### Issue: Table Not Found
+
+**Error**: `Table 'xxx' not found`
+
+**Solutions**:
+- Tables are auto-created on first run
+- Verify table exists in Supabase dashboard
+- Check table name spelling
+- Ensure proper permissions
+
+### Issue: Permission Denied
+
+**Error**: `Permission denied`
+
+**Solutions**:
+- Check RLS policies
+- Use `service_role` key for server-side operations
+- Verify API key permissions
+- Review Row Level Security settings
+
+## Reranker Issues
+
+### Issue: Model Download Fails
+
+**Error**: `Failed to download model`
+
+**Solutions**:
+- Check internet connection
+- Verify model name: `"ms-marco-MiniLM-L-12-v2"`
+- Check disk space
+- Ensure write permissions on cache directory
+
+### Issue: Import Errors
+
+**Error**: `Could not import FlashrankRerank`
+
+**Solutions**:
+```bash
+pip install langchain langchain-community
+pip install flashrank
+```
+
+### Issue: Slow Performance
+
+**Solutions**:
+- Use smaller model: `reranker_model="ms-marco-MiniLM-L-6-v2"`
+- Reduce retrieval count before reranking
+- Use GPU if available
+
+## Performance Issues
+
+### Issue: Slow Response Times
+
+**Solutions**:
+- Reduce `retrieval_k`: `retrieval_k=5`
+- Use smaller embedding model
+- Reduce `reranker_top_n`: `reranker_top_n=3`
+- Optimize Pinecone index
+- Use faster model: `openai_model="gpt-4o-mini"`
+
+### Issue: High Memory Usage
+
+**Solutions**:
+- Reduce `max_chat_history`: `max_chat_history=10`
+- Use smaller reranker model
+- Clear session history periodically
+- Use streaming responses (if supported)
+
+## General Debugging
+
+### Enable Logging
+
+```python
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('langchat')
+logger.setLevel(logging.DEBUG)
+```
+
+### Check Configuration
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig.from_env()
+print(f"OpenAI Model: {config.openai_model}")
+print(f"Pinecone Index: {config.pinecone_index_name}")
+print(f"Supabase URL: {config.supabase_url}")
+```
+
+### Test Individual Components
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Test OpenAI
+engine = langchat.engine
+test_response = engine.llm.invoke([{"role": "user", "content": "Hello"}])
+print(f"OpenAI works: {test_response.content}")
+
+# Test Pinecone
+retriever = engine.vector_adapter.get_retriever(k=1)
+docs = retriever.get_relevant_documents("test")
+print(f"Pinecone works: {len(docs)} documents")
+
+# Test Supabase
+client = engine.supabase_adapter.client
+result = client.table("chat_history").select("id").limit(1).execute()
+print(f"Supabase works: {len(result.data)} records")
+```
+
+## Getting Help
+
+- Check [GitHub Issues](https://github.com/neurobrains/langchat/issues)
+- Review [Configuration Guide](/guides/configuration)
+- See [Examples](/examples/basic-usage)
+
+## Related Documentation
+
+- **[Configuration](/guides/configuration)** - Configuration options
+- **[Performance](/advanced/performance)** - Performance optimization
+

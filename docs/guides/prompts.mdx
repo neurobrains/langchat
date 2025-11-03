@@ -1,0 +1,377 @@
+---
+title: Custom Prompts
+description: Learn how to customize prompts for your LangChat application
+---
+
+import { Callout } from 'mintlify';
+
+# Custom Prompts Guide
+
+Prompts are the instructions that guide your chatbot's behavior. LangChat allows you to fully customize both system prompts and standalone question prompts.
+
+## Understanding Prompts
+
+LangChat uses two types of prompts:
+
+1. **System Prompt** - Defines the chatbot's personality and behavior
+2. **Standalone Question Prompt** - Converts user questions into search queries
+
+## System Prompt
+
+The system prompt is the main instruction that defines your chatbot's role, behavior, and how it should respond.
+
+### Default System Prompt
+
+If you don't provide a custom prompt, LangChat uses a default:
+
+```python
+"""You are a helpful assistant specializing in {domain}.
+
+Use the following context to answer questions:
+{context}
+
+Chat history: {chat_history}
+
+Question: {question}
+Answer:"""
+```
+
+### Custom System Prompt
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig(
+    # ... other config ...
+    
+    system_prompt_template="""You are a friendly travel assistant.
+    
+    Your expertise includes:
+    - Destination recommendations
+    - Flight and hotel booking
+    - Local attractions and activities
+    - Travel tips and safety information
+    
+    Use the following context to answer questions:
+    {context}
+    
+    Previous conversation:
+    {chat_history}
+    
+    User's question: {question}
+    
+    Provide a helpful and friendly response:"""
+)
+```
+
+### Prompt Variables
+
+Your system prompt template can use these variables:
+
+- `{domain}` - The user's domain (e.g., "education", "travel")
+- `{context}` - Retrieved context from vector search
+- `{chat_history}` - Previous conversation history
+- `{question}` - Current user question
+
+<Callout type="info">
+All variables are automatically filled by LangChat when processing queries.
+</Callout>
+
+## Standalone Question Prompt
+
+The standalone question prompt converts conversational questions into searchable queries.
+
+### Default Standalone Question Prompt
+
+```python
+"""Convert this question to a standalone search query.
+
+Chat History: {chat_history}
+Question: {question}
+Standalone query:"""
+```
+
+### Custom Standalone Question Prompt
+
+```python
+config = LangChatConfig(
+    # ... other config ...
+    
+    standalone_question_prompt="""Convert this travel-related question to a standalone search query.
+    Make sure the query captures the intent for finding relevant travel information.
+    
+    Chat History: {chat_history}
+    Question: {question}
+    Standalone query:"""
+)
+```
+
+## Prompt Examples
+
+### Education Chatbot
+
+```python
+EDUCATION_SYSTEM_PROMPT = """You are an expert education consultant specializing in study abroad programs.
+
+Your expertise includes:
+- University and program recommendations
+- Admission requirements and procedures
+- Application deadlines and timelines
+- Scholarship and funding opportunities
+- Student visa requirements
+
+Your goal is to help students find the best universities based on their:
+- Academic profile (GPA, test scores)
+- Preferred countries and programs
+- Budget constraints
+
+Communication Style:
+- Friendly and professional
+- Concise and actionable
+- Use emojis appropriately (👋 👍 ✨)
+- Break down complex information into digestible chunks
+
+Use the following context to answer questions:
+{context}
+
+Previous conversation:
+{chat_history}
+
+Student's question: {question}
+
+Provide a helpful response that guides them toward suitable options:"""
+
+config = LangChatConfig(
+    # ... other config ...
+    system_prompt_template=EDUCATION_SYSTEM_PROMPT
+)
+```
+
+### Travel Assistant
+
+```python
+TRAVEL_SYSTEM_PROMPT = """You are a helpful travel assistant specializing in trip planning, recommendations, and travel information.
+
+Your expertise includes:
+- Destination recommendations based on budget and preferences
+- Flight and hotel booking guidance
+- Local attractions and activities
+- Travel tips and safety information
+- Cultural insights and local customs
+- Visa and travel document requirements
+
+Be friendly, concise, and helpful. Provide practical, actionable advice.
+
+Use the following context to answer questions:
+{context}
+
+Chat history: {chat_history}
+
+Question: {question}
+Answer:"""
+
+TRAVEL_STANDALONE_PROMPT = """Convert this travel-related question to a standalone search query.
+Make sure the query captures the intent for finding relevant travel information.
+
+Chat History: {chat_history}
+Question: {question}
+Standalone query:"""
+
+config = LangChatConfig(
+    # ... other config ...
+    system_prompt_template=TRAVEL_SYSTEM_PROMPT,
+    standalone_question_prompt=TRAVEL_STANDALONE_PROMPT
+)
+```
+
+### Customer Support
+
+```python
+SUPPORT_SYSTEM_PROMPT = """You are a customer support agent for TechCorp products.
+
+Your responsibilities:
+- Answer product questions accurately
+- Help troubleshoot technical issues
+- Guide users through features
+- Escalate complex issues when needed
+
+Communication Guidelines:
+- Be professional and empathetic
+- Acknowledge user concerns
+- Provide step-by-step solutions
+- Ask clarifying questions when needed
+
+Product Context:
+{context}
+
+Previous conversation:
+{chat_history}
+
+Customer inquiry: {question}
+
+Provide a helpful response:"""
+
+config = LangChatConfig(
+    # ... other config ...
+    system_prompt_template=SUPPORT_SYSTEM_PROMPT
+)
+```
+
+## Best Practices
+
+### 1. Be Specific About the Role
+
+Clearly define your chatbot's role:
+
+```python
+# ❌ Vague
+"""You are an assistant. Help users."""
+
+# ✅ Specific
+"""You are an expert education consultant specializing in study abroad programs.
+Your goal is to help students find the best universities based on their academic profiles."""
+```
+
+### 2. Include Context Instructions
+
+Tell the model how to use retrieved context:
+
+```python
+"""Use the following context to answer questions:
+{context}
+
+If the context doesn't contain relevant information, say so honestly."""
+```
+
+### 3. Guide Conversation Style
+
+Specify how the chatbot should communicate:
+
+```python
+"""Communication Style:
+- Friendly and professional
+- Concise and actionable
+- Use emojis appropriately
+- Break down complex information"""
+```
+
+### 4. Handle Edge Cases
+
+Provide instructions for common scenarios:
+
+```python
+"""If the user asks about something not in the context:
+1. Acknowledge the limitation
+2. Offer alternative assistance
+3. Suggest contacting support if needed"""
+```
+
+### 5. Use Domain-Specific Language
+
+Tailor language to your domain:
+
+```python
+# Education domain
+"""Use terms like: 'academic profile', 'CGPA', 'admission requirements', 'intake session'"""
+
+# Travel domain
+"""Use terms like: 'destination', 'itinerary', 'travel dates', 'budget-friendly'"""
+```
+
+## Dynamic Prompts
+
+You can also create dynamic prompts programmatically:
+
+```python
+def create_custom_prompt(domain: str, style: str = "professional") -> str:
+    base_prompt = f"""You are a {domain} assistant."""
+    
+    if style == "friendly":
+        base_prompt += "\n\nCommunication Style: Friendly, use emojis, keep it casual."
+    elif style == "professional":
+        base_prompt += "\n\nCommunication Style: Professional, formal, detailed."
+    
+    base_prompt += """
+    
+    Use the following context:
+    {context}
+    
+    Chat history: {chat_history}
+    Question: {question}
+    Answer:"""
+    
+    return base_prompt
+
+config = LangChatConfig(
+    # ... other config ...
+    system_prompt_template=create_custom_prompt("education", "friendly")
+)
+```
+
+## Testing Prompts
+
+Test your prompts with different scenarios:
+
+```python
+async def test_prompt():
+    langchat = LangChat(config=config)
+    
+    test_cases = [
+        "What universities are good for computer science?",
+        "I need help with my visa application",
+        "What's the deadline for fall intake?"
+    ]
+    
+    for query in test_cases:
+        result = await langchat.chat(
+            query=query,
+            user_id="test_user",
+            domain="education"
+        )
+        print(f"Q: {query}")
+        print(f"A: {result['response']}\n")
+```
+
+## Prompt Optimization Tips
+
+### 1. Iterate and Test
+
+Start with a simple prompt and refine based on results:
+
+```python
+# Version 1: Basic
+"""You are a helpful assistant. Answer questions using {context}."""
+
+# Version 2: More specific
+"""You are an education consultant. Help students find universities using {context}."""
+
+# Version 3: Detailed
+"""You are an expert education consultant specializing in study abroad programs.
+[Detailed instructions...]"""
+```
+
+### 2. Monitor Response Quality
+
+Check if responses:
+- Use the retrieved context appropriately
+- Match your desired tone and style
+- Handle edge cases gracefully
+
+### 3. Adjust for Your Domain
+
+Different domains need different approaches:
+
+- **Education**: Detailed, structured, professional
+- **Travel**: Friendly, concise, visual
+- **Support**: Empathetic, solution-focused
+
+## Next Steps
+
+- **[Configuration Guide](/guides/configuration)** - Learn about other configuration options
+- **[Examples](/examples/custom-prompts)** - See complete prompt examples
+- **[API Reference](/api-reference/langchat-config)** - Full configuration API
+
+---
+
+Ready to customize your chatbot? Check out our [Examples](/examples/custom-prompts)!
+

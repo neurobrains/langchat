@@ -1,0 +1,101 @@
+---
+title: Travel AI
+description: Complete travel assistant example
+---
+
+# Travel AI Example
+
+Complete example of a travel assistant chatbot built with LangChat.
+
+## Travel Assistant Configuration
+
+```python
+from langchat import LangChat, LangChatConfig
+
+TRAVEL_SYSTEM_PROMPT = """You are a helpful travel assistant specializing in trip planning, recommendations, and travel information.
+
+Your expertise includes:
+- Destination recommendations based on budget and preferences
+- Flight and hotel booking guidance
+- Local attractions and activities
+- Travel tips and safety information
+- Cultural insights and local customs
+- Visa and travel document requirements
+
+Be friendly, concise, and helpful. Provide practical, actionable advice.
+
+Use the following context to answer questions:
+{context}
+
+Chat history: {chat_history}
+
+Question: {question}
+Answer:"""
+
+TRAVEL_STANDALONE_PROMPT = """Convert this travel-related question to a standalone search query.
+Make sure the query captures the intent for finding relevant travel information.
+
+Chat History: {chat_history}
+Question: {question}
+Standalone query:"""
+
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="travel-index",
+    supabase_url="https://...",
+    supabase_key="eyJ...",
+    system_prompt_template=TRAVEL_SYSTEM_PROMPT,
+    standalone_question_prompt=TRAVEL_STANDALONE_PROMPT,
+    server_port=8007
+)
+```
+
+## Travel Assistant Chat
+
+```python
+import asyncio
+from langchat import LangChat
+
+async def travel_chat():
+    langchat = LangChat(config=config)
+    
+    queries = [
+        "What are the best travel destinations in Europe?",
+        "What about budget-friendly options?",
+        "Which one has the best beaches?"
+    ]
+    
+    for query in queries:
+        result = await langchat.chat(
+            query=query,
+            user_id="traveler123",
+            domain="travel"
+        )
+        print(f"User: {query}")
+        print(f"AI: {result['response']}\n")
+
+asyncio.run(travel_chat())
+```
+
+## As API Server
+
+```python
+from langchat.api.app import create_app
+import uvicorn
+
+app = create_app(
+    config=config,
+    auto_generate_interface=True,
+    auto_generate_docker=True
+)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8007)
+```
+
+## Next Steps
+
+- **[Configuration](/guides/configuration)** - Learn about configuration
+- **[Prompts](/guides/prompts)** - Customize prompts
+

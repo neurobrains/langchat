@@ -1,0 +1,344 @@
+---
+title: LangChatConfig
+description: Configuration class API reference
+---
+
+import { Param } from 'mintlify';
+import { Callout } from 'mintlify';
+
+# LangChatConfig API Reference
+
+The `LangChatConfig` class provides all configuration options for LangChat.
+
+## Class: LangChatConfig
+
+Configuration class for LangChat. All settings can be customized.
+
+### Constructor
+
+```python
+LangChatConfig(
+    openai_api_keys: List[str],
+    openai_model: str = "gpt-4o-mini",
+    openai_temperature: float = 1.0,
+    openai_embedding_model: str = "text-embedding-3-large",
+    pinecone_api_key: Optional[str] = None,
+    pinecone_index_name: Optional[str] = None,
+    supabase_url: Optional[str] = None,
+    supabase_key: Optional[str] = None,
+    retrieval_k: int = 5,
+    reranker_top_n: int = 3,
+    reranker_model: str = "ms-marco-MiniLM-L-12-v2",
+    reranker_cache_dir: str = "rerank_models",
+    max_chat_history: int = 20,
+    memory_window: int = 20,
+    timezone: str = "Asia/Dhaka",
+    system_prompt_template: Optional[str] = None,
+    standalone_question_prompt: Optional[str] = None,
+    max_llm_retries: int = 2,
+    server_port: int = 8000
+)
+```
+
+**Parameters:**
+
+<Param name="openai_api_keys" type="List[str]" required>
+  List of OpenAI API keys. Can provide multiple keys for automatic rotation.
+</Param>
+
+<Param name="openai_model" type="str" default="gpt-4o-mini">
+  OpenAI model to use. Options: "gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"
+</Param>
+
+<Param name="openai_temperature" type="float" default="1.0">
+  Model temperature (0.0-2.0). Higher = more creative, lower = more focused
+</Param>
+
+<Param name="openai_embedding_model" type="str" default="text-embedding-3-large">
+  OpenAI embedding model. Options: "text-embedding-3-large", "text-embedding-3-small", "text-embedding-ada-002"
+</Param>
+
+<Param name="pinecone_api_key" type="str | None" default="None">
+  Pinecone API key
+</Param>
+
+<Param name="pinecone_index_name" type="str | None" default="None">
+  Pinecone index name (must be pre-created)
+</Param>
+
+<Param name="supabase_url" type="str | None" default="None">
+  Supabase project URL
+</Param>
+
+<Param name="supabase_key" type="str | None" default="None">
+  Supabase API key (anon or service role)
+</Param>
+
+<Param name="retrieval_k" type="int" default="5">
+  Number of documents to retrieve from vector search
+</Param>
+
+<Param name="reranker_top_n" type="int" default="3">
+  Number of top documents after reranking
+</Param>
+
+<Param name="reranker_model" type="str" default="ms-marco-MiniLM-L-12-v2">
+  Flashrank reranker model name
+</Param>
+
+<Param name="reranker_cache_dir" type="str" default="rerank_models">
+  Directory to cache reranker models
+</Param>
+
+<Param name="max_chat_history" type="int" default="20">
+  Maximum chat history messages to keep in memory
+</Param>
+
+<Param name="memory_window" type="int" default="20">
+  Conversation buffer window size
+</Param>
+
+<Param name="timezone" type="str" default="Asia/Dhaka">
+  Timezone for date/time formatting
+</Param>
+
+<Param name="system_prompt_template" type="str | None" default="None">
+  Custom system prompt template. Uses default if None.
+</Param>
+
+<Param name="standalone_question_prompt" type="str | None" default="None">
+  Custom standalone question prompt. Uses default if None.
+</Param>
+
+<Param name="max_llm_retries" type="int" default="2">
+  Maximum retry attempts per API key
+</Param>
+
+<Param name="server_port" type="int" default="8000">
+  Port for API server
+</Param>
+
+### Class Methods
+
+#### `from_env()`
+
+Create configuration from environment variables.
+
+```python
+@classmethod
+def from_env() -> LangChatConfig
+```
+
+**Returns:**
+
+`LangChatConfig` - Configuration loaded from environment variables
+
+**Example:**
+
+```python
+from langchat import LangChatConfig
+
+# Load from environment variables
+config = LangChatConfig.from_env()
+```
+
+**Required Environment Variables:**
+
+- `OPENAI_API_KEYS` or `OPENAI_API_KEY` - OpenAI API key(s), comma-separated
+- `PINECONE_API_KEY` - Pinecone API key
+- `PINECONE_INDEX_NAME` - Pinecone index name
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_KEY` - Supabase API key
+
+**Optional Environment Variables:**
+
+- `OPENAI_MODEL` - OpenAI model (default: "gpt-4o-mini")
+- `OPENAI_TEMPERATURE` - Model temperature (default: "1.0")
+- `OPENAI_EMBEDDING_MODEL` - Embedding model (default: "text-embedding-3-large")
+- `RETRIEVAL_K` - Retrieval count (default: "5")
+- `RERANKER_TOP_N` - Reranker top N (default: "3")
+- `MAX_CHAT_HISTORY` - Max history (default: "20")
+- `SERVER_PORT` or `PORT` - Server port (default: "8000")
+- `TIMEZONE` - Timezone (default: "Asia/Dhaka")
+
+### Instance Methods
+
+#### `get_formatted_time()`
+
+Get current formatted time based on configured timezone.
+
+```python
+def get_formatted_time(self) -> str
+```
+
+**Returns:**
+
+`str` - Formatted time string (e.g., "Monday, 01 January 2024")
+
+**Example:**
+
+```python
+config = LangChatConfig.from_env()
+time_str = config.get_formatted_time()
+print(time_str)  # "Monday, 01 January 2024"
+```
+
+#### `get_default_prompt_template()`
+
+Get default system prompt template.
+
+```python
+def get_default_prompt_template(self) -> str
+```
+
+**Returns:**
+
+`str` - Default prompt template string
+
+**Example:**
+
+```python
+config = LangChatConfig.from_env()
+default_prompt = config.get_default_prompt_template()
+print(default_prompt)
+```
+
+## Usage Examples
+
+### Basic Configuration
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJ..."
+)
+```
+
+### From Environment Variables
+
+```python
+from langchat import LangChatConfig
+
+# Set environment variables first
+import os
+os.environ["OPENAI_API_KEYS"] = "sk-key1,sk-key2"
+os.environ["PINECONE_API_KEY"] = "pcsk-..."
+os.environ["PINECONE_INDEX_NAME"] = "my-index"
+os.environ["SUPABASE_URL"] = "https://xxxxx.supabase.co"
+os.environ["SUPABASE_KEY"] = "eyJ..."
+
+# Load configuration
+config = LangChatConfig.from_env()
+```
+
+### Production Configuration
+
+```python
+import os
+from langchat import LangChatConfig
+
+config = LangChatConfig(
+    # Multiple API keys for rotation
+    openai_api_keys=os.getenv("OPENAI_API_KEYS").split(","),
+    
+    # Model configuration
+    openai_model="gpt-4o-mini",
+    openai_temperature=0.8,
+    openai_embedding_model="text-embedding-3-large",
+    max_llm_retries=2,
+    
+    # Vector search
+    pinecone_api_key=os.getenv("PINECONE_API_KEY"),
+    pinecone_index_name=os.getenv("PINECONE_INDEX_NAME"),
+    retrieval_k=10,
+    reranker_top_n=5,
+    
+    # Database
+    supabase_url=os.getenv("SUPABASE_URL"),
+    supabase_key=os.getenv("SUPABASE_KEY"),
+    
+    # Session
+    max_chat_history=50,
+    memory_window=50,
+    
+    # Server
+    server_port=int(os.getenv("PORT", "8000"))
+)
+```
+
+### Custom Prompts
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig(
+    # ... other config ...
+    
+    # Custom system prompt
+    system_prompt_template="""You are a helpful assistant.
+    
+    Use the following context:
+    {context}
+    
+    Chat history: {chat_history}
+    Question: {question}
+    Answer:""",
+    
+    # Custom standalone question prompt
+    standalone_question_prompt="""Convert this to a standalone query:
+    
+    Chat History: {chat_history}
+    Question: {question}
+    Standalone query:"""
+)
+```
+
+### Hybrid Configuration
+
+```python
+from langchat import LangChatConfig
+
+# Load from environment
+config = LangChatConfig.from_env()
+
+# Override specific settings
+config.openai_model = "gpt-4"
+config.server_port = 8080
+config.retrieval_k = 15
+```
+
+## Validation
+
+Configuration is validated when `LangChat` is initialized:
+
+```python
+from langchat import LangChat, LangChatConfig
+
+try:
+    config = LangChatConfig(
+        openai_api_keys=[],  # Empty list
+        # ... other config ...
+    )
+    langchat = LangChat(config=config)
+except ValueError as e:
+    print(f"Configuration error: {e}")
+```
+
+**Common Validation Errors:**
+
+- `"OpenAI API keys must be provided"` - Empty or missing API keys
+- `"Supabase URL and key must be provided"` - Missing Supabase credentials
+- `"Pinecone API key must be provided"` - Missing Pinecone key
+- `"Pinecone index name must be provided"` - Missing index name
+
+## Related Documentation
+
+- **[Configuration Guide](/guides/configuration)** - Complete configuration guide
+- **[LangChat](/api-reference/langchat)** - Main LangChat API
+- **[Examples](/examples/basic-usage)** - Configuration examples
+

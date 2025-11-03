@@ -1,0 +1,158 @@
+---
+title: Performance
+description: Performance optimization guide for LangChat
+---
+
+# Performance Optimization
+
+Optimize LangChat for better performance and lower costs.
+
+## Optimization Strategies
+
+### Reduce Retrieval Count
+
+Retrieve fewer documents for faster responses:
+
+```python
+config = LangChatConfig(
+    retrieval_k=5,  # Reduce from 10
+    reranker_top_n=3  # Keep top 3
+)
+```
+
+### Use Faster Models
+
+Use faster (and cheaper) models:
+
+```python
+config = LangChatConfig(
+    openai_model="gpt-4o-mini",  # Fastest model
+    openai_embedding_model="text-embedding-3-small"  # Faster embeddings
+)
+```
+
+### Optimize Reranking
+
+Use smaller reranker models:
+
+```python
+config = LangChatConfig(
+    reranker_model="ms-marco-MiniLM-L-6-v2",  # Faster model
+    reranker_top_n=3  # Fewer documents
+)
+```
+
+### Reduce Chat History
+
+Limit chat history in memory:
+
+```python
+config = LangChatConfig(
+    max_chat_history=10,  # Reduce from 20
+    memory_window=10
+)
+```
+
+## Caching
+
+### Cache Embeddings
+
+Cache frequently used embeddings:
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def cached_embedding(query: str):
+    return generate_embedding(query)
+```
+
+### Cache Reranked Results
+
+Cache reranked results:
+
+```python
+@lru_cache(maxsize=50)
+def cached_rerank(query: str, docs: list):
+    return reranker.rerank(query, docs)
+```
+
+## Database Optimization
+
+### Use Indexes
+
+Create indexes for faster queries:
+
+```sql
+CREATE INDEX idx_user_domain ON chat_history(user_id, domain);
+CREATE INDEX idx_timestamp_desc ON chat_history(timestamp DESC);
+```
+
+### Batch Operations
+
+Process in batches:
+
+```python
+# Batch insert chat history
+batch = [msg1, msg2, msg3, ...]
+for batch_chunk in chunks(batch, 100):
+    supabase.table("chat_history").insert(batch_chunk).execute()
+```
+
+## Monitoring
+
+### Track Response Times
+
+Monitor response times:
+
+```python
+import time
+
+start = time.time()
+result = await langchat.chat(query, user_id, domain)
+elapsed = time.time() - start
+print(f"Response time: {elapsed:.2f}s")
+```
+
+### Monitor API Usage
+
+Track API key usage:
+
+```python
+# Check which keys are being used
+engine = langchat.engine
+# Monitor key rotation
+# Track error rates
+```
+
+## Cost Optimization
+
+### Use Efficient Models
+
+Choose models based on needs:
+
+```python
+# For simple queries
+openai_model="gpt-4o-mini"  # Cheaper
+
+# For complex queries
+openai_model="gpt-4o"  # More expensive but better
+```
+
+### Reduce Token Usage
+
+Limit context length:
+
+```python
+config = LangChatConfig(
+    max_chat_history=5,  # Less context = fewer tokens
+    retrieval_k=3,  # Fewer documents = fewer tokens
+    reranker_top_n=2  # Less context = fewer tokens
+)
+```
+
+## Related Documentation
+
+- **[Configuration](/guides/configuration)** - Configuration options
+- **[Troubleshooting](/advanced/troubleshooting)** - Common issues
+

@@ -1,0 +1,190 @@
+---
+title: Basic Usage
+description: Basic examples of using LangChat
+---
+
+import { CodeGroup } from 'mintlify';
+
+# Basic Usage Examples
+
+Learn how to use LangChat with these practical examples.
+
+## Simple Chat
+
+Basic example of chatting with LangChat:
+
+<CodeGroup>
+```python Basic Example
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def main():
+    # Create configuration
+    config = LangChatConfig.from_env()
+    
+    # Initialize LangChat
+    langchat = LangChat(config=config)
+    
+    # Chat with the AI
+    result = await langchat.chat(
+        query="Hello! What can you help me with?",
+        user_id="user123",
+        domain="general"
+    )
+    
+    print(f"Response: {result['response']}")
+    print(f"Status: {result['status']}")
+    print(f"Time: {result['response_time']:.2f}s")
+
+asyncio.run(main())
+```
+
+```python With Custom Config
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def main():
+    # Custom configuration
+    config = LangChatConfig(
+        openai_api_keys=["sk-..."],
+        openai_model="gpt-4o-mini",
+        pinecone_api_key="pcsk-...",
+        pinecone_index_name="my-index",
+        supabase_url="https://xxxxx.supabase.co",
+        supabase_key="eyJ..."
+    )
+    
+    langchat = LangChat(config=config)
+    
+    result = await langchat.chat(
+        query="What are the best universities?",
+        user_id="user123",
+        domain="education"
+    )
+    
+    print(result["response"])
+
+asyncio.run(main())
+```
+
+```python Synchronous
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Synchronous version
+result = langchat.chat_sync(
+    query="Hello!",
+    user_id="user123",
+    domain="general"
+)
+
+print(result["response"])
+```
+</CodeGroup>
+
+## Multi-Turn Conversation
+
+Handle conversation context automatically:
+
+<CodeGroup>
+```python Multi-Turn
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def conversation():
+    config = LangChatConfig.from_env()
+    langchat = LangChat(config=config)
+    
+    user_id = "user123"
+    domain = "education"
+    
+    # First message
+    result1 = await langchat.chat(
+        query="What universities offer computer science?",
+        user_id=user_id,
+        domain=domain
+    )
+    print(f"User: What universities offer computer science?")
+    print(f"AI: {result1['response']}\n")
+    
+    # Second message (has context from first)
+    result2 = await langchat.chat(
+        query="What about in Europe?",
+        user_id=user_id,
+        domain=domain
+    )
+    print(f"User: What about in Europe?")
+    print(f"AI: {result2['response']}\n")
+    
+    # Third message (continues conversation)
+    result3 = await langchat.chat(
+        query="Which ones accept IELTS 6.5?",
+        user_id=user_id,
+        domain=domain
+    )
+    print(f"User: Which ones accept IELTS 6.5?")
+    print(f"AI: {result3['response']}")
+
+asyncio.run(conversation())
+```
+
+```python Access Session
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Get or create session
+session = langchat.get_session(
+    user_id="user123",
+    domain="education"
+)
+
+# Access chat history
+print(f"History length: {len(session.chat_history)}")
+for query, response in session.chat_history:
+    print(f"Q: {query}")
+    print(f"A: {response}\n")
+```
+</CodeGroup>
+
+## Error Handling
+
+Proper error handling:
+
+```python
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def chat_with_error_handling():
+    try:
+        config = LangChatConfig.from_env()
+        langchat = LangChat(config=config)
+        
+        result = await langchat.chat(
+            query="Hello!",
+            user_id="user123",
+            domain="general"
+        )
+        
+        if result["status"] == "success":
+            print(f"Response: {result['response']}")
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+            
+    except ValueError as e:
+        print(f"Configuration error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+asyncio.run(chat_with_error_handling())
+```
+
+## Next Steps
+
+- **[Custom Prompts](/examples/custom-prompts)** - Customize chatbot behavior
+- **[API Server](/examples/api-server)** - Run as API server
+- **[Travel AI](/examples/travel-ai)** - Complete travel assistant example
+

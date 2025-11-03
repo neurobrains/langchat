@@ -1,0 +1,56 @@
+---
+title: Flashrank Reranker
+description: Document reranking for improved search results
+---
+
+# Flashrank Reranker Adapter
+
+The Flashrank Reranker Adapter provides document reranking using Flashrank models to improve retrieval quality.
+
+## Overview
+
+The `FlashrankRerankAdapter` implements reranking functionality that:
+
+- **Improves Relevance**: Re-ranks retrieved documents for better relevance
+- **Fast Performance**: Uses optimized ONNX models for speed
+- **Easy Integration**: Seamlessly integrates with LangChain retrieval chains
+- **Automatic Model Download**: Downloads models automatically on first use
+
+## Configuration
+
+Configure through `LangChatConfig`:
+
+```python
+from langchat.config import LangChatConfig
+
+config = LangChatConfig(
+    reranker_model="ms-marco-MiniLM-L-12-v2",
+    reranker_cache_dir="rerank_models",
+    reranker_top_n=3  # Top documents after reranking
+)
+```
+
+## Usage
+
+### Basic Usage
+
+The adapter is automatically initialized by `LangChatEngine`:
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig(
+    reranker_model="ms-marco-MiniLM-L-12-v2",
+    reranker_top_n=3,
+    # ... other config
+)
+
+langchat = LangChat(config=config)
+# Adapter is automatically initialized
+```
+
+## Related Documentation
+
+- **[Vector Search Guide](/guides/vector-search)** - Vector search guide
+- **[Configuration](/guides/configuration)** - Configuration options
+

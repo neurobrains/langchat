@@ -1,0 +1,63 @@
+---
+title: Supabase Adapter
+description: Supabase database integration for chat history and metrics
+---
+
+# Supabase Adapter
+
+The Supabase Adapter provides integration with Supabase PostgreSQL database for storing chat history, metrics, and feedback.
+
+## Overview
+
+The `SupabaseAdapter` is a lightweight wrapper around Supabase's Python client that provides:
+
+- **Database Operations**: CRUD operations on Supabase tables
+- **Connection Management**: Efficient client initialization
+- **Error Handling**: Robust error handling
+- **Integration**: Seamless integration with LangChat components
+
+## Configuration
+
+Configure through `LangChatConfig`:
+
+```python
+from langchat.config import LangChatConfig
+
+config = LangChatConfig(
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJhbGc..."  # anon or service role key
+)
+```
+
+## Usage
+
+### Basic Usage
+
+The adapter is automatically initialized by `LangChatEngine`:
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig(
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJhbGc...",
+    # ... other config
+)
+
+langchat = LangChat(config=config)
+# Adapter is automatically initialized
+```
+
+## Database Schema
+
+LangChat uses the following tables:
+
+- **chat_history**: User conversation history
+- **request_metrics**: Request performance metrics
+- **feedback**: User feedback on responses
+
+## Related Documentation
+
+- **[Configuration](/guides/configuration)** - Configuration options
+- **[Session Management](/guides/sessions)** - Session guide
+

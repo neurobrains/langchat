@@ -1,0 +1,107 @@
+---
+title: LangChatEngine
+description: LangChatEngine API reference
+---
+
+import { Param } from 'mintlify';
+import { Callout } from 'mintlify';
+
+# LangChatEngine API Reference
+
+The `LangChatEngine` class is the core orchestrator that manages all LangChat components.
+
+## Class: LangChatEngine
+
+Main engine for LangChat library. Handles initialization of adapters and chat processing.
+
+### Constructor
+
+```python
+LangChatEngine(config: Optional[LangChatConfig] = None)
+```
+
+**Parameters:**
+
+<Param name="config" type="LangChatConfig | None" default="None">
+  LangChat configuration. If None, uses default config.
+</Param>
+
+### Methods
+
+#### `async chat()`
+
+Process a chat query.
+
+```python
+async def chat(
+    self,
+    query: str,
+    user_id: str,
+    domain: str = "default",
+    standalone_question: Optional[str] = None
+) -> dict
+```
+
+**Parameters:**
+
+<Param name="query" type="str" required>
+  User query text
+</Param>
+
+<Param name="user_id" type="str" required>
+  User identifier
+</Param>
+
+<Param name="domain" type="str" default="default">
+  User domain
+</Param>
+
+<Param name="standalone_question" type="str | None" default="None">
+  Optional standalone question (if already generated)
+</Param>
+
+**Returns:**
+
+`dict` - Response dictionary with `response`, `user_id`, `timestamp`, `status`, `response_time`
+
+#### `get_session()`
+
+Get or create a user session.
+
+```python
+def get_session(
+    self,
+    user_id: str,
+    domain: str = "default"
+) -> UserSession
+```
+
+**Parameters:**
+
+<Param name="user_id" type="str" required>
+  User identifier
+</Param>
+
+<Param name="domain" type="str" default="default">
+  User domain
+</Param>
+
+**Returns:**
+
+`UserSession` - User session instance
+
+### Properties
+
+- `config`: LangChatConfig instance
+- `llm`: OpenAILLMService instance
+- `vector_adapter`: PineconeVectorAdapter instance
+- `reranker_adapter`: FlashrankRerankAdapter instance
+- `supabase_adapter`: SupabaseAdapter instance
+- `id_manager`: IDManager instance
+- `sessions`: Dict[str, UserSession] - Active sessions
+
+## Related Documentation
+
+- **[LangChat](/api-reference/langchat)** - Main API
+- **[Adapters](/adapters/overview)** - Adapter documentation
+

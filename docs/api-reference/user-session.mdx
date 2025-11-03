@@ -1,0 +1,76 @@
+---
+title: UserSession
+description: UserSession API reference
+---
+
+import { Param } from 'mintlify';
+
+# UserSession API Reference
+
+The `UserSession` class manages user conversation history and context.
+
+## Class: UserSession
+
+Represents a user's conversation session within a specific domain.
+
+### Properties
+
+#### `user_id`
+
+User identifier.
+
+```python
+user_id: str
+```
+
+#### `domain`
+
+Session domain.
+
+```python
+domain: str
+```
+
+#### `chat_history`
+
+Chat history as list of tuples.
+
+```python
+chat_history: List[Tuple[str, str]]
+```
+
+Format: `[(query1, response1), (query2, response2), ...]`
+
+#### `config`
+
+Session configuration.
+
+```python
+config: LangChatConfig
+```
+
+### Methods
+
+#### `save_message()`
+
+Save a message to database.
+
+```python
+def save_message(self, query: str, response: str) -> None
+```
+
+**Parameters:**
+
+<Param name="query" type="str" required>
+  User query
+</Param>
+
+<Param name="response" type="str" required>
+  AI response
+</Param>
+
+## Related Documentation
+
+- **[Session Management](/guides/sessions)** - Session guide
+- **[LangChat](/api-reference/langchat)** - Main API
+

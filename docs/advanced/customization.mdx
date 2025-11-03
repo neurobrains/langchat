@@ -1,0 +1,55 @@
+---
+title: Customization
+description: Advanced customization guide for LangChat
+---
+
+# Customization Guide
+
+Learn how to customize and extend LangChat for your specific needs.
+
+## Custom Adapters
+
+### Creating Custom LLM Adapter
+
+```python
+from langchat.adapters.services.openai_service import OpenAILLMService
+
+class CustomLLMAdapter(OpenAILLMService):
+    def invoke(self, messages, **kwargs):
+        # Custom logic here
+        return super().invoke(messages, **kwargs)
+```
+
+### Creating Custom Vector Adapter
+
+```python
+from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+
+class CustomVectorAdapter(PineconeVectorAdapter):
+    def get_retriever(self, k=5):
+        # Custom retrieval logic
+        return super().get_retriever(k=k)
+```
+
+## Custom Prompts
+
+See [Prompts Guide](/guides/prompts) for detailed prompt customization.
+
+## Advanced Configuration
+
+### Custom Session Management
+
+```python
+from langchat.core.session import UserSession
+
+class CustomSession(UserSession):
+    def save_message(self, query: str, response: str) -> None:
+        # Custom save logic
+        super().save_message(query, response)
+```
+
+## Related Documentation
+
+- **[Configuration](/guides/configuration)** - Configuration options
+- **[Prompts](/guides/prompts)** - Custom prompts
+

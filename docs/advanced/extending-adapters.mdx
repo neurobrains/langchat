@@ -1,0 +1,70 @@
+---
+title: Extending Adapters
+description: Guide to extending and creating custom adapters
+---
+
+# Extending Adapters
+
+Learn how to extend LangChat adapters and create custom ones.
+
+## Custom LLM Adapter
+
+Create a custom LLM adapter:
+
+```python
+from langchat.adapters.services.openai_service import OpenAILLMService
+
+class CustomLLMAdapter(OpenAILLMService):
+    def invoke(self, messages, **kwargs):
+        # Custom preprocessing
+        processed_messages = self.preprocess(messages)
+        
+        # Call parent method
+        response = super().invoke(processed_messages, **kwargs)
+        
+        # Custom postprocessing
+        return self.postprocess(response)
+    
+    def preprocess(self, messages):
+        # Custom preprocessing logic
+        return messages
+    
+    def postprocess(self, response):
+        # Custom postprocessing logic
+        return response
+```
+
+## Custom Vector Adapter
+
+Create a custom vector adapter:
+
+```python
+from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+
+class CustomVectorAdapter(PineconeVectorAdapter):
+    def get_retriever(self, k=5):
+        retriever = super().get_retriever(k=k)
+        # Custom retriever logic
+        return retriever
+```
+
+## Integration
+
+Integrate custom adapters:
+
+```python
+from langchat.core.engine import LangChatEngine
+
+class CustomLangChatEngine(LangChatEngine):
+    def _initialize_adapters(self):
+        # Use custom adapters
+        self.llm = CustomLLMAdapter(...)
+        self.vector_adapter = CustomVectorAdapter(...)
+        # ... other adapters
+```
+
+## Related Documentation
+
+- **[Customization](/advanced/customization)** - Customization guide
+- **[Adapters Overview](/adapters/overview)** - All adapters
+

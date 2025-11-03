@@ -1,0 +1,114 @@
+---
+title: API Server
+description: Run LangChat as an API server with FastAPI
+---
+
+import { CodeGroup } from 'mintlify';
+
+# API Server Example
+
+Run LangChat as a FastAPI server with auto-generated frontend interface.
+
+## Basic API Server
+
+<CodeGroup>
+```python Basic Server
+from langchat.api.app import create_app
+from langchat.config import LangChatConfig
+import uvicorn
+
+# Create configuration
+config = LangChatConfig.from_env()
+
+# Create FastAPI app (auto-generates interface and Dockerfile)
+app = create_app(
+    config=config,
+    auto_generate_interface=True,
+    auto_generate_docker=True
+)
+
+if __name__ == "__main__":
+    print(f"🚀 Starting LangChat API server on port {config.server_port}")
+    print(f"📱 Chat interface: http://localhost:{config.server_port}/frontend")
+    print(f"📡 API endpoint: http://localhost:{config.server_port}/chat")
+    uvicorn.run(app, host="0.0.0.0", port=config.server_port)
+```
+
+```python With Custom Config
+from langchat.api.app import create_app
+from langchat.config import LangChatConfig
+import uvicorn
+
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://...",
+    supabase_key="eyJ...",
+    server_port=8000
+)
+
+app = create_app(
+    config=config,
+    auto_generate_interface=True,
+    auto_generate_docker=True
+)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+```
+
+```bash Run Server
+python server.py
+```
+
+```bash Docker
+# Auto-generated Dockerfile is created
+docker build -t langchat-server .
+docker run -p 8000:8000 langchat-server
+```
+</CodeGroup>
+
+## API Endpoints
+
+### POST /chat
+
+Send a chat message.
+
+**Request:**
+```
+Content-Type: application/x-www-form-urlencoded
+
+query=Hello!
+userId=user123
+domain=general
+```
+
+**Response:**
+```json
+{
+  "response": "Hello! How can I help you?",
+  "user_id": "user123",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "status": "success",
+  "response_time": 1.23
+}
+```
+
+### GET /frontend
+
+Access the chat interface.
+
+### GET /health
+
+Health check endpoint.
+
+### POST /feedback
+
+Submit feedback on responses.
+
+## Next Steps
+
+- **[Travel AI](/examples/travel-ai)** - Complete example
+- **[Customization](/advanced/customization)** - Customize API
+

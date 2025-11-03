@@ -1,0 +1,384 @@
+---
+title: Vector Search
+description: Learn about vector search and RAG (Retrieval-Augmented Generation) in LangChat
+---
+
+import { Callout } from 'mintlify';
+
+# Vector Search Guide
+
+LangChat integrates powerful vector search capabilities for Retrieval-Augmented Generation (RAG). This guide explains how vector search works.
+
+## What is Vector Search?
+
+Vector search enables your chatbot to find relevant documents from your knowledge base and use them to answer questions accurately.
+
+**How it works:**
+
+1. **Query**: User asks a question
+2. **Embedding**: Question converted to vector embedding
+3. **Search**: Similar vectors found in Pinecone
+4. **Retrieval**: Relevant documents retrieved
+5. **Reranking**: Results reranked for relevance
+6. **Context**: Documents used as context for LLM response
+
+## Vector Search Flow
+
+```
+User Question
+    ↓
+Standalone Question Generation
+    ↓
+Query Embedding (OpenAI)
+    ↓
+Vector Search (Pinecone)
+    ↓
+Retrieve K Documents
+    ↓
+Rerank Documents (Flashrank)
+    ↓
+Top N Documents
+    ↓
+Use as Context for LLM
+    ↓
+Generate Response
+```
+
+## Configuration
+
+Configure vector search in `LangChatConfig`:
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig(
+    # Pinecone Configuration
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="your-index-name",
+    
+    # Embedding Model
+    openai_embedding_model="text-embedding-3-large",  # Default
+    
+    # Retrieval Configuration
+    retrieval_k=5,  # Retrieve 5 documents (default)
+    
+    # Reranking Configuration
+    reranker_top_n=3,  # Keep top 3 after reranking (default)
+    reranker_model="ms-marco-MiniLM-L-12-v2"  # Default
+)
+```
+
+## Retrieval Configuration
+
+### Retrieval K (Number of Documents)
+
+Control how many documents to retrieve:
+
+```python
+config = LangChatConfig(
+    retrieval_k=10  # Retrieve 10 documents from Pinecone
+)
+```
+
+**Recommendations:**
+- **Small index (< 1000 docs)**: `retrieval_k=5`
+- **Medium index (1000-10000 docs)**: `retrieval_k=10`
+- **Large index (> 10000 docs)**: `retrieval_k=20`
+
+<Callout type="info">
+More documents = better coverage, but slower and potentially less relevant.
+</Callout>
+
+### Reranking Top N
+
+Control how many documents to keep after reranking:
+
+```python
+config = LangChatConfig(
+    reranker_top_n=5  # Keep top 5 documents after reranking
+)
+```
+
+**Recommendations:**
+- **Precise queries**: `reranker_top_n=3`
+- **Broad queries**: `reranker_top_n=5`
+- **Complex topics**: `reranker_top_n=7`
+
+<Callout type="info">
+Reranking improves relevance by re-scoring retrieved documents. More documents = more context, but can confuse the LLM.
+</Callout>
+
+## Embedding Models
+
+LangChat supports OpenAI embedding models:
+
+### text-embedding-3-large (Recommended)
+
+```python
+config = LangChatConfig(
+    openai_embedding_model="text-embedding-3-large"
+)
+```
+
+**Advantages:**
+- Highest quality embeddings
+- Best for semantic search
+- Good for complex queries
+
+### text-embedding-3-small
+
+```python
+config = LangChatConfig(
+    openai_embedding_model="text-embedding-3-small"
+)
+```
+
+**Advantages:**
+- Faster and cheaper
+- Good for simple queries
+- Lower latency
+
+### text-embedding-ada-002 (Legacy)
+
+```python
+config = LangChatConfig(
+    openai_embedding_model="text-embedding-ada-002"
+)
+```
+
+**Note:** Still supported, but newer models are recommended.
+
+## Reranking Models
+
+Flashrank reranker improves search result relevance:
+
+### ms-marco-MiniLM-L-12-v2 (Default)
+
+```python
+config = LangChatConfig(
+    reranker_model="ms-marco-MiniLM-L-12-v2"
+)
+```
+
+**Characteristics:**
+- ~50MB download size
+- Fast and efficient
+- Good accuracy
+
+<Callout type="info">
+Reranker models are automatically downloaded on first use to `rerank_models/` directory.
+</Callout>
+
+## How Vector Search Works
+
+### Step 1: Query Processing
+
+User question is processed:
+
+```python
+# Original query
+query = "What universities offer computer science in Europe?"
+
+# Converted to standalone question
+standalone_question = "universities computer science Europe"
+```
+
+### Step 2: Embedding Generation
+
+Question is converted to vector:
+
+```python
+# Query → Vector embedding
+embedding = openai.embeddings.create(
+    model="text-embedding-3-large",
+    input="universities computer science Europe"
+)
+# Returns: [0.123, -0.456, 0.789, ...] (1536 dimensions)
+```
+
+### Step 3: Vector Search
+
+Similar vectors found in Pinecone:
+
+```python
+# Search Pinecone index
+results = pinecone.query(
+    vector=embedding,
+    top_k=5  # retrieval_k
+)
+# Returns: 5 most similar documents
+```
+
+### Step 4: Reranking
+
+Results reranked for relevance:
+
+```python
+# Rerank results
+reranked = flashrank.rerank(
+    query="universities computer science Europe",
+    documents=results,
+    top_n=3  # reranker_top_n
+)
+# Returns: Top 3 most relevant documents
+```
+
+### Step 5: Context Injection
+
+Documents used as context:
+
+```python
+# Context for LLM
+context = "\n\n".join([
+    doc["text"] for doc in reranked
+])
+
+# Used in system prompt
+prompt = f"""Use the following context:
+{context}
+
+Question: {query}
+Answer:"""
+```
+
+## Best Practices
+
+### 1. Optimize Retrieval K
+
+Balance between coverage and relevance:
+
+```python
+# Too small: Might miss relevant docs
+config.retrieval_k = 3
+
+# Too large: Too many irrelevant docs
+config.retrieval_k = 50
+
+# Optimal: Depends on your index size
+config.retrieval_k = 10  # Good for most cases
+```
+
+### 2. Use Reranking
+
+Always use reranking for better results:
+
+```python
+config = LangChatConfig(
+    retrieval_k=10,  # Retrieve 10
+    reranker_top_n=3  # Rerank and keep top 3
+)
+```
+
+### 3. Choose Right Embedding Model
+
+Match model to your needs:
+
+```python
+# High quality (recommended)
+config.openai_embedding_model = "text-embedding-3-large"
+
+# Faster and cheaper
+config.openai_embedding_model = "text-embedding-3-small"
+```
+
+### 4. Index Your Documents
+
+Make sure your Pinecone index contains relevant documents:
+
+```python
+# Document format
+{
+    "id": "doc_1",
+    "values": [0.123, -0.456, ...],  # Embedding vector
+    "metadata": {
+        "text": "Stanford University offers Computer Science programs...",
+        "source": "university_database"
+    }
+}
+```
+
+## Troubleshooting
+
+### Issue: No relevant results
+
+**Solutions:**
+- Increase `retrieval_k`: `retrieval_k=20`
+- Check your Pinecone index has documents
+- Verify embeddings are generated correctly
+- Try different embedding model
+
+### Issue: Too many irrelevant results
+
+**Solutions:**
+- Use reranking: `reranker_top_n=3`
+- Improve document quality
+- Use better embedding model
+- Refine your queries
+
+### Issue: Slow search
+
+**Solutions:**
+- Reduce `retrieval_k`: `retrieval_k=5`
+- Use smaller embedding model
+- Optimize Pinecone index
+- Use smaller reranker model
+
+### Issue: Out of memory
+
+**Solutions:**
+- Reduce `retrieval_k`
+- Reduce `reranker_top_n`
+- Use smaller embedding model
+
+## Advanced Usage
+
+### Custom Embeddings
+
+You can use custom embeddings (advanced):
+
+```python
+# Access vector adapter directly
+engine = langchat.engine
+vector_adapter = engine.vector_adapter
+
+# Custom embedding
+embedding = vector_adapter.embed_query("custom query")
+
+# Custom search
+results = vector_adapter.search(query_embedding=embedding, k=10)
+```
+
+### Custom Reranking
+
+Access reranker directly:
+
+```python
+# Access reranker adapter
+reranker = engine.reranker_adapter
+
+# Custom reranking
+reranked = reranker.rerank(
+    query="custom query",
+    documents=results,
+    top_n=5
+)
+```
+
+## Performance Tips
+
+1. **Use appropriate retrieval_k**: Don't retrieve too many documents
+2. **Enable reranking**: Always improves relevance
+3. **Cache embeddings**: Reuse embeddings when possible
+4. **Optimize index**: Use appropriate Pinecone index configuration
+5. **Monitor performance**: Track retrieval and reranking times
+
+## Next Steps
+
+- **[Configuration Guide](/guides/configuration)** - Learn about all config options
+- **[API Reference](/api-reference/langchat-engine)** - Full API documentation
+- **[Examples](/examples/basic-usage)** - See vector search in action
+
+---
+
+Questions? Check the [API Reference](/api-reference/langchat-engine) for complete details!
+

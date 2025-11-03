@@ -1,0 +1,352 @@
+---
+title: LangChat
+description: Main LangChat class API reference
+---
+
+import { Param } from 'mintlify';
+import { Callout } from 'mintlify';
+
+# LangChat API Reference
+
+The main `LangChat` class provides an easy-to-use interface for creating conversational AI applications.
+
+## Class: LangChat
+
+The primary interface for using LangChat. Simplifies initialization and chat operations.
+
+### Constructor
+
+```python
+LangChat(config: Optional[LangChatConfig] = None)
+```
+
+Creates a new LangChat instance.
+
+**Parameters:**
+
+<Param name="config" type="LangChatConfig | None" default="None">
+  LangChat configuration. If None, creates config from environment variables using `LangChatConfig.from_env()`.
+</Param>
+
+**Example:**
+
+```python
+from langchat import LangChat, LangChatConfig
+
+# With custom config
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJ..."
+)
+langchat = LangChat(config=config)
+
+# Or from environment variables
+langchat = LangChat()  # Uses LangChatConfig.from_env()
+```
+
+<Callout type="info">
+All adapters are automatically initialized when LangChat is created.
+</Callout>
+
+### Methods
+
+#### `async chat()`
+
+Process a chat query asynchronously.
+
+```python
+async def chat(
+    self,
+    query: str,
+    user_id: str,
+    domain: str = "default"
+) -> dict
+```
+
+**Parameters:**
+
+<Param name="query" type="str" required>
+  User query text
+</Param>
+
+<Param name="user_id" type="str" required>
+  User identifier. Used for session management and chat history.
+</Param>
+
+<Param name="domain" type="str" default="default">
+  User domain. Used to separate different conversation contexts (e.g., "education", "travel", "support").
+</Param>
+
+**Returns:**
+
+`dict` - Dictionary with the following keys:
+- `response` (str): AI response text
+- `user_id` (str): User identifier
+- `timestamp` (str): ISO format timestamp
+- `status` (str): "success" or "error"
+- `response_time` (float): Response time in seconds
+- `error` (str, optional): Error message if status is "error"
+
+**Example:**
+
+```python
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def main():
+    config = LangChatConfig.from_env()
+    langchat = LangChat(config=config)
+    
+    result = await langchat.chat(
+        query="What are the best universities in Europe?",
+        user_id="user123",
+        domain="education"
+    )
+    
+    print(f"Response: {result['response']}")
+    print(f"Status: {result['status']}")
+    print(f"Response Time: {result['response_time']:.2f}s")
+
+asyncio.run(main())
+```
+
+**What happens under the hood:**
+
+1. Gets or creates user session
+2. Generates standalone question from query and chat history
+3. Retrieves relevant documents from Pinecone
+4. Reranks documents using Flashrank
+5. Generates response using OpenAI with context
+6. Saves chat history to Supabase
+7. Updates in-memory session
+8. Returns response with metadata
+
+#### `chat_sync()`
+
+Synchronous version of `chat()` method.
+
+```python
+def chat_sync(
+    self,
+    query: str,
+    user_id: str,
+    domain: str = "default"
+) -> dict
+```
+
+**Parameters:**
+
+<Param name="query" type="str" required>
+  User query text
+</Param>
+
+<Param name="user_id" type="str" required>
+  User identifier
+</Param>
+
+<Param name="domain" type="str" default="default">
+  User domain
+</Param>
+
+**Returns:**
+
+`dict` - Same as `chat()` method
+
+**Example:**
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+result = langchat.chat_sync(
+    query="Hello!",
+    user_id="user123",
+    domain="general"
+)
+
+print(result["response"])
+```
+
+<Callout type="warning">
+For production, prefer `chat()` over `chat_sync()` as it's non-blocking and more efficient.
+</Callout>
+
+#### `get_session()`
+
+Get or create a user session.
+
+```python
+def get_session(
+    self,
+    user_id: str,
+    domain: str = "default"
+) -> UserSession
+```
+
+**Parameters:**
+
+<Param name="user_id" type="str" required>
+  User identifier
+</Param>
+
+<Param name="domain" type="str" default="default">
+  User domain
+</Param>
+
+**Returns:**
+
+`UserSession` - User session instance with chat history and metadata
+
+**Example:**
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Get or create session
+session = langchat.get_session(
+    user_id="user123",
+    domain="education"
+)
+
+# Access chat history
+print(session.chat_history)  # List of (query, response) tuples
+print(session.domain)  # "education"
+print(session.user_id)  # "user123"
+```
+
+### Properties
+
+#### `config`
+
+Access the configuration object.
+
+```python
+config: LangChatConfig
+```
+
+**Example:**
+
+```python
+langchat = LangChat(config=my_config)
+print(langchat.config.openai_model)  # "gpt-4o-mini"
+print(langchat.config.server_port)  # 8000
+```
+
+#### `engine`
+
+Access the underlying engine.
+
+```python
+engine: LangChatEngine
+```
+
+**Example:**
+
+```python
+# Access engine directly (advanced)
+engine = langchat.engine
+print(engine.llm)  # OpenAILLMService instance
+print(engine.vector_adapter)  # PineconeVectorAdapter instance
+```
+
+## Usage Examples
+
+### Basic Usage
+
+```python
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def main():
+    config = LangChatConfig.from_env()
+    langchat = LangChat(config=config)
+    
+    result = await langchat.chat(
+        query="What can you help me with?",
+        user_id="user123",
+        domain="general"
+    )
+    
+    print(result["response"])
+
+asyncio.run(main())
+```
+
+### With Custom Configuration
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig(
+    openai_api_keys=["sk-key1", "sk-key2"],
+    openai_model="gpt-4o",
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJ...",
+    retrieval_k=10,
+    reranker_top_n=5
+)
+
+langchat = LangChat(config=config)
+```
+
+### Multi-Domain Sessions
+
+```python
+async def handle_multiple_domains():
+    langchat = LangChat(config=config)
+    
+    # Education domain
+    result1 = await langchat.chat(
+        query="What universities offer CS?",
+        user_id="user123",
+        domain="education"
+    )
+    
+    # Travel domain (separate session)
+    result2 = await langchat.chat(
+        query="Best travel destinations?",
+        user_id="user123",
+        domain="travel"
+    )
+```
+
+### Error Handling
+
+```python
+async def chat_with_error_handling():
+    langchat = LangChat(config=config)
+    
+    try:
+        result = await langchat.chat(
+            query="Hello!",
+            user_id="user123",
+            domain="general"
+        )
+        
+        if result["status"] == "success":
+            print(f"Response: {result['response']}")
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+            
+    except Exception as e:
+        print(f"Exception: {str(e)}")
+```
+
+## Related Documentation
+
+- **[LangChatConfig](/api-reference/langchat-config)** - Configuration API
+- **[LangChatEngine](/api-reference/langchat-engine)** - Engine API
+- **[UserSession](/api-reference/user-session)** - Session API
+- **[Getting Started](/getting-started)** - Quick start guide
+- **[Examples](/examples/basic-usage)** - Usage examples
+

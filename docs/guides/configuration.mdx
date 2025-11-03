@@ -1,0 +1,399 @@
+---
+title: Configuration
+description: Complete guide to configuring LangChat
+---
+
+import { Callout } from 'mintlify';
+
+# Configuration Guide
+
+LangChat is highly configurable. This guide covers all configuration options available in `LangChatConfig`.
+
+## Quick Configuration
+
+The simplest way to configure LangChat:
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig.from_env()  # Load from environment variables
+```
+
+## Configuration Options
+
+### OpenAI Configuration
+
+<Callout type="info">
+You can provide multiple OpenAI API keys for automatic rotation and fault tolerance.
+</Callout>
+
+```python
+config = LangChatConfig(
+    # Required: List of OpenAI API keys
+    openai_api_keys=["sk-...", "sk-..."],  # Multiple keys for rotation
+    
+    # Optional: OpenAI model settings
+    openai_model="gpt-4o-mini",  # Default: "gpt-4o-mini"
+    openai_temperature=1.0,  # Default: 1.0 (0.0-2.0)
+    openai_embedding_model="text-embedding-3-large",  # Default: "text-embedding-3-large"
+    
+    # Optional: Retry configuration
+    max_llm_retries=2  # Default: 2 (retries per API key)
+)
+```
+
+**Available Models:**
+- `gpt-4o-mini` (recommended for cost-effectiveness)
+- `gpt-4o`
+- `gpt-4-turbo`
+- `gpt-3.5-turbo`
+
+**Available Embedding Models:**
+- `text-embedding-3-large` (recommended)
+- `text-embedding-3-small`
+- `text-embedding-ada-002`
+
+### Pinecone Configuration
+
+```python
+config = LangChatConfig(
+    # Required: Pinecone API key
+    pinecone_api_key="pcsk-...",
+    
+    # Required: Pinecone index name (must be pre-created)
+    pinecone_index_name="your-index-name"
+)
+```
+
+<Callout type="warning">
+Make sure your Pinecone index is already created before using LangChat.
+</Callout>
+
+### Supabase Configuration
+
+```python
+config = LangChatConfig(
+    # Required: Supabase project URL
+    supabase_url="https://xxxxx.supabase.co",
+    
+    # Required: Supabase API key (anon key)
+    supabase_key="eyJhbGc..."
+)
+```
+
+<Callout type="info">
+LangChat automatically creates database tables on first run if they don't exist.
+</Callout>
+
+### Vector Search Configuration
+
+```python
+config = LangChatConfig(
+    # Number of documents to retrieve
+    retrieval_k=5,  # Default: 5
+    
+    # Top N results after reranking
+    reranker_top_n=3,  # Default: 3
+    
+    # Reranker model
+    reranker_model="ms-marco-MiniLM-L-12-v2",  # Default: "ms-marco-MiniLM-L-12-v2"
+    
+    # Reranker cache directory
+    reranker_cache_dir="rerank_models"  # Default: "rerank_models"
+)
+```
+
+**Reranker Models:**
+- `ms-marco-MiniLM-L-12-v2` (recommended, ~50MB)
+- Other Flashrank-compatible models
+
+### Session Configuration
+
+```python
+config = LangChatConfig(
+    # Maximum chat history messages to keep in memory
+    max_chat_history=20,  # Default: 20
+    
+    # Conversation buffer window size
+    memory_window=20  # Default: 20
+)
+```
+
+### Server Configuration
+
+```python
+config = LangChatConfig(
+    # Port for API server
+    server_port=8000  # Default: 8000
+)
+```
+
+### Timezone Configuration
+
+```python
+config = LangChatConfig(
+    # Timezone for date/time formatting
+    timezone="Asia/Dhaka"  # Default: "Asia/Dhaka"
+)
+```
+
+### Prompt Configuration
+
+```python
+config = LangChatConfig(
+    # Custom system prompt template
+    system_prompt_template="""You are a helpful assistant.
+    
+    Use the following context to answer questions:
+    {context}
+    
+    Chat history: {chat_history}
+    
+    Question: {question}
+    Answer:""",
+    
+    # Custom standalone question prompt
+    standalone_question_prompt="""Convert this question to a standalone search query.
+    
+    Chat History: {chat_history}
+    Question: {question}
+    Standalone query:"""
+)
+```
+
+<Callout type="info">
+If not provided, LangChat uses default prompts optimized for general use cases.
+</Callout>
+
+## Environment Variables
+
+You can configure LangChat entirely via environment variables:
+
+```bash
+# OpenAI
+export OPENAI_API_KEYS="key1,key2"  # Comma-separated for multiple keys
+export OPENAI_API_KEY="key1"  # Alternative: single key
+export OPENAI_MODEL="gpt-4o-mini"
+export OPENAI_TEMPERATURE="1.0"
+export OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
+
+# Pinecone
+export PINECONE_API_KEY="pcsk-..."
+export PINECONE_INDEX_NAME="your-index-name"
+
+# Supabase
+export SUPABASE_URL="https://xxxxx.supabase.co"
+export SUPABASE_KEY="eyJhbGc..."
+
+# Vector Search
+export RETRIEVAL_K="5"
+export RERANKER_TOP_N="3"
+export RERANKER_MODEL="ms-marco-MiniLM-L-12-v2"
+export RERANKER_CACHE_DIR="rerank_models"
+
+# Session
+export MAX_CHAT_HISTORY="20"
+export MEMORY_WINDOW="20"
+
+# Server
+export SERVER_PORT="8000"
+export PORT="8000"  # Alternative
+
+# Timezone
+export TIMEZONE="Asia/Dhaka"
+```
+
+Then load:
+
+```python
+config = LangChatConfig.from_env()
+```
+
+## Configuration Examples
+
+### Minimal Configuration
+
+```python
+from langchat import LangChatConfig
+
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJ..."
+)
+```
+
+### Production Configuration
+
+```python
+from langchat import LangChatConfig
+import os
+
+config = LangChatConfig(
+    # Multiple API keys for rotation
+    openai_api_keys=os.getenv("OPENAI_API_KEYS").split(","),
+    openai_model="gpt-4o-mini",
+    openai_temperature=0.8,
+    openai_embedding_model="text-embedding-3-large",
+    max_llm_retries=2,
+    
+    # Pinecone
+    pinecone_api_key=os.getenv("PINECONE_API_KEY"),
+    pinecone_index_name=os.getenv("PINECONE_INDEX_NAME"),
+    
+    # Supabase
+    supabase_url=os.getenv("SUPABASE_URL"),
+    supabase_key=os.getenv("SUPABASE_KEY"),
+    
+    # Vector search
+    retrieval_k=10,
+    reranker_top_n=5,
+    
+    # Session
+    max_chat_history=50,
+    memory_window=50,
+    
+    # Server
+    server_port=int(os.getenv("PORT", "8000"))
+)
+```
+
+### Custom Domain Configuration
+
+```python
+config = LangChatConfig(
+    # ... other config ...
+    
+    # Custom prompts for education domain
+    system_prompt_template="""You are an expert education consultant.
+    
+    Help students find the best universities based on their profiles.
+    
+    Context: {context}
+    History: {chat_history}
+    Question: {question}
+    Answer:""",
+    
+    standalone_question_prompt="""Convert this education question to a standalone search query.
+    
+    Chat History: {chat_history}
+    Question: {question}
+    Standalone query:"""
+)
+```
+
+## Configuration Methods
+
+### Method 1: From Environment Variables (Recommended)
+
+```python
+config = LangChatConfig.from_env()
+```
+
+### Method 2: Direct Configuration
+
+```python
+config = LangChatConfig(
+    openai_api_keys=["sk-..."],
+    # ... other options ...
+)
+```
+
+### Method 3: Hybrid Approach
+
+```python
+config = LangChatConfig.from_env()
+# Override specific settings
+config.openai_model = "gpt-4"
+config.server_port = 8080
+```
+
+## Configuration Validation
+
+LangChat validates configuration on initialization:
+
+```python
+from langchat import LangChat
+
+try:
+    config = LangChatConfig(
+        openai_api_keys=[],  # Empty list
+        # ... other config ...
+    )
+    langchat = LangChat(config=config)
+except ValueError as e:
+    print(f"Configuration error: {e}")
+```
+
+**Common Validation Errors:**
+- `"OpenAI API keys must be provided"` - Missing API keys
+- `"Supabase URL and key must be provided"` - Missing Supabase credentials
+- `"Pinecone API key must be provided"` - Missing Pinecone key
+- `"Pinecone index name must be provided"` - Missing index name
+
+## Best Practices
+
+### 1. Use Environment Variables for Secrets
+
+Never hardcode API keys:
+
+```python
+# ❌ Bad
+config = LangChatConfig(
+    openai_api_keys=["sk-abc123..."],  # Hardcoded
+    supabase_key="eyJ..."
+)
+
+# ✅ Good
+config = LangChatConfig.from_env()  # From environment
+```
+
+### 2. Use Multiple API Keys
+
+For production, use multiple API keys:
+
+```python
+config = LangChatConfig(
+    openai_api_keys=[
+        "sk-key1",
+        "sk-key2",
+        "sk-key3"
+    ],
+    max_llm_retries=2  # Total: 6 retries
+)
+```
+
+### 3. Adjust Retrieval Settings
+
+Balance between accuracy and speed:
+
+```python
+# More results = better accuracy, slower
+config.retrieval_k = 10
+config.reranker_top_n = 5
+
+# Fewer results = faster, potentially less accurate
+config.retrieval_k = 3
+config.reranker_top_n = 2
+```
+
+### 4. Customize Prompts
+
+Create domain-specific prompts:
+
+```python
+config.system_prompt_template = """Your custom prompt here..."""
+```
+
+## Next Steps
+
+- **[Prompts Guide](/guides/prompts)** - Learn about customizing prompts
+- **[API Reference](/api-reference/langchat-config)** - Full API documentation
+- **[Examples](/examples/custom-prompts)** - See configuration examples
+
+---
+
+Questions? Check the [API Reference](/api-reference/langchat-config) for complete details!
+

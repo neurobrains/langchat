@@ -1,0 +1,42 @@
+---
+title: ID Manager
+description: Sequential ID generation with conflict resolution
+---
+
+# ID Manager
+
+The ID Manager provides automatic sequential ID generation with conflict resolution for Supabase tables.
+
+## Overview
+
+The `IDManager` handles ID generation for database tables, ensuring:
+
+- **Sequential IDs**: Generate sequential integer IDs
+- **Conflict Resolution**: Automatic retry on ID conflicts
+- **Database Sync**: Synchronizes with database state
+- **Error Recovery**: Robust error handling and recovery
+
+## Usage
+
+### Basic Usage
+
+The ID Manager is automatically initialized by `LangChatEngine`:
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig(
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJhbGc...",
+    # ... other config
+)
+
+langchat = LangChat(config=config)
+# ID Manager is automatically initialized
+```
+
+## Related Documentation
+
+- **[Supabase Adapter](/adapters/supabase-adapter)** - Database adapter
+- **[Configuration](/guides/configuration)** - Configuration options
+
