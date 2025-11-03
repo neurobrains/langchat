@@ -39,7 +39,7 @@ def create_app(
 
     _engine = LangChatEngine(config=_config)
 
-    app = FastAPI(title="LangChat API", version="0.0.1")
+    app = FastAPI(title="LangChat API", version="0.0.2")
 
     # Add CORS middleware
     app.add_middleware(

@@ -1,0 +1,2 @@
+"""Tests for supabase adapters."""
+

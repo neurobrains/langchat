@@ -239,32 +239,23 @@ If your commits don't have sign-off, you'll need to add it before the PR can be 
 
 ##### Automatic Sign-off Hook
 
-A git commit hook is included that automatically appends DCO sign-off to your commit messages if you forget to add it. The hook runs automatically when you commit, so you don't need to remember to add `-s` every time.
+A git commit hook automatically appends DCO sign-off to your commit messages if you forget to add it.
 
 **To enable the hook:**
 
-On Linux/macOS/Git Bash (Windows):
-```bash
-./scripts/setup-dco-hook.sh
-```
+Run the setup script:
+- **Linux/macOS/Git Bash**: `./scripts/setup-dco-hook.sh`
+- **Windows PowerShell**: `.\scripts\setup-dco-hook.ps1`
 
-On Windows (PowerShell):
-```powershell
-.\scripts\setup-dco-hook.ps1
-```
-
-Or manually:
+Or manually copy the hook:
 ```bash
-# Copy the hook to .git/hooks
 cp scripts/prepare-commit-msg .git/hooks/prepare-commit-msg
-
-# Make it executable (Linux/macOS/Git Bash)
 chmod +x .git/hooks/prepare-commit-msg
 ```
 
 **Check if your commits are signed off:**
 ```bash
-git log --show-signature
+git log --grep="Signed-off-by:"
 ```
 
 **Check the status of DCO verification in your PR:**

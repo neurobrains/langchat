@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: langchat
-Version: 0.0.1
+Version: 0.0.2
 Summary: A conversational AI library with vector search capabilities
 Home-page: https://github.com/neurobrains/langchat
 Author: Sifat Hasan, NeuroBrain
