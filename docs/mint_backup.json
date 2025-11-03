@@ -1,0 +1,97 @@
+﻿{
+    "$schema":  "https://mintlify.com/schema.json",
+    "name":  "LangChat",
+    "favicon":  "/favicon.svg",
+    "colors":  {
+                   "primary":  "#6366F1",
+                   "light":  "#818CF8",
+                   "dark":  "#4F46E5",
+                   "anchors":  {
+                                   "from":  "#6366F1",
+                                   "to":  "#818CF8"
+                               }
+               },
+    "topbarLinks":  [
+                        {
+                            "name":  "GitHub",
+                            "url":  "https://github.com/neurobrains/langchat"
+                        }
+                    ],
+    "topbarCtaButton":  {
+                            "name":  "Install",
+                            "url":  "https://pypi.org/project/langchat/"
+                        },
+    "anchors":  [
+                    {
+                        "name":  "Documentation",
+                        "icon":  "book-open-cover",
+                        "url":  "https://docs.langchat.io"
+                    },
+                    {
+                        "name":  "GitHub",
+                        "icon":  "github",
+                        "url":  "https://github.com/neurobrains/langchat"
+                    }
+                ],
+    "navigation":  [
+                       {
+                           "group":  "Get Started",
+                           "pages":  [
+                                         "introduction",
+                                         "getting-started",
+                                         "installation"
+                                     ]
+                       },
+                       {
+                           "group":  "Guides",
+                           "pages":  [
+                                         "guides/configuration",
+                                         "guides/prompts",
+                                         "guides/sessions",
+                                         "guides/vector-search"
+                                     ]
+                       },
+                       {
+                           "group":  "API Reference",
+                           "pages":  [
+                                         "api-reference/langchat",
+                                         "api-reference/langchat-config",
+                                         "api-reference/langchat-engine",
+                                         "api-reference/user-session"
+                                     ]
+                       },
+                       {
+                           "group":  "Adapters",
+                           "pages":  [
+                                         "adapters/overview",
+                                         "adapters/openai-service",
+                                         "adapters/pinecone-adapter",
+                                         "adapters/flashrank-reranker",
+                                         "adapters/supabase-adapter",
+                                         "adapters/id-manager"
+                                     ]
+                       },
+                       {
+                           "group":  "Examples",
+                           "pages":  [
+                                         "examples/basic-usage",
+                                         "examples/custom-prompts",
+                                         "examples/api-server",
+                                         "examples/travel-ai"
+                                     ]
+                       },
+                       {
+                           "group":  "Advanced",
+                           "pages":  [
+                                         "advanced/customization",
+                                         "advanced/extending-adapters",
+                                         "advanced/performance",
+                                         "advanced/troubleshooting"
+                                     ]
+                       }
+                   ],
+    "footerSocials":  {
+                          "github":  "https://github.com/neurobrains/langchat",
+                          "linkedin":  "https://www.linkedin.com/company/neurobrain"
+                      }
+}
