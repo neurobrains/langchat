@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: DCO Check
-        uses: scriptworker/dco@v1.2.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: tisonkun/actions-dco@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
