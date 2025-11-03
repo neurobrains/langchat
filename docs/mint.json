@@ -21,18 +21,6 @@
     "name": "Install",
     "url": "https://pypi.org/project/langchat/"
   },
-  "anchors": [
-    {
-      "name": "Documentation",
-      "icon": "book-open-cover",
-      "url": "https://docs.langchat.io"
-    },
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/neurobrains/langchat"
-    }
-  ],
   "navigation": [
     {
       "group": "Get Started",
