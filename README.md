@@ -1,134 +1,211 @@
 # LangChat
 
-> **Production-ready AI chatbots in minutes, not months**
+<div align="center">
 
-A powerful, modular conversational AI library with vector search capabilities, designed to help developers build production-ready AI chatbots with minimal effort.
+<h2>🚀 Production-ready AI chatbots in minutes, not months</h2>
 
-## 🎯 Motivation
+<p>
+  <a href="https://pypi.org/project/langchat/">
+    <img src="https://badge.fury.io/py/langchat.svg" alt="PyPI version" />
+  </a>
+  <a href="https://www.python.org/downloads/">
+    <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" />
+  </a>
+</p>
 
-LangChat was created to solve the complexity of building production-ready conversational AI systems. Instead of managing multiple libraries, API integrations, vector databases, and chat history tracking separately, LangChat provides a unified, modular architecture that handles all these concerns out of the box.
+<p>
+  <strong>A powerful, modular conversational AI library</strong> with vector search capabilities, designed to help developers build production-ready AI chatbots with minimal effort.
+</p>
 
-### Why LangChat?
+<p>
+  <a href="https://langchat.neurobrains.co/"><strong>📖 Full Documentation →</strong></a> • 
+  <a href="https://github.com/neurobrains/langchat"><strong>⭐ GitHub</strong></a> • 
+  <a href="https://pypi.org/project/langchat/"><strong>📦 PyPI</strong></a>
+</p>
 
-- **🚀 Fast Development**: Get a production-ready chatbot running in minutes
-- **🔧 Modular Architecture**: Mix and match components as needed
-- **🔄 Automatic API Key Rotation**: Built-in fault tolerance for OpenAI API
-- **📊 Production Ready**: Includes chat history, metrics, and feedback tracking
-- **🎨 Highly Customizable**: Easy to extend with custom prompts and adapters
-- **🐳 Docker Ready**: Auto-generated Dockerfile for easy deployment
+</div>
 
-## Features
+---
 
-### 🤖 LLM Integration
-- **OpenAI**: Native OpenAI API support with automatic API key rotation
-- **Fault Tolerant**: Automatic retry logic with multiple API keys
+## 🎯 What is LangChat?
 
-### 🔍 Vector Search
-- **Pinecone Integration**: Seamless vector database integration
-- **Reranking**: Flashrank reranker for improved search results
-- **Auto-Configured Models**: Rerank models automatically stored in `src/langchat/models/rerank_models`
+<p>
+  <strong>LangChat</strong> is a production-ready conversational AI library that simplifies building intelligent chatbots with vector search capabilities. Instead of juggling multiple libraries, API integrations, vector databases, and chat history management, LangChat provides a unified, modular architecture that handles all these concerns out of the box.
+</p>
 
-### 💾 Database Management
-- **Supabase**: Built-in Supabase integration
-- **ID Management**: Automatic ID generation with conflict resolution
-- **Session Management**: User-specific chat history and memory
+<div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3;">
+<strong>💡 Key Insight:</strong> LangChat combines the power of LLMs (Large Language Models), vector search, and conversation management into one easy-to-use library.
+</div>
 
-### 🎨 Customization
-- **Custom Prompts**: Configure both system prompts and standalone question prompts
-- **Flexible Configuration**: Environment variables or direct configuration
-- **Port Configuration**: Configurable server port (auto-set in Dockerfile)
+---
 
-### 🚀 Developer Experience
-- **Auto-Generated Interface**: Chat interface HTML auto-created on server startup
-- **Auto-Generated Dockerfile**: Dockerfile auto-created with correct port configuration
-- **Easy Setup**: Simple configuration and initialization
+## 🎯 Why LangChat?
 
-## Structure
+<p>Building production-ready conversational AI systems is complex. You need to:</p>
 
-The library is organized in the `src/langchat/` directory with the following structure:
+<ul>
+  <li><strong>Integrate LLM APIs</strong> (OpenAI, Anthropic, etc.)</li>
+  <li><strong>Manage Vector Databases</strong> (Pinecone, Weaviate, etc.)</li>
+  <li><strong>Handle Chat History</strong> (conversation context and memory)</li>
+  <li><strong>Implement Reranking</strong> (improve search result relevance)</li>
+  <li><strong>Track Metrics</strong> (response times, errors, feedback)</li>
+  <li><strong>Rotate API Keys</strong> (handle rate limits and failures)</li>
+</ul>
 
-```
-src/langchat/
-├── __init__.py              # Main exports
-├── main.py                  # Developer entry point (no API)
-├── config.py                # Configuration module
-├── adapters/                # External service adapters
-│   ├── supabase/            # Supabase adapters
-│   │   ├── supabase_adapter.py
-│   │   └── id_manager.py
-│   ├── services/            # LLM service providers
-│   │   └── openai_service.py
-│   ├── vector_db/           # Vector database adapters
-│   │   └── pinecone_adapter.py
-│   └── reranker/            # Reranker adapters
-│       └── flashrank_adapter.py
-├── core/                    # Core functionality
-│   ├── engine.py            # Main LangChat engine
-│   ├── session.py           # User session management
-│   └── prompts.py           # Prompt templates
-├── api/                     # FastAPI routes
-│   ├── app.py               # FastAPI app setup
-│   ├── routes.py            # API routes
-│   └── models.py            # Pydantic models
-├── utils/                   # Utility functions
-│   ├── interface_generator.py  # Auto-generate chat interface
-│   └── docker_generator.py      # Auto-generate Dockerfile
-└── models/                  # Model storage
-    └── rerank_models/       # Reranker models (auto-configured)
-```
+<p><strong>LangChat simplifies all of this</strong> by providing a complete solution out of the box.</p>
 
-## Installation
+<table>
+  <thead>
+    <tr>
+      <th>Feature</th>
+      <th>LangChat</th>
+      <th>Other Libraries</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Setup Time</strong></td>
+      <td>⚡ Minutes</td>
+      <td>⏳ Days/Weeks</td>
+    </tr>
+    <tr>
+      <td><strong>API Key Rotation</strong></td>
+      <td>✅ Built-in</td>
+      <td>❌ Manual</td>
+    </tr>
+    <tr>
+      <td><strong>Chat History</strong></td>
+      <td>✅ Automatic</td>
+      <td>⚠️ Manual</td>
+    </tr>
+    <tr>
+      <td><strong>Vector Search</strong></td>
+      <td>✅ Integrated</td>
+      <td>⚠️ Separate</td>
+    </tr>
+    <tr>
+      <td><strong>Reranking</strong></td>
+      <td>✅ Built-in</td>
+      <td>❌ Manual</td>
+    </tr>
+    <tr>
+      <td><strong>Production Ready</strong></td>
+      <td>✅ Yes</td>
+      <td>⚠️ Depends</td>
+    </tr>
+  </tbody>
+</table>
 
-Install LangChat from PyPI:
+---
+
+## ✨ Key Features
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+
+<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
+<h3>🤖 LLM Integration</h3>
+<ul>
+  <li>OpenAI with automatic key rotation</li>
+  <li>Fault-tolerant retry logic</li>
+  <li>Production-ready error handling</li>
+</ul>
+</div>
+
+<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
+<h3>🔍 Vector Search</h3>
+<ul>
+  <li>Pinecone integration</li>
+  <li>Flashrank reranking</li>
+  <li>Configurable retrieval</li>
+</ul>
+</div>
+
+<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
+<h3>💾 Database Management</h3>
+<ul>
+  <li>Supabase integration</li>
+  <li>Automatic ID management</li>
+  <li>User session management</li>
+</ul>
+</div>
+
+<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
+<h3>🎨 Customization</h3>
+<ul>
+  <li>Custom prompts</li>
+  <li>Flexible configuration</li>
+  <li>Modular architecture</li>
+</ul>
+</div>
+
+</div>
+
+---
+
+## 📦 Installation
+
+<pre><code>pip install langchat</code></pre>
+
+<p><strong>Requirements:</strong> Python 3.8+, OpenAI API key(s), Pinecone account, Supabase project</p>
+
+---
+
+## 🚀 Quick Start
+
+### Step 1: Set Environment Variables
 
 ```bash
-pip install langchat
+export OPENAI_API_KEYS="sk-...,sk-..."
+export PINECONE_API_KEY="your-key"
+export PINECONE_INDEX_NAME="your-index"
+export SUPABASE_URL="https://xxxxx.supabase.co"
+export SUPABASE_KEY="your-key"
 ```
 
-Or install in development mode:
-
-```bash
-pip install -e .
-```
-
-Or install dependencies directly:
-
-```bash
-pip install -r requirements.txt
-```
-
-## Quick Start
-
-### Installation
-
-Install LangChat from PyPI:
-
-```bash
-pip install langchat
-```
-
-### Basic Usage
-
-#### As a Library
+### Step 2: Write Your First Chatbot
 
 ```python
 import asyncio
 from langchat import LangChat, LangChatConfig
 
 async def main():
-    # Create configuration
-    config = LangChatConfig(
-        openai_api_keys=["your-openai-api-key"],
-        pinecone_api_key="your-pinecone-api-key",
-        pinecone_index_name="your-index-name",
-        supabase_url="your-supabase-url",
-        supabase_key="your-supabase-key"
-    )
+    # Load configuration from environment variables
+    config = LangChatConfig.from_env()
     
     # Initialize LangChat
     langchat = LangChat(config=config)
     
     # Chat with the AI
+    # Note: Response is automatically displayed in a Rich panel
+    result = await langchat.chat(
+        query="Hello! What can you help me with?",
+        user_id="user123",
+        domain="general"
+    )
+    
+    # Access response data
+    print(f"Status: {result['status']}")
+
+asyncio.run(main())
+```
+
+---
+
+## 📚 Examples
+
+### Basic Usage
+
+```python
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def main():
+    config = LangChatConfig.from_env()
+    langchat = LangChat(config=config)
+    
     result = await langchat.chat(
         query="What are the best universities in Europe?",
         user_id="user123",
@@ -136,64 +213,42 @@ async def main():
     )
     
     print(result["response"])
-    print(f"Status: {result['status']}")
-    print(f"Response time: {result.get('response_time', 0):.2f}s")
 
-# Run the example
 asyncio.run(main())
 ```
 
-#### With Custom Prompts
+### Custom Configuration
 
 ```python
+from langchat import LangChat, LangChatConfig
+
 config = LangChatConfig(
-    openai_api_keys=["your-api-key"],
-    pinecone_api_key="your-pinecone-key",
-    pinecone_index_name="your-index",
-    supabase_url="your-supabase-url",
-    supabase_key="your-supabase-key",
+    openai_api_keys=["sk-...", "sk-..."],  # Multiple keys for rotation
+    openai_model="gpt-4o-mini",
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJhbGc...",
+    system_prompt_template="""You are a helpful assistant.
     
-    # Custom system prompt
-    system_prompt_template="""You are a helpful assistant specializing in {domain}.
-    
-    Use the following context to answer questions:
-    {context}
-    
-    Chat history: {chat_history}
-    
-    Question: {question}
-    Answer:""",
-    
-    # Custom standalone question prompt
-    standalone_question_prompt="""Convert this question to a standalone search query.
-    
+    Context: {context}
     Chat History: {chat_history}
     Question: {question}
-    Standalone query:"""
+    Answer:"""
 )
+
+langchat = LangChat(config=config)
 ```
 
-#### As an API Server
-
-Run the FastAPI server (auto-generates `chat_interface.html` and `Dockerfile`):
+### As API Server
 
 ```python
-# main.py
 from langchat.api.app import create_app
 from langchat.config import LangChatConfig
 import uvicorn
 
-# Create configuration
-config = LangChatConfig(
-    openai_api_keys=["your-openai-api-key"],
-    pinecone_api_key="your-pinecone-api-key",
-    pinecone_index_name="your-index-name",
-    supabase_url="your-supabase-url",
-    supabase_key="your-supabase-key",
-    server_port=8007  # Your server port
-)
+config = LangChatConfig.from_env()
 
-# Create FastAPI app (auto-generates chat_interface.html and Dockerfile)
 app = create_app(
     config=config,
     auto_generate_interface=True,
@@ -201,155 +256,88 @@ app = create_app(
 )
 
 if __name__ == "__main__":
-    # Start the server
-    print(f"🚀 Starting LangChat API server on port {config.server_port}")
-    print(f"📱 Chat interface available at: http://localhost:{config.server_port}/frontend")
     uvicorn.run(app, host="0.0.0.0", port=config.server_port)
 ```
 
-After starting the server:
-- **API Endpoint**: `http://localhost:8007/chat`
-- **Frontend Interface**: `http://localhost:8007/frontend`
-- **Health Check**: `http://localhost:8007/health`
+---
 
-Or use environment variables:
+## 🌐 API Endpoints
 
-```bash
-export OPENAI_API_KEYS="key1,key2"
-export PINECONE_API_KEY="your-key"
-export SUPABASE_URL="your-url"
-export SUPABASE_KEY="your-key"
+<p>When running as an API server:</p>
 
-python main.py
-```
+<ul>
+  <li><code>POST /chat</code> - Send a chat message</li>
+  <li><code>GET /frontend</code> - Access the chat interface</li>
+  <li><code>GET /health</code> - Health check endpoint</li>
+</ul>
 
-## Configuration
+---
 
-All configuration can be done through `LangChatConfig`:
+## 💡 Use Cases
 
-- **OpenAI**: API keys, model, temperature, embedding model
-- **Pinecone**: API key, index name (must be configured)
-- **Supabase**: URL, API key
-- **Vector Search**: Retrieval parameters, reranker settings (auto-configured)
-- **Session**: Chat history limits, memory window
-- **Timezone**: For date/time formatting
-- **Prompts**: Custom system prompts and standalone question prompts
-- **Server**: Port configuration
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
 
-### Configuration Examples
+<div>📚 <strong>Education Chatbots</strong><br/>Help students find universities</div>
+<div>✈️ <strong>Travel Assistants</strong><br/>Travel recommendations</div>
+<div>🛒 <strong>Customer Support</strong><br/>Answer product questions</div>
+<div>💼 <strong>Business Assistants</strong><br/>Knowledge base queries</div>
+<div>🎓 <strong>Learning Platforms</strong><br/>Course material Q&A</div>
+<div>🏥 <strong>Healthcare</strong><br/>Medical information</div>
 
-#### Basic Configuration
+</div>
 
-```python
-config = LangChatConfig(
-    openai_api_keys=["sk-...", "sk-..."],  # Multiple keys for rotation
-    openai_model="gpt-4o-mini",
-    openai_temperature=1.0,
-    openai_embedding_model="text-embedding-3-large",
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    supabase_url="https://xxxxx.supabase.co",
-    supabase_key="eyJhbGc...",
-    server_port=8000
-)
-```
+---
 
-#### Using Environment Variables
+## 📖 Documentation
 
-```bash
-export OPENAI_API_KEYS="key1,key2"
-export OPENAI_MODEL="gpt-4o-mini"
-export PINECONE_API_KEY="your-key"
-export PINECONE_INDEX_NAME="your-index"
-export SUPABASE_URL="your-url"
-export SUPABASE_KEY="your-key"
-export SERVER_PORT=8000
-```
+<p>
+  For complete documentation, examples, guides, and API reference, visit:
+</p>
 
-```python
-# Load from environment variables
-config = LangChatConfig.from_env()
-```
+<div align="center" style="margin: 30px 0;">
+  <a href="https://langchat.neurobrains.co/" style="font-size: 18px; font-weight: bold; color: #2196F3; text-decoration: none;">
+    📖 https://langchat.neurobrains.co/
+  </a>
+</div>
 
-#### Custom Prompts
+<p>The documentation includes:</p>
 
-```python
-config = LangChatConfig(
-    system_prompt_template="Your custom system prompt here...",
-    standalone_question_prompt="Your custom standalone question prompt...",
-    # ... other config ...
-)
-```
+<ul>
+  <li>📘 <a href="https://langchat.neurobrains.co/getting-started">Getting Started Guide</a></li>
+  <li>⚙️ <a href="https://langchat.neurobrains.co/guides/configuration">Configuration Guide</a></li>
+  <li>📝 <a href="https://langchat.neurobrains.co/api-reference/langchat">API Reference</a></li>
+  <li>💡 <a href="https://langchat.neurobrains.co/examples/basic-usage">Examples</a></li>
+  <li>🔧 <a href="https://langchat.neurobrains.co/advanced/customization">Advanced Topics</a></li>
+</ul>
 
-## Examples
+---
 
-See [examples/](examples/) for detailed usage examples:
+## 🤝 Contributing
 
-- **[Travel AI Example](examples/travel_ai.py)**: Custom chatbot for travel assistance
-- **[main.py](main.py)**: Full API server example with custom prompts
+<p>We welcome contributions! Please see <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for guidelines.</p>
 
-### Example: Education Chatbot
+<div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
+<strong>⚠️ Important:</strong> All contributions require a <a href="DCO.md">Developer Certificate of Origin (DCO)</a> sign-off.
+</div>
 
-```python
-config = LangChatConfig(
-    openai_api_keys=["your-key"],
-    pinecone_api_key="your-key",
-    pinecone_index_name="education-index",
-    supabase_url="your-url",
-    supabase_key="your-key",
-    system_prompt_template="""You are an expert education consultant.
-    
-    Help students find the best universities based on their profiles.
-    
-    Context: {context}
-    History: {chat_history}
-    Question: {question}
-    Answer:""",
-    retrieval_k=10,
-    reranker_top_n=5
-)
-```
+---
 
-## Customization
+## 📄 License
 
-The library is designed to be easily customizable:
+<p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
 
-1. **Custom LLM Providers**: Add new providers in `adapters/services/`
-2. **Custom Vector DBs**: Add new adapters in `adapters/vector_db/`
-3. **Custom Prompts**: Override `system_prompt_template` and `standalone_question_prompt` in config
-4. **Custom Sessions**: Extend `UserSession` in `core/session.py`
-5. **Auto-Generated Files**: Chat interface and Dockerfile auto-generated on startup
+---
 
-## API Endpoints
+<div align="center" style="margin-top: 40px; padding: 20px; background-color: #f5f5f5; border-radius: 10px;">
 
-When running as an API server:
+<p style="font-size: 20px; margin: 0;">
+  <strong>Built with ❤️ by <a href="https://neurobrain.co">NeuroBrain</a></strong>
+</p>
 
-- `POST /chat` - Send a chat message
-  - Body: `query`, `userId`, `domain`
-- `GET /frontend` - Access the chat interface
-- `GET /health` - Health check endpoint
-- `POST /feedback` - Submit feedback
+<p style="margin-top: 15px;">
+  <a href="https://github.com/neurobrains/langchat">⭐ Star us on GitHub</a> • 
+  <a href="https://langchat.neurobrains.co/">📖 Read the Docs</a> • 
+  <a href="https://github.com/neurobrains/langchat/issues">🐛 Report Issues</a>
+</p>
 
-## Development
-
-The library follows a modular architecture:
-
-- **Adapters**: Handle external services (DBs, LLMs, Vector DBs)
-- **Core**: Main business logic (Engine, Sessions, Prompts)
-- **API**: FastAPI routes for HTTP API
-
-Each module can be used independently or together.
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Documentation
-
-See [docs/](docs/) for detailed documentation:
-- [Configuration Guide](docs/configuration.md)
-- [API Reference](docs/api_reference.md) (coming soon)
+</div>
