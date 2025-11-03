@@ -231,12 +231,45 @@ Signed-off-by: John Doe <john.doe@example.com>
 
 #### DCO Verification
 
-Your Pull Request will be checked for DCO sign-off. If your commits don't have sign-off, you'll need to add it before the PR can be merged.
+Your Pull Request will be automatically checked for DCO sign-off via GitHub Actions. The check will show:
+- ✅ **Green checkmark** if all commits are signed off
+- ❌ **Red X** if any commits are missing sign-off
+
+If your commits don't have sign-off, you'll need to add it before the PR can be merged.
+
+##### Automatic Sign-off Hook
+
+A git commit hook is included that automatically appends DCO sign-off to your commit messages if you forget to add it. The hook runs automatically when you commit, so you don't need to remember to add `-s` every time.
+
+**To enable the hook:**
+
+On Linux/macOS/Git Bash (Windows):
+```bash
+./scripts/setup-dco-hook.sh
+```
+
+On Windows (PowerShell):
+```powershell
+.\scripts\setup-dco-hook.ps1
+```
+
+Or manually:
+```bash
+# Copy the hook to .git/hooks
+cp scripts/prepare-commit-msg .git/hooks/prepare-commit-msg
+
+# Make it executable (Linux/macOS/Git Bash)
+chmod +x .git/hooks/prepare-commit-msg
+```
 
 **Check if your commits are signed off:**
 ```bash
 git log --show-signature
 ```
+
+**Check the status of DCO verification in your PR:**
+- Look at the PR checks section on GitHub
+- You'll see a "DCO Check" status that shows ✅ (passed) or ❌ (failed)
 
 **Fix unsigned commits:**
 ```bash
