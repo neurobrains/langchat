@@ -42,10 +42,10 @@
     {
       "group": "API Reference",
       "pages": [
-        "reference/langchat",
-        "reference/langchat-config",
-        "reference/langchat-engine",
-        "reference/user-session"
+        "api-reference/langchat",
+        "api-reference/langchat-config",
+        "api-reference/langchat-engine",
+        "api-reference/user-session"
       ]
     },
     {
