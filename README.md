@@ -185,9 +185,6 @@ async def main():
         user_id="user123",
         domain="general"
     )
-    
-    # Access response data
-    print(f"Status: {result['status']}")
 
 asyncio.run(main())
 ```
@@ -212,7 +209,6 @@ async def main():
         domain="education"
     )
     
-    print(result["response"])
 
 asyncio.run(main())
 ```

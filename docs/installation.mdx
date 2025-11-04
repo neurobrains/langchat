@@ -21,10 +21,6 @@ LangChat requires Python 3.8 or higher.
 
 ### From PyPI (Recommended)
 
-```bash
-pip install langchat
-```
-
 For production use, specify a version:
 
 ```bash
@@ -54,34 +50,6 @@ pip install -e ".[dev]"
 This includes:
 - `pytest` for testing
 - `pytest-asyncio` for async tests
-
-## Dependencies
-
-LangChat automatically installs these dependencies:
-
-### Core Dependencies
-
-- **fastapi** (0.115.14) - Web framework for API server
-- **uvicorn** (0.34.3) - ASGI server
-- **pydantic** (2.11.7) - Data validation
-- **requests** (2.32.3) - HTTP library
-
-### LLM Dependencies
-
-- **langchain** (0.3.27) - LLM framework
-- **langchain-core** (>=0.3.72) - Core LangChain functionality
-- **langchain-openai** (>=0.2.0) - OpenAI integration
-- **openai** (>=1.0.0) - OpenAI SDK
-
-### Vector Search Dependencies
-
-- **langchain-pinecone** (>=0.1.0) - Pinecone integration
-- **pinecone-client** (>=3.0.0) - Pinecone SDK
-- **flashrank** (0.2.10) - Reranking library
-
-### Database Dependencies
-
-- **supabase** (2.15.2) - Supabase client
 
 ## System Requirements
 
