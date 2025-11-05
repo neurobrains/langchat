@@ -1,6 +1,6 @@
 ---
-title: Getting Started
-description: Get up and running with LangChat in minutes. Welcome! This guide will help you build your first LangChat application in just a few minutes.
+title: "Getting Started"
+description: "Get up and running with LangChat in minutes. Welcome! This guide will help you build your first LangChat application in just a few minutes."
 ---
 
 import { Card, CardGroup } from 'mintlify';
@@ -15,9 +15,9 @@ Before you begin, make sure you have:
 - **Pinecone Account** - Sign up at [pinecone.io](https://www.pinecone.io)
 - **Supabase Project** - Create one at [supabase.com](https://supabase.com)
 
-<Callout type="info">
-You can use multiple OpenAI API keys for automatic rotation and better fault tolerance.
-</Callout>
+<info>
+  You can use multiple OpenAI API keys for automatic rotation and better fault tolerance.
+</info>
 
 ## Quick Start (5 Minutes)
 
@@ -49,9 +49,9 @@ export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_KEY="your-supabase-key"
 ```
 
-<Callout type="warning">
-Make sure your Pinecone index is already created and your Supabase project is set up.
-</Callout>
+<warning>
+  Make sure your Pinecone index is already created and your Supabase project is set up.
+</warning>
 
 ### Step 3: Write Your First Chatbot
 
@@ -76,11 +76,6 @@ async def main():
         user_id="user123",
         domain="general"
     )
-    
-    # Response already shown in panel above
-    # Access response data programmatically if needed:
-    print(f"Status: {result['status']}")
-    print(f"Response Time: {result.get('response_time', 0):.2f}s")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -92,9 +87,9 @@ if __name__ == "__main__":
 python main.py
 ```
 
-<Callout type="success">
-🎉 Congratulations! You just built your first LangChat application!
-</Callout>
+<success>
+  🎉 Congratulations! You just built your first LangChat application!
+</success>
 
 ## Using LangChat as an API Server
 
@@ -120,9 +115,6 @@ app = create_app(
 )
 
 if __name__ == "__main__":
-    print(f"🚀 Starting LangChat API server on port {config.server_port}")
-    print(f"📱 Chat interface: http://localhost:{config.server_port}/frontend")
-    print(f"📡 API endpoint: http://localhost:{config.server_port}/chat")
     uvicorn.run(app, host="0.0.0.0", port=config.server_port)
 ```
 
@@ -173,18 +165,10 @@ config.server_port = 8080
 ```
 
 <CardGroup cols={2}>
-  <Card
-    title="Configuration Guide"
-    icon="gear"
-    href="/guides/configuration"
-  >
+  <Card title="Configuration Guide" icon="gear" href="/guides/configuration">
     Learn about all configuration options
   </Card>
-  <Card
-    title="Custom Prompts"
-    icon="comments"
-    href="/guides/prompts"
-  >
+  <Card title="Custom Prompts" icon="comments" href="/guides/prompts">
     Customize your chatbot's behavior
   </Card>
 </CardGroup>
@@ -198,18 +182,18 @@ When you initialize LangChat, it automatically:
 3. **Downloads Reranker Models**: Automatically downloads Flashrank reranker models
 4. **Sets Up Sessions**: Prepares user session management
 
-<Callout type="info">
-All initialization happens automatically - you don't need to configure each component separately!
-</Callout>
+<info>
+  All initialization happens automatically - you don't need to configure each component separately!
+</info>
 
 ## Next Steps
 
 Now that you have LangChat running, explore these topics:
 
-- **[Configuration Guide](/guides/configuration)** - Customize LangChat for your needs
-- **[Custom Prompts](/guides/prompts)** - Make your chatbot unique
-- **[API Reference](/api-reference/langchat)** - Learn about all available methods
-- **[Examples](/examples/basic-usage)** - See more complex use cases
+- [**Configuration Guide**](/guides/configuration) - Customize LangChat for your needs
+- [**Custom Prompts**](/guides/prompts) - Make your chatbot unique
+- [**API Reference**](/api-reference/langchat) - Learn about all available methods
+- [**Examples**](/examples/basic-usage) - See more complex use cases
 
 ## Common Issues
 
@@ -238,4 +222,3 @@ Now that you have LangChat running, explore these topics:
 ---
 
 Ready to build something amazing? Let's continue with [Configuration](/guides/configuration)!
-
