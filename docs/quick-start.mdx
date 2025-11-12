@@ -1,0 +1,406 @@
+---
+title: Quick Start
+description: Get started with LangChat in minutes - Installation, setup, and your first chatbot
+---
+
+import { Card, CardGroup } from 'mintlify';
+import { Callout } from 'mintlify';
+import { CodeGroup } from 'mintlify';
+
+## What is LangChat?
+
+**LangChat** is a production-ready conversational AI library that simplifies building intelligent chatbots with vector search capabilities. Instead of juggling multiple libraries, API integrations, vector databases, and chat history management, LangChat provides a unified, modular architecture that handles all these concerns out of the box.
+
+<Callout type="info">
+LangChat combines the power of LLMs (Large Language Models), vector search, and conversation management into one easy-to-use library.
+</Callout>
+
+## Why LangChat?
+
+Building production-ready conversational AI systems is complex. You need to:
+
+- **Integrate LLM APIs** (OpenAI, Anthropic, etc.)
+- **Manage Vector Databases** (Pinecone, Weaviate, etc.)
+- **Handle Chat History** (conversation context and memory)
+- **Implement Reranking** (improve search result relevance)
+- **Track Metrics** (response times, errors, feedback)
+- **Rotate API Keys** (handle rate limits and failures)
+
+**LangChat simplifies all of this** by providing a complete solution out of the box.
+
+## Installation
+
+### Quick Install
+
+The fastest way to get started:
+
+```bash
+pip install langchat
+```
+
+<Callout type="info">
+LangChat requires Python 3.8 or higher.
+</Callout>
+
+### From PyPI (Recommended)
+
+For production use, specify a version:
+
+```bash
+pip install langchat==0.0.2
+```
+
+### From Source
+
+Clone the repository and install:
+
+```bash
+git clone https://github.com/neurobrains/langchat.git
+cd langchat
+pip install -e .
+```
+
+### Development Installation
+
+For development with all dependencies:
+
+```bash
+git clone https://github.com/neurobrains/langchat.git
+cd langchat
+pip install -e ".[dev]"
+```
+
+### Virtual Environment (Recommended)
+
+Always use a virtual environment:
+
+<CodeGroup>
+```bash Linux/macOS
+# Create virtual environment
+python -m venv venv
+
+# Activate
+source venv/bin/activate
+
+# Install LangChat
+pip install langchat
+```
+
+```bash Windows
+# Create virtual environment
+python -m venv venv
+
+# Activate
+venv\Scripts\activate
+
+# Install LangChat
+pip install langchat
+```
+</CodeGroup>
+
+## System Requirements
+
+### Python Version
+
+- **Minimum**: Python 3.8
+- **Recommended**: Python 3.10+
+
+### Operating System
+
+LangChat works on:
+- ✅ Linux
+- ✅ macOS
+- ✅ Windows
+
+### Memory
+
+- **Minimum**: 2GB RAM
+- **Recommended**: 4GB+ RAM (for reranker models)
+
+<Callout type="warning">
+The Flashrank reranker downloads models (~50MB) on first use. Make sure you have sufficient disk space.
+</Callout>
+
+## Verify Installation
+
+Test your installation:
+
+```python
+import langchat
+print(langchat.__version__)  # Should print: 0.0.2
+```
+
+Or check if components are importable:
+
+```python
+from langchat import LangChat, LangChatConfig, DocumentIndexer
+print("✅ Installation successful!")
+```
+
+## Environment Setup
+
+### Required Environment Variables
+
+Create a `.env` file:
+
+```bash
+# OpenAI Configuration
+OPENAI_API_KEYS=sk-...  # Can be comma-separated for multiple keys
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TEMPERATURE=1.0
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+
+# Pinecone Configuration
+PINECONE_API_KEY=pcsk-...
+PINECONE_INDEX_NAME=your-index-name
+
+# Supabase Configuration
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_KEY=eyJhbGc...
+
+# Optional: Server Configuration
+SERVER_PORT=8000
+```
+
+### Load Environment Variables
+
+Using `python-dotenv`:
+
+```bash
+pip install python-dotenv
+```
+
+```python
+from dotenv import load_dotenv
+load_dotenv()
+
+from langchat.config import LangChatConfig
+config = LangChatConfig.from_env()
+```
+
+## Your First Chatbot (5 Minutes)
+
+### Step 1: Install LangChat
+
+```bash
+pip install langchat
+```
+
+### Step 2: Configure Your Environment
+
+Create a `.env` file or set environment variables:
+
+```bash
+export OPENAI_API_KEYS="your-key-1,your-key-2"
+export PINECONE_API_KEY="your-pinecone-key"
+export PINECONE_INDEX_NAME="your-index-name"
+export SUPABASE_URL="https://your-project.supabase.co"
+export SUPABASE_KEY="your-supabase-key"
+```
+
+<Callout type="warning">
+Make sure your Pinecone index is already created and your Supabase project is set up.
+</Callout>
+
+### Step 3: Write Your First Chatbot
+
+Create a file `main.py`:
+
+```python
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def main():
+    # Load configuration from environment variables
+    config = LangChatConfig.from_env()
+    
+    # Initialize LangChat
+    langchat = LangChat(config=config)
+    
+    # Chat with the AI
+    # Note: Response is automatically displayed in a Rich panel box
+    result = await langchat.chat(
+        query="Hello! What can you help me with?",
+        user_id="user123",
+        domain="general"
+    )
+    
+    # Response already shown in panel above
+    # Access response data programmatically if needed:
+    print(f"Status: {result['status']}")
+    print(f"Response Time: {result.get('response_time', 0):.2f}s")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Step 4: Run It!
+
+```bash
+python main.py
+```
+
+<Callout type="success">
+🎉 Congratulations! You just built your first LangChat application!
+</Callout>
+
+## Using LangChat as an API Server
+
+LangChat can also run as a FastAPI server with an auto-generated frontend interface.
+
+### Create API Server
+
+Create `server.py`:
+
+```python
+from langchat.api.app import create_app
+from langchat.config import LangChatConfig
+import uvicorn
+
+# Create configuration
+config = LangChatConfig.from_env()
+
+# Create FastAPI app (auto-generates interface and Dockerfile)
+app = create_app(
+    config=config,
+    auto_generate_interface=True,
+    auto_generate_docker=True
+)
+
+if __name__ == "__main__":
+    print(f"🚀 Starting LangChat API server on port {config.server_port}")
+    print(f"📱 Chat interface: http://localhost:{config.server_port}/frontend")
+    print(f"📡 API endpoint: http://localhost:{config.server_port}/chat")
+    uvicorn.run(app, host="0.0.0.0", port=config.server_port)
+```
+
+### Run the Server
+
+```bash
+python server.py
+```
+
+Now you can:
+
+- **Frontend Interface**: Visit `http://localhost:8000/frontend`
+- **API Endpoint**: POST to `http://localhost:8000/chat`
+- **Health Check**: GET `http://localhost:8000/health`
+
+## Configuration Options
+
+LangChat supports configuration in multiple ways:
+
+### 1. Environment Variables (Recommended)
+
+```python
+config = LangChatConfig.from_env()
+```
+
+### 2. Direct Configuration
+
+```python
+config = LangChatConfig(
+    openai_api_keys=["sk-...", "sk-..."],
+    openai_model="gpt-4o-mini",
+    openai_temperature=1.0,
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    supabase_url="https://xxxxx.supabase.co",
+    supabase_key="eyJhbGc...",
+    server_port=8000
+)
+```
+
+### 3. Hybrid Approach
+
+```python
+config = LangChatConfig.from_env()
+# Override specific settings
+config.openai_model = "gpt-4"
+config.server_port = 8080
+```
+
+## What Happens Under the Hood?
+
+When you initialize LangChat, it automatically:
+
+1. **Initializes Adapters**: Sets up OpenAI, Pinecone, Supabase, and Flashrank
+2. **Creates Database Tables**: Sets up chat history, metrics, and feedback tables
+3. **Downloads Reranker Models**: Automatically downloads Flashrank reranker models
+4. **Sets Up Sessions**: Prepares user session management
+
+<Callout type="info">
+All initialization happens automatically - you don't need to configure each component separately!
+</Callout>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="⚡ Fast Development"
+    icon="bolt"
+    href="/guides/configuration"
+  >
+    Get a production-ready chatbot running in minutes, not months
+  </Card>
+  <Card
+    title="🔧 Modular Architecture"
+    icon="gear"
+    href="/guides/configuration"
+  >
+    Mix and match components as needed - highly customizable
+  </Card>
+  <Card
+    title="🔄 Automatic API Key Rotation"
+    icon="arrows-rotate"
+    href="/adapters/openai-service"
+  >
+    Built-in fault tolerance with multiple OpenAI API keys
+  </Card>
+  <Card
+    title="📊 Production Ready"
+    icon="chart-line"
+    href="/api-reference/langchat"
+  >
+    Includes chat history, metrics, and feedback tracking
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+Now that you have LangChat installed and running:
+
+1. **[Motivation](/motivation)** - Understand why LangChat exists
+2. **[Configuration Guide](/guides/configuration)** - Customize LangChat for your needs
+3. **[Document Indexing](/guides/document-indexing)** - Build your knowledge base
+4. **[Examples](/examples/basic-usage)** - See more complex use cases
+5. **[Production Deployment](/advanced/production)** - Deploy to production
+
+## Common Issues
+
+### Issue: "Supabase URL and key must be provided"
+
+**Solution**: Make sure you've set `SUPABASE_URL` and `SUPABASE_KEY` environment variables.
+
+### Issue: "Pinecone index name must be provided"
+
+**Solution**: Create a Pinecone index first, then set `PINECONE_INDEX_NAME`.
+
+### Issue: "OpenAI API keys must be provided"
+
+**Solution**: Set `OPENAI_API_KEYS` or `OPENAI_API_KEY` environment variable.
+
+### Issue: Reranker model download fails
+
+**Solution**: The reranker model is downloaded automatically to `rerank_models/`. Make sure you have write permissions.
+
+## Need Help?
+
+- Check our [Troubleshooting Guide](/advanced/troubleshooting)
+- Open an issue on [GitHub](https://github.com/neurobrains/langchat/issues)
+- Review the [API Reference](/api-reference/langchat)
+
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+

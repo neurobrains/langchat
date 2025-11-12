@@ -220,6 +220,134 @@ print(session.domain)  # "education"
 print(session.user_id)  # "user123"
 ```
 
+#### `load_and_index_documents()`
+
+Load documents from a file, split them into chunks, and index them to Pinecone. Prevents duplicate documents from being indexed multiple times.
+
+```python
+def load_and_index_documents(
+    self,
+    file_path: str,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    namespace: Optional[str] = None,
+    prevent_duplicates: bool = True
+) -> dict
+```
+
+**Parameters:**
+
+<ParamField path="file_path" type="str" required>
+  Path to the document file (supports PDF, TXT, CSV, etc.)
+</ParamField>
+
+<ParamField path="chunk_size" type="int" default="1000">
+  Size of each text chunk in characters
+</ParamField>
+
+<ParamField path="chunk_overlap" type="int" default="200">
+  Overlap between chunks in characters
+</ParamField>
+
+<ParamField path="namespace" type="str | None" default="None">
+  Optional Pinecone namespace to store documents in
+</ParamField>
+
+<ParamField path="prevent_duplicates" type="bool" default="True">
+  If True, checks for existing documents before adding to prevent duplicates
+</ParamField>
+
+**Returns:**
+
+`dict` - Dictionary with indexing results:
+- `status` (str): "success"
+- `chunks_indexed` (int): Number of chunks indexed
+- `chunks_skipped` (int): Number of duplicate chunks skipped
+- `documents_loaded` (int): Number of documents loaded
+- `file_path` (str): Path to indexed file
+- `namespace` (str | None): Namespace used
+
+**Example:**
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Index a document
+result = langchat.load_and_index_documents(
+    file_path="document.pdf",
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+print(f"Indexed {result['chunks_indexed']} chunks")
+print(f"Skipped {result.get('chunks_skipped', 0)} duplicates")
+```
+
+#### `load_and_index_multiple_documents()`
+
+Load multiple documents, split them, and index them to Pinecone in batch.
+
+```python
+def load_and_index_multiple_documents(
+    self,
+    file_paths: List[str],
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    namespace: Optional[str] = None,
+    prevent_duplicates: bool = True
+) -> dict
+```
+
+**Parameters:**
+
+<ParamField path="file_paths" type="List[str]" required>
+  List of file paths to load and index
+</ParamField>
+
+<ParamField path="chunk_size" type="int" default="1000">
+  Size of each text chunk
+</ParamField>
+
+<ParamField path="chunk_overlap" type="int" default="200">
+  Overlap between chunks
+</ParamField>
+
+<ParamField path="namespace" type="str | None" default="None">
+  Optional Pinecone namespace
+</ParamField>
+
+<ParamField path="prevent_duplicates" type="bool" default="True">
+  Prevent duplicate indexing
+</ParamField>
+
+**Returns:**
+
+`dict` - Dictionary with batch results:
+- `status` (str): "completed"
+- `total_chunks_indexed` (int): Total chunks indexed
+- `total_chunks_skipped` (int): Total duplicates skipped
+- `files_processed` (int): Total files processed
+- `files_succeeded` (int): Files successfully indexed
+- `files_failed` (int): Files that failed
+- `results` (List[Dict]): Detailed results per file
+- `errors` (List[Dict] | None): List of errors
+
+**Example:**
+
+```python
+result = langchat.load_and_index_multiple_documents(
+    file_paths=["doc1.pdf", "doc2.txt", "doc3.csv"],
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+print(f"Total chunks: {result['total_chunks_indexed']}")
+print(f"Files succeeded: {result['files_succeeded']}")
+```
+
 ### Properties
 
 #### `config`
@@ -340,11 +468,34 @@ async def chat_with_error_handling():
         print(f"Exception: {str(e)}")
 ```
 
+### Document Indexing
+
+```python
+async def index_documents():
+    langchat = LangChat(config=config)
+    
+    # Index single document
+    result = langchat.load_and_index_documents(
+        file_path="document.pdf",
+        chunk_size=1000,
+        chunk_overlap=200,
+        namespace="company-docs"
+    )
+    
+    # Index multiple documents
+    result = langchat.load_and_index_multiple_documents(
+        file_paths=["doc1.pdf", "doc2.txt"],
+        chunk_size=1000
+    )
+```
+
 ## Related Documentation
 
 - **[LangChatConfig](/api-reference/langchat-config)** - Configuration API
 - **[LangChatEngine](/api-reference/langchat-engine)** - Engine API
 - **[UserSession](/api-reference/user-session)** - Session API
+- **[DocumentIndexer](/api-reference/document-indexer)** - Standalone document indexing API
+- **[Document Indexing Guide](/guides/document-indexing)** - Complete guide to document indexing
 - **[Getting Started](/getting-started)** - Quick start guide
 - **[Examples](/examples/basic-usage)** - Usage examples
 

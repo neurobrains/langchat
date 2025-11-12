@@ -39,6 +39,7 @@ dependencies = [
     "pinecone-client",
     "flashrank>=0.2.10",
     "supabase>=2.15.2",
+    "docsuite>=0.1.0",
 ]
 
 [project.optional-dependencies]

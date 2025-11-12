@@ -1,0 +1,504 @@
+---
+title: Production Deployment
+description: Complete guide to deploying your LangChat AI chatbot to production using Docker, GitHub, and Google Cloud Run
+---
+
+import { Callout } from 'mintlify';
+import { CodeGroup } from 'mintlify';
+
+## Overview
+
+This guide will walk you through deploying your LangChat AI chatbot to production using:
+- **Docker** for containerization
+- **GitHub** for version control and repository
+- **Google Cloud Run** for serverless deployment
+
+<Callout type="info">
+This guide is designed for both developers and non-developers. Follow each step carefully.
+</Callout>
+
+## Prerequisites
+
+Before starting, make sure you have:
+
+- ✅ **Python 3.8+** installed
+- ✅ **Git** installed
+- ✅ **Docker** installed (optional, for local testing)
+- ✅ **GitHub account**
+- ✅ **Google Cloud Platform (GCP) account**
+- ✅ **LangChat project** ready to deploy
+
+## Step 1: Prepare Your Project
+
+### Project Structure
+
+Your project should have this structure:
+
+```
+your-chatbot/
+├── main.py              # Your LangChat application
+├── requirements.txt     # Python dependencies
+├── Dockerfile          # Docker configuration
+├── .dockerignore       # Files to exclude from Docker
+├── .env.example        # Example environment variables
+└── README.md           # Project documentation
+```
+
+### Create Your Application
+
+Create `main.py`:
+
+```python
+from langchat.api.app import create_app
+from langchat.config import LangChatConfig
+import uvicorn
+import os
+
+# Load configuration from environment variables
+config = LangChatConfig.from_env()
+
+# Create FastAPI app
+app = create_app(
+    config=config,
+    auto_generate_interface=True,
+    auto_generate_docker=False  # We'll create our own Dockerfile
+)
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", config.server_port))
+    print(f"🚀 Starting LangChat API server on port {port}")
+    print(f"📱 Chat interface: http://localhost:{port}/frontend")
+    print(f"📡 API endpoint: http://localhost:{port}/chat")
+    uvicorn.run(app, host="0.0.0.0", port=port)
+```
+
+<Callout type="warning">
+**Important**: Use `host="0.0.0.0"` and read port from environment variable `PORT` for Cloud Run compatibility.
+</Callout>
+
+### Create requirements.txt
+
+Create `requirements.txt`:
+
+```txt
+langchat>=0.0.2
+uvicorn[standard]>=0.34.3
+python-dotenv>=1.0.0
+```
+
+<Callout type="info">
+You can add other dependencies your project needs. Make sure to pin versions for production.
+</Callout>
+
+### Create .env.example
+
+Create `.env.example` (for reference, don't commit actual `.env`):
+
+```bash
+# OpenAI Configuration
+OPENAI_API_KEYS=sk-...
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TEMPERATURE=1.0
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+
+# Pinecone Configuration
+PINECONE_API_KEY=pcsk-...
+PINECONE_INDEX_NAME=your-index-name
+
+# Supabase Configuration
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_KEY=eyJhbGc...
+
+# Server Configuration
+PORT=8000
+```
+
+## Step 2: Create Dockerfile
+
+Create `Dockerfile`:
+
+```dockerfile
+# Use Python 3.10 slim image
+FROM python:3.10-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first (for better caching)
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Expose port (Cloud Run will override this)
+EXPOSE 8000
+
+# Set environment variable for port
+ENV PORT=8000
+
+# Run the application
+CMD exec uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+<Callout type="info">
+**Key Points**:
+- Use `python:3.10-slim` for smaller image size
+- Copy `requirements.txt` first for Docker layer caching
+- Use `$PORT` environment variable (Cloud Run sets this)
+- Use `0.0.0.0` as host (required for Cloud Run)
+</Callout>
+
+### Create .dockerignore
+
+Create `.dockerignore`:
+
+```
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+.git
+.gitignore
+README.md
+.dockerignore
+*.md
+.pytest_cache
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+```
+
+## Step 3: Test Locally
+
+### Build Docker Image
+
+```bash
+docker build -t langchat-chatbot .
+```
+
+### Run Docker Container
+
+```bash
+docker run -p 8000:8000 \
+  -e OPENAI_API_KEYS="your-key" \
+  -e PINECONE_API_KEY="your-key" \
+  -e PINECONE_INDEX_NAME="your-index" \
+  -e SUPABASE_URL="your-url" \
+  -e SUPABASE_KEY="your-key" \
+  langchat-chatbot
+```
+
+### Test Your Application
+
+1. **Health Check**: Visit `http://localhost:8000/health`
+2. **Frontend**: Visit `http://localhost:8000/frontend`
+3. **API Test**: 
+   ```bash
+   curl -X POST http://localhost:8000/chat \
+     -H "Content-Type: application/json" \
+     -d '{"query": "Hello", "user_id": "test", "domain": "general"}'
+   ```
+
+<Callout type="success">
+If everything works locally, you're ready to deploy!
+</Callout>
+
+## Step 4: Push to GitHub
+
+### Initialize Git Repository
+
+```bash
+# Initialize git (if not already)
+git init
+
+# Add all files
+git add .
+
+# Commit
+git commit -m "Initial commit: LangChat chatbot"
+
+# Add remote (replace with your repo URL)
+git remote add origin https://github.com/yourusername/your-chatbot.git
+
+# Push to GitHub
+git branch -M main
+git push -u origin main
+```
+
+### Create GitHub Repository
+
+1. Go to [GitHub](https://github.com)
+2. Click **New Repository**
+3. Name it (e.g., `langchat-chatbot`)
+4. **Don't** initialize with README (you already have files)
+5. Click **Create Repository**
+6. Follow the commands shown (or use the commands above)
+
+### Verify Files in GitHub
+
+Make sure these files are in your GitHub repository:
+- ✅ `main.py`
+- ✅ `requirements.txt`
+- ✅ `Dockerfile`
+- ✅ `.dockerignore`
+- ✅ `.env.example` (optional)
+
+<Callout type="warning">
+**Never commit `.env` file with actual API keys!** Only commit `.env.example`.
+</Callout>
+
+## Step 5: Deploy to Google Cloud Run
+
+### Step 5.1: Set Up Google Cloud Project
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project (or select existing)
+3. Enable **Cloud Run API**:
+   - Go to **APIs & Services** > **Library**
+   - Search for "Cloud Run API"
+   - Click **Enable**
+
+### Step 5.2: Connect GitHub Repository
+
+1. Go to **Cloud Run** in Google Cloud Console
+2. Click **Create Service**
+3. Select **Deploy from source repository**
+4. Click **Set up with Cloud Build**
+5. **Connect Repository**:
+   - Choose **GitHub (Cloud Build GitHub App)**
+   - Authorize GitHub access
+   - Select your repository
+   - Select branch (usually `main`)
+
+### Step 5.3: Configure Build Settings
+
+1. **Service Name**: Enter a name (e.g., `langchat-chatbot`)
+2. **Region**: Select your preferred region
+3. **Authentication**: Choose **Allow unauthenticated invocations** (or authenticated if needed)
+4. **Container**: 
+   - **Container port**: `8000` (or your configured port)
+   - **Dockerfile location**: `Dockerfile` (should auto-detect)
+
+### Step 5.4: Configure Service Settings
+
+1. **CPU**: 
+   - **Allocated**: Choose based on needs
+   - **Minimum**: 1 vCPU (recommended)
+   - **Maximum**: 4 vCPU (for scaling)
+
+2. **Memory**: 
+   - **Minimum**: 512 MiB
+   - **Recommended**: 1 GiB (for reranker models)
+
+3. **Request timeout**: 300 seconds (5 minutes)
+
+4. **Maximum instances**: Set based on your needs (default: 100)
+
+5. **Minimum instances**: 0 (to save costs) or 1 (for always-on)
+
+### Step 5.5: Set Environment Variables
+
+In the **Variables & Secrets** section, add:
+
+```
+OPENAI_API_KEYS=your-actual-key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TEMPERATURE=1.0
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+PINECONE_API_KEY=your-actual-key
+PINECONE_INDEX_NAME=your-index-name
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_KEY=your-actual-key
+PORT=8000
+```
+
+<Callout type="warning">
+**Important**: Make sure `PORT=8000` matches the port in your Dockerfile and code!
+</Callout>
+
+### Step 5.6: Deploy
+
+1. Click **Create** or **Deploy**
+2. Wait for build to complete (5-10 minutes)
+3. Once deployed, you'll see:
+   - **Service URL**: Your API endpoint
+   - **Status**: Active
+
+### Step 5.7: Test Your Deployment
+
+1. **Health Check**: Visit `https://your-service-url.run.app/health`
+2. **Frontend**: Visit `https://your-service-url.run.app/frontend`
+3. **API Test**:
+   ```bash
+   curl -X POST https://your-service-url.run.app/chat \
+     -H "Content-Type: application/json" \
+     -d '{"query": "Hello", "user_id": "test", "domain": "general"}'
+   ```
+
+<Callout type="success">
+🎉 Your chatbot is now live in production!
+</Callout>
+
+## Step 6: Update and Redeploy
+
+### Making Changes
+
+1. **Update your code** locally
+2. **Test locally** with Docker
+3. **Commit and push** to GitHub:
+   ```bash
+   git add .
+   git commit -m "Update chatbot"
+   git push
+   ```
+4. **Cloud Run automatically rebuilds and redeploys** (if auto-deploy is enabled)
+
+### Manual Redeploy
+
+If auto-deploy is disabled:
+
+1. Go to **Cloud Run** in Google Cloud Console
+2. Select your service
+3. Click **Edit & Deploy New Revision**
+4. Click **Deploy**
+
+## Configuration Tips
+
+### Port Configuration
+
+Make sure port is consistent:
+
+1. **Dockerfile**: `EXPOSE 8000` and `ENV PORT=8000`
+2. **main.py**: `port = int(os.getenv("PORT", 8000))`
+3. **Cloud Run**: Container port = `8000`
+4. **Environment**: `PORT=8000`
+
+### Resource Allocation
+
+**For Small Scale** (testing, low traffic):
+- CPU: 1 vCPU
+- Memory: 512 MiB
+- Min instances: 0
+- Max instances: 10
+
+**For Production** (moderate traffic):
+- CPU: 2 vCPU
+- Memory: 1 GiB
+- Min instances: 1
+- Max instances: 100
+
+**For High Scale** (high traffic):
+- CPU: 4 vCPU
+- Memory: 2 GiB
+- Min instances: 2
+- Max instances: 1000
+
+### Cost Optimization
+
+1. **Set minimum instances to 0** (if acceptable cold start is OK)
+2. **Use appropriate CPU/Memory** (don't over-provision)
+3. **Set request timeout** appropriately
+4. **Monitor usage** in Cloud Console
+
+## Troubleshooting
+
+### Issue: Build Fails
+
+**Solutions**:
+- Check Dockerfile syntax
+- Verify requirements.txt has correct packages
+- Check Cloud Build logs in Google Cloud Console
+
+### Issue: Service Won't Start
+
+**Solutions**:
+- Verify PORT environment variable is set
+- Check that host is `0.0.0.0` in code
+- Review Cloud Run logs
+
+### Issue: Timeout Errors
+
+**Solutions**:
+- Increase request timeout in Cloud Run settings
+- Optimize your code for faster responses
+- Check for slow API calls
+
+### Issue: Out of Memory
+
+**Solutions**:
+- Increase memory allocation in Cloud Run
+- Optimize reranker model usage
+- Check for memory leaks
+
+### Issue: API Keys Not Working
+
+**Solutions**:
+- Verify environment variables are set correctly
+- Check for typos in variable names
+- Ensure secrets are properly configured
+
+## Monitoring
+
+### View Logs
+
+1. Go to **Cloud Run** > Your Service
+2. Click **Logs** tab
+3. View real-time logs
+
+### Set Up Alerts
+
+1. Go to **Monitoring** > **Alerting**
+2. Create alert policies for:
+   - Error rate
+   - Latency
+   - Request count
+
+## Security Best Practices
+
+1. **Never commit API keys** to GitHub
+2. **Use Cloud Run secrets** for sensitive data
+3. **Enable authentication** if needed
+4. **Use HTTPS** (automatic with Cloud Run)
+5. **Set up IAM** roles properly
+
+## Next Steps
+
+Now that your chatbot is deployed:
+
+1. **[Monitor Performance](/advanced/performance)** - Optimize your deployment
+2. **[Customize Prompts](/guides/prompts)** - Improve responses
+3. **[Index Documents](/guides/document-indexing)** - Add knowledge base
+4. **[Scale Up](/advanced/performance)** - Handle more traffic
+
+## Summary
+
+✅ **Created Dockerfile** for containerization  
+✅ **Pushed to GitHub** for version control  
+✅ **Deployed to Cloud Run** for production  
+✅ **Configured environment** variables  
+✅ **Tested deployment** successfully  
+
+<Callout type="success">
+Your AI chatbot is now live and ready to use! 🚀
+</Callout>
+
+---
+
+Questions? Check the [Troubleshooting Guide](/advanced/troubleshooting) or [GitHub Issues](https://github.com/neurobrains/langchat/issues)!
+

@@ -23,11 +23,10 @@
   },
   "navigation": [
     {
-      "group": "Get Started",
+      "group": "Quick Start",
       "pages": [
-        "introduction",
-        "getting-started",
-        "installation"
+        "quick-start",
+        "motivation"
       ]
     },
     {
@@ -36,20 +35,12 @@
         "guides/configuration",
         "guides/prompts",
         "guides/sessions",
-        "guides/vector-search"
+        "guides/vector-search",
+        "guides/document-indexing"
       ]
     },
     {
-      "group": "API Reference",
-      "pages": [
-        "api-reference/langchat",
-        "api-reference/langchat-config",
-        "api-reference/langchat-engine",
-        "api-reference/user-session"
-      ]
-    },
-    {
-      "group": "Adapters",
+      "group": "Components",
       "pages": [
         "adapters/overview",
         "adapters/openai-service",
@@ -60,17 +51,29 @@
       ]
     },
     {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/langchat",
+        "api-reference/langchat-config",
+        "api-reference/langchat-engine",
+        "api-reference/user-session",
+        "api-reference/document-indexer"
+      ]
+    },
+    {
       "group": "Examples",
       "pages": [
         "examples/basic-usage",
         "examples/custom-prompts",
         "examples/api-server",
+        "examples/document-indexing",
         "examples/travel-ai"
       ]
     },
     {
       "group": "Advanced",
       "pages": [
+        "advanced/production",
         "advanced/customization",
         "advanced/extending-adapters",
         "advanced/performance",

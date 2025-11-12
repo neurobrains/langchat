@@ -1,0 +1,371 @@
+---
+title: Document Indexing Examples
+description: Practical examples of loading and indexing documents for your AI chatbot
+---
+
+import { CodeGroup } from 'mintlify';
+import { Callout } from 'mintlify';
+
+## Basic Document Indexing
+
+### Index a Single Document
+
+<CodeGroup>
+```python Using LangChat
+from langchat import LangChat, LangChatConfig
+
+# Initialize LangChat
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Index a PDF document
+result = langchat.load_and_index_documents(
+    file_path="company-handbook.pdf",
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+print(f"✅ Indexed {result['chunks_indexed']} chunks")
+print(f"⏭️  Skipped {result.get('chunks_skipped', 0)} duplicates")
+```
+
+```python Using DocumentIndexer
+from langchat.utils.document_indexer import DocumentIndexer
+
+# Initialize DocumentIndexer (standalone)
+indexer = DocumentIndexer(
+    pinecone_api_key="your-pinecone-key",
+    pinecone_index_name="your-index",
+    openai_api_key="your-openai-key"
+)
+
+# Index document
+result = indexer.load_and_index_documents(
+    file_path="company-handbook.pdf",
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+print(f"✅ Indexed {result['chunks_indexed']} chunks")
+```
+</CodeGroup>
+
+## Indexing Multiple Documents
+
+### Batch Processing
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Index multiple documents at once
+result = langchat.load_and_index_multiple_documents(
+    file_paths=[
+        "product-catalog.pdf",
+        "faq-document.txt",
+        "pricing-guide.csv",
+        "company-policies.pdf"
+    ],
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+print(f"📊 Summary:")
+print(f"   Total chunks indexed: {result['total_chunks_indexed']}")
+print(f"   Total duplicates skipped: {result['total_chunks_skipped']}")
+print(f"   Files processed: {result['files_processed']}")
+print(f"   ✅ Succeeded: {result['files_succeeded']}")
+print(f"   ❌ Failed: {result['files_failed']}")
+
+# Check individual file results
+for file_result in result['results']:
+    status_icon = "✅" if file_result['status'] == "success" else "❌"
+    print(f"{status_icon} {file_result['file_path']}: {file_result.get('chunks_indexed', 0)} chunks")
+```
+
+## Using Namespaces
+
+### Organize Documents by Topic
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Index documents into different namespaces
+langchat.load_and_index_documents(
+    file_path="product-docs.pdf",
+    namespace="products"
+)
+
+langchat.load_and_index_documents(
+    file_path="support-articles.pdf",
+    namespace="support"
+)
+
+langchat.load_and_index_documents(
+    file_path="company-policies.pdf",
+    namespace="policies"
+)
+
+print("✅ Documents organized by namespace!")
+```
+
+## Building a Complete Knowledge Base
+
+### Complete Example
+
+```python
+import os
+from langchat import LangChat, LangChatConfig
+
+# Step 1: Initialize LangChat
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Step 2: Define your documents
+documents = {
+    "company-knowledge": [
+        "company-handbook.pdf",
+        "employee-guide.pdf",
+        "policies-and-procedures.pdf"
+    ],
+    "product-docs": [
+        "product-catalog.pdf",
+        "user-manuals.pdf",
+        "technical-specs.pdf"
+    ],
+    "support": [
+        "faq-document.txt",
+        "troubleshooting-guide.pdf",
+        "common-issues.csv"
+    ]
+}
+
+# Step 3: Index documents by namespace
+print("📚 Building knowledge base...\n")
+
+for namespace, files in documents.items():
+    print(f"📁 Indexing {namespace} namespace...")
+    
+    for file_path in files:
+        if os.path.exists(file_path):
+            result = langchat.load_and_index_documents(
+                file_path=file_path,
+                chunk_size=1000,
+                chunk_overlap=200,
+                namespace=namespace
+            )
+            print(f"   ✅ {file_path}: {result['chunks_indexed']} chunks")
+        else:
+            print(f"   ⚠️  {file_path}: File not found")
+
+print("\n🎉 Knowledge base ready!")
+
+# Step 4: Test your chatbot
+result = await langchat.chat(
+    query="What are our company policies?",
+    user_id="user123",
+    domain="support"
+)
+```
+
+## Custom Chunk Settings
+
+### Different Chunk Sizes for Different Documents
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Short documents: smaller chunks
+langchat.load_and_index_documents(
+    file_path="short-faq.txt",
+    chunk_size=500,
+    chunk_overlap=100
+)
+
+# Medium documents: default chunks
+langchat.load_and_index_documents(
+    file_path="medium-doc.pdf",
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+# Long documents: larger chunks
+langchat.load_and_index_documents(
+    file_path="long-manual.pdf",
+    chunk_size=2000,
+    chunk_overlap=400
+)
+```
+
+## Error Handling
+
+### Robust Document Indexing
+
+```python
+from langchat import LangChat, LangChatConfig
+from docsuite.exceptions import UnsupportedFileTypeError
+import os
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+def safe_index_document(file_path):
+    """Safely index a document with error handling."""
+    try:
+        if not os.path.exists(file_path):
+            print(f"❌ File not found: {file_path}")
+            return None
+        
+        result = langchat.load_and_index_documents(
+            file_path=file_path,
+            chunk_size=1000,
+            chunk_overlap=200
+        )
+        
+        if result['chunks_indexed'] == 0:
+            if result.get('chunks_skipped', 0) > 0:
+                print(f"⚠️  {file_path}: All chunks were duplicates")
+            else:
+                print(f"⚠️  {file_path}: No chunks indexed (empty document?)")
+        else:
+            print(f"✅ {file_path}: {result['chunks_indexed']} chunks indexed")
+        
+        return result
+        
+    except UnsupportedFileTypeError as e:
+        print(f"❌ {file_path}: Unsupported file type - {e}")
+        return None
+    except Exception as e:
+        print(f"❌ {file_path}: Error - {e}")
+        return None
+
+# Index documents with error handling
+files = ["doc1.pdf", "doc2.txt", "doc3.unknown"]
+
+for file_path in files:
+    safe_index_document(file_path)
+```
+
+## Monitoring Progress
+
+### Track Indexing Progress
+
+```python
+import time
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+def index_with_progress(file_path):
+    """Index document and show progress."""
+    print(f"📄 Processing: {file_path}")
+    start_time = time.time()
+    
+    result = langchat.load_and_index_documents(
+        file_path=file_path,
+        chunk_size=1000,
+        chunk_overlap=200
+    )
+    
+    elapsed = time.time() - start_time
+    chunks_per_second = result['chunks_indexed'] / elapsed if elapsed > 0 else 0
+    
+    print(f"   ✅ Indexed: {result['chunks_indexed']} chunks")
+    print(f"   ⏭️  Skipped: {result.get('chunks_skipped', 0)} duplicates")
+    print(f"   ⏱️  Time: {elapsed:.2f}s")
+    print(f"   ⚡ Speed: {chunks_per_second:.1f} chunks/second")
+    
+    return result
+
+# Index with progress tracking
+index_with_progress("large-document.pdf")
+```
+
+## Re-indexing Documents
+
+### Safe Re-indexing (Prevents Duplicates)
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# First time indexing
+print("First indexing...")
+result1 = langchat.load_and_index_documents(
+    file_path="document.pdf",
+    prevent_duplicates=True
+)
+print(f"Indexed: {result1['chunks_indexed']}, Skipped: {result1.get('chunks_skipped', 0)}")
+
+# Try to index again (safe - won't create duplicates)
+print("\nRe-indexing same document...")
+result2 = langchat.load_and_index_documents(
+    file_path="document.pdf",
+    prevent_duplicates=True
+)
+print(f"Indexed: {result2['chunks_indexed']}, Skipped: {result2.get('chunks_skipped', 0)}")
+
+# All chunks were skipped as duplicates ✅
+```
+
+## Integration with Chatbot
+
+### Index Documents Then Chat
+
+```python
+import asyncio
+from langchat import LangChat, LangChatConfig
+
+async def build_and_chat():
+    # Initialize
+    config = LangChatConfig.from_env()
+    langchat = LangChat(config=config)
+    
+    # Step 1: Index your documents
+    print("📚 Indexing documents...")
+    result = langchat.load_and_index_documents(
+        file_path="knowledge-base.pdf",
+        chunk_size=1000,
+        chunk_overlap=200
+    )
+    print(f"✅ Indexed {result['chunks_indexed']} chunks\n")
+    
+    # Step 2: Chat with your documents
+    print("💬 Chatting with your documents...\n")
+    
+    queries = [
+        "What is covered in the knowledge base?",
+        "Can you summarize the main topics?",
+        "What are the key points I should know?"
+    ]
+    
+    for query in queries:
+        print(f"❓ {query}")
+        result = await langchat.chat(
+            query=query,
+            user_id="user123",
+            domain="knowledge"
+        )
+        print(f"💡 {result['response']}\n")
+
+asyncio.run(build_and_chat())
+```
+
+## Next Steps
+
+- **[Document Indexing Guide](/guides/document-indexing)** - Complete guide from A to Z
+- **[DocumentIndexer API](/api-reference/document-indexer)** - Full API reference
+- **[Vector Search Guide](/guides/vector-search)** - Understand how search works
+- **[Basic Usage](/examples/basic-usage)** - More chatbot examples
+

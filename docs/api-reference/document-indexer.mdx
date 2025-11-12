@@ -1,0 +1,435 @@
+---
+title: DocumentIndexer API
+description: Complete API reference for DocumentIndexer - standalone document loading and indexing for Pinecone
+---
+
+import { ParamField } from 'mintlify';
+import { Callout } from 'mintlify';
+
+## Class: DocumentIndexer
+
+Standalone document loader and indexer for Pinecone. Only requires Pinecone API key and OpenAI API key for embeddings. Perfect for indexing documents without full LangChat setup.
+
+### Constructor
+
+```python
+DocumentIndexer(
+    pinecone_api_key: str,
+    pinecone_index_name: str,
+    openai_api_key: str,
+    embedding_model: str = "text-embedding-3-large"
+)
+```
+
+Creates a new DocumentIndexer instance.
+
+**Parameters:**
+
+<ParamField path="pinecone_api_key" type="str" required>
+  Your Pinecone API key. Get it from [pinecone.io](https://www.pinecone.io)
+</ParamField>
+
+<ParamField path="pinecone_index_name" type="str" required>
+  Name of your Pinecone index. Must be pre-created in your Pinecone dashboard.
+</ParamField>
+
+<ParamField path="openai_api_key" type="str" required>
+  Your OpenAI API key for generating embeddings. Get it from [platform.openai.com](https://platform.openai.com)
+</ParamField>
+
+<ParamField path="embedding_model" type="str" default="text-embedding-3-large">
+  OpenAI embedding model to use. Options:
+  - `"text-embedding-3-large"` (recommended, 3072 dimensions)
+  - `"text-embedding-3-small"` (faster, 1536 dimensions)
+  - `"text-embedding-ada-002"` (legacy, 1536 dimensions)
+</ParamField>
+
+**Example:**
+
+```python
+from langchat.utils.document_indexer import DocumentIndexer
+
+# Initialize DocumentIndexer
+indexer = DocumentIndexer(
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    openai_api_key="sk-...",
+    embedding_model="text-embedding-3-large"
+)
+```
+
+<Callout type="info">
+DocumentIndexer automatically connects to Pinecone and verifies the index is accessible on initialization.
+</Callout>
+
+### Methods
+
+#### `load_and_index_documents()`
+
+Load documents from a file, split them into chunks, and index them to Pinecone.
+
+```python
+def load_and_index_documents(
+    self,
+    file_path: str,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    namespace: Optional[str] = None,
+    prevent_duplicates: bool = True
+) -> Dict
+```
+
+**Parameters:**
+
+<ParamField path="file_path" type="str" required>
+  Path to the document file. Supports:
+  - PDF files (`.pdf`)
+  - Text files (`.txt`)
+  - CSV files (`.csv`)
+  - And more (see docsuite documentation)
+</ParamField>
+
+<ParamField path="chunk_size" type="int" default="1000">
+  Size of each text chunk in characters. Recommended values:
+  - Small documents: `500`
+  - Medium documents: `1000` (default)
+  - Large documents: `1500-2000`
+</ParamField>
+
+<ParamField path="chunk_overlap" type="int" default="200">
+  Overlap between chunks in characters. Should be 10-20% of chunk_size. Default `200` (20% of 1000).
+</ParamField>
+
+<ParamField path="namespace" type="str | None" default="None">
+  Optional Pinecone namespace to store documents in. Use namespaces to organize documents by topic, project, or department.
+</ParamField>
+
+<ParamField path="prevent_duplicates" type="bool" default="True">
+  If `True`, checks for existing documents before indexing to prevent duplicates. Uses SHA256 hash of file path + content.
+</ParamField>
+
+**Returns:**
+
+`Dict` with the following keys:
+- `status` (str): `"success"` or error status
+- `chunks_indexed` (int): Number of chunks successfully indexed
+- `chunks_skipped` (int): Number of duplicate chunks skipped (if `prevent_duplicates=True`)
+- `documents_loaded` (int): Number of documents loaded from file
+- `file_path` (str): Path to the indexed file
+- `namespace` (str | None): Namespace used (if any)
+- `message` (str, optional): Additional message (e.g., "No documents to index")
+
+**Example:**
+
+```python
+from langchat.utils.document_indexer import DocumentIndexer
+
+indexer = DocumentIndexer(
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    openai_api_key="sk-..."
+)
+
+# Index a single document
+result = indexer.load_and_index_documents(
+    file_path="document.pdf",
+    chunk_size=1000,
+    chunk_overlap=200,
+    namespace="company-docs",
+    prevent_duplicates=True
+)
+
+print(f"Indexed: {result['chunks_indexed']} chunks")
+print(f"Skipped: {result['chunks_skipped']} duplicates")
+```
+
+**Raises:**
+
+- `UnsupportedFileTypeError`: If file type is not supported by docsuite
+- `RuntimeError`: If indexing to Pinecone fails
+- `ValueError`: If required parameters are missing
+
+#### `load_and_index_multiple_documents()`
+
+Load multiple documents, split them, and index them to Pinecone in batch.
+
+```python
+def load_and_index_multiple_documents(
+    self,
+    file_paths: List[str],
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    namespace: Optional[str] = None,
+    prevent_duplicates: bool = True
+) -> Dict
+```
+
+**Parameters:**
+
+<ParamField path="file_paths" type="List[str]" required>
+  List of file paths to load and index. All files will be processed with the same chunk settings.
+</ParamField>
+
+<ParamField path="chunk_size" type="int" default="1000">
+  Size of each text chunk (same as `load_and_index_documents`)
+</ParamField>
+
+<ParamField path="chunk_overlap" type="int" default="200">
+  Overlap between chunks (same as `load_and_index_documents`)
+</ParamField>
+
+<ParamField path="namespace" type="str | None" default="None">
+  Optional namespace for all documents (same as `load_and_index_documents`)
+</ParamField>
+
+<ParamField path="prevent_duplicates" type="bool" default="True">
+  Prevent duplicate indexing (same as `load_and_index_documents`)
+</ParamField>
+
+**Returns:**
+
+`Dict` with the following keys:
+- `status` (str): `"completed"`
+- `total_chunks_indexed` (int): Total chunks indexed across all files
+- `total_chunks_skipped` (int): Total duplicate chunks skipped
+- `files_processed` (int): Total number of files processed
+- `files_succeeded` (int): Number of files successfully indexed
+- `files_failed` (int): Number of files that failed
+- `results` (List[Dict]): Detailed results for each file
+- `errors` (List[Dict] | None): List of errors (if any)
+
+**Example:**
+
+```python
+# Index multiple documents
+result = indexer.load_and_index_multiple_documents(
+    file_paths=[
+        "doc1.pdf",
+        "doc2.txt",
+        "data.csv"
+    ],
+    chunk_size=1000,
+    chunk_overlap=200,
+    namespace="project-docs"
+)
+
+print(f"Total chunks: {result['total_chunks_indexed']}")
+print(f"Files succeeded: {result['files_succeeded']}")
+print(f"Files failed: {result['files_failed']}")
+
+# Check individual file results
+for file_result in result['results']:
+    print(f"{file_result['file_path']}: {file_result['status']}")
+```
+
+### Properties
+
+#### `index`
+
+Access the Pinecone index directly (advanced usage).
+
+```python
+index: pinecone.Index
+```
+
+**Example:**
+
+```python
+# Access index stats
+stats = indexer.index.describe_index_stats()
+print(f"Total vectors: {stats.total_vector_count}")
+```
+
+#### `embeddings`
+
+Access the OpenAI embeddings model (advanced usage).
+
+```python
+embeddings: OpenAIEmbeddings
+```
+
+**Example:**
+
+```python
+# Generate custom embedding
+embedding = indexer.embeddings.embed_query("custom text")
+print(f"Embedding dimension: {len(embedding)}")
+```
+
+#### `vector_store`
+
+Access the LangChain PineconeVectorStore (advanced usage).
+
+```python
+vector_store: PineconeVectorStore
+```
+
+**Example:**
+
+```python
+# Use vector store directly
+retriever = indexer.vector_store.as_retriever(search_kwargs={"k": 5})
+```
+
+## Usage Examples
+
+### Basic Single Document Indexing
+
+```python
+from langchat.utils.document_indexer import DocumentIndexer
+
+# Initialize
+indexer = DocumentIndexer(
+    pinecone_api_key="pcsk-...",
+    pinecone_index_name="my-index",
+    openai_api_key="sk-..."
+)
+
+# Index document
+result = indexer.load_and_index_documents("document.pdf")
+print(f"✅ Indexed {result['chunks_indexed']} chunks")
+```
+
+### Batch Document Indexing
+
+```python
+# Index multiple documents
+files = ["doc1.pdf", "doc2.txt", "doc3.csv"]
+
+result = indexer.load_and_index_multiple_documents(
+    file_paths=files,
+    chunk_size=1000,
+    chunk_overlap=200
+)
+
+print(f"✅ Total: {result['total_chunks_indexed']} chunks")
+print(f"📄 Files: {result['files_succeeded']}/{result['files_processed']}")
+```
+
+### Using Namespaces
+
+```python
+# Organize documents by topic
+indexer.load_and_index_documents(
+    file_path="product-docs.pdf",
+    namespace="products"
+)
+
+indexer.load_and_index_documents(
+    file_path="support-articles.pdf",
+    namespace="support"
+)
+```
+
+### Error Handling
+
+```python
+from docsuite.exceptions import UnsupportedFileTypeError
+
+try:
+    result = indexer.load_and_index_documents("document.pdf")
+    
+    if result['chunks_indexed'] == 0:
+        print("⚠️  No chunks indexed")
+        if result.get('chunks_skipped', 0) > 0:
+            print("All chunks were duplicates")
+    
+except UnsupportedFileTypeError as e:
+    print(f"❌ Unsupported file type: {e}")
+except RuntimeError as e:
+    print(f"❌ Indexing failed: {e}")
+except Exception as e:
+    print(f"❌ Unexpected error: {e}")
+```
+
+### Custom Chunk Settings
+
+```python
+# For short documents
+result = indexer.load_and_index_documents(
+    file_path="short-doc.txt",
+    chunk_size=500,
+    chunk_overlap=100
+)
+
+# For long documents
+result = indexer.load_and_index_documents(
+    file_path="long-doc.pdf",
+    chunk_size=2000,
+    chunk_overlap=400
+)
+```
+
+### Disabling Duplicate Prevention
+
+```python
+# Allow duplicates (not recommended)
+result = indexer.load_and_index_documents(
+    file_path="document.pdf",
+    prevent_duplicates=False
+)
+```
+
+## Integration with LangChat
+
+DocumentIndexer is automatically used by LangChat's `load_and_index_documents()` method:
+
+```python
+from langchat import LangChat, LangChatConfig
+
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
+
+# Uses DocumentIndexer internally
+result = langchat.load_and_index_documents("document.pdf")
+```
+
+## Advanced Usage
+
+### Custom Embedding Models
+
+```python
+# Use smaller, faster model
+indexer = DocumentIndexer(
+    pinecone_api_key="...",
+    pinecone_index_name="...",
+    openai_api_key="...",
+    embedding_model="text-embedding-3-small"  # Faster
+)
+```
+
+### Direct Index Access
+
+```python
+# Query index directly
+results = indexer.index.query(
+    vector=[0.0] * 3072,  # Dummy vector
+    top_k=5,
+    filter={"source_file": {"$eq": "document.pdf"}},
+    namespace="my-namespace"
+)
+```
+
+### Custom Vector Store Operations
+
+```python
+# Use LangChain retriever
+retriever = indexer.vector_store.as_retriever(
+    search_kwargs={"k": 10, "filter": {"namespace": "my-namespace"}}
+)
+
+# Retrieve documents
+docs = retriever.get_relevant_documents("query text")
+```
+
+## Related Documentation
+
+- **[Document Indexing Guide](/guides/document-indexing)** - Complete guide to document indexing
+- **[Vector Search Guide](/guides/vector-search)** - How vector search works
+- **[LangChat API](/api-reference/langchat)** - Main LangChat API with document indexing
+- **[Pinecone Adapter](/adapters/pinecone-adapter)** - Pinecone integration details
+
+---
+
+Questions? Check the [Document Indexing Guide](/guides/document-indexing) for detailed examples and best practices!
+
