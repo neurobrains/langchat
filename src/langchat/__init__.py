@@ -8,5 +8,6 @@ from langchat.core.engine import LangChatEngine
 from langchat.core.session import UserSession
 from langchat.config import LangChatConfig
 from langchat.main import LangChat
+from langchat.utils.document_indexer import DocumentIndexer
 
-__all__ = ["LangChat", "LangChatEngine", "UserSession", "LangChatConfig"]
+__all__ = ["LangChat", "LangChatEngine", "UserSession", "LangChatConfig", "DocumentIndexer"]
