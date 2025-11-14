@@ -1,241 +1,223 @@
 ---
-title: Getting Started
-description: Get up and running with LangChat in minutes. Welcome! This guide will help you build your first LangChat application in just a few minutes.
+title: LangChain Integration
+description: Learn how LangChat integrates with LangChain and leverages its powerful ecosystem
 ---
 
-import { Card, CardGroup } from 'mintlify';
 import { Callout } from 'mintlify';
+import { Card, CardGroup } from 'mintlify';
 
-## Prerequisites
+## About LangChain
 
-Before you begin, make sure you have:
+**LangChain** is a powerful framework for building applications with Large Language Models (LLMs). It provides a comprehensive set of tools, components, and integrations that make it easier to develop AI applications.
 
-- **Python 3.8+** installed
-- **OpenAI API Key(s)** - Get one at [platform.openai.com](https://platform.openai.com)
-- **Pinecone Account** - Sign up at [pinecone.io](https://www.pinecone.io)
-- **Supabase Project** - Create one at [supabase.com](https://supabase.com)
+LangChat is built on top of LangChain, leveraging its robust ecosystem to provide you with a production-ready chatbot framework.
+
+### Why LangChain?
+
+LangChain offers:
+
+- **🔧 Modular Components**: Reusable building blocks for AI applications
+- **🔌 Extensive Integrations**: Support for 100+ integrations (OpenAI, Pinecone, Supabase, etc.)
+- **📚 Document Loaders**: Easy document loading from various sources
+- **🔍 Vector Stores**: Built-in support for vector databases
+- **🔄 Chains**: Composable workflows for complex AI applications
+- **💾 Memory Management**: Built-in conversation memory handling
 
 <Callout type="info">
-You can use multiple OpenAI API keys for automatic rotation and better fault tolerance.
+LangChat uses LangChain's document loaders, text splitters, vector stores, and chains to provide a complete chatbot solution.
 </Callout>
 
-## Quick Start (5 Minutes)
+## LangChain Components in LangChat
 
-### Step 1: Install LangChat
+### Document Loaders
 
-Install LangChat using pip:
-
-```bash
-pip install langchat
-```
-
-Or install from source:
-
-```bash
-git clone https://github.com/neurobrains/langchat.git
-cd langchat
-pip install -e .
-```
-
-### Step 2: Configure Your Environment
-
-Create a `.env` file or set environment variables:
-
-```bash
-export OPENAI_API_KEYS="your-key-1,your-key-2"  # Multiple keys for rotation
-export PINECONE_API_KEY="your-pinecone-key"
-export PINECONE_INDEX_NAME="your-index-name"
-export SUPABASE_URL="https://your-project.supabase.co"
-export SUPABASE_KEY="your-supabase-key"
-```
-
-<Callout type="warning">
-Make sure your Pinecone index is already created and your Supabase project is set up.
-</Callout>
-
-### Step 3: Write Your First Chatbot
-
-Create a file `main.py`:
+LangChat uses LangChain's document loaders through `docsuite`:
 
 ```python
-import asyncio
+from docsuite import UnifiedDocumentLoader
+
+# LangChain-powered document loading
+loader = UnifiedDocumentLoader("document.pdf")
+documents = loader.load()
+```
+
+**Supported formats:**
+- PDF files
+- Text files
+- CSV files
+- And more (via LangChain loaders)
+
+### Text Splitters
+
+LangChat uses LangChain's `RecursiveCharacterTextSplitter`:
+
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# LangChain text splitter
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200
+)
+chunks = text_splitter.split_documents(documents)
+```
+
+### Vector Stores
+
+LangChat integrates with LangChain's Pinecone vector store:
+
+```python
+from langchain_pinecone.vectorstores import PineconeVectorStore
+
+# LangChain Pinecone integration
+vector_store = PineconeVectorStore(
+    index=pinecone_index,
+    embedding=embeddings
+)
+```
+
+### Embeddings
+
+LangChat uses LangChain's OpenAI embeddings:
+
+```python
+from langchain_openai import OpenAIEmbeddings
+
+# LangChain OpenAI embeddings
+embeddings = OpenAIEmbeddings(
+    model="text-embedding-3-large"
+)
+```
+
+## LangChain Chains in LangChat
+
+LangChat uses LangChain's chain architecture for:
+
+1. **Standalone Question Generation**: Converts conversational queries to standalone questions
+2. **Retrieval-Augmented Generation (RAG)**: Combines retrieval and generation
+3. **Conversation Chains**: Manages multi-turn conversations
+
+### Example Chain Flow
+
+```
+User Query
+    ↓
+Standalone Question Chain (LangChain)
+    ↓
+Vector Retrieval (LangChain)
+    ↓
+Reranking (Flashrank)
+    ↓
+LLM Chain (LangChain)
+    ↓
+Response
+```
+
+## Using LangChain Directly
+
+While LangChat provides a high-level interface, you can also access LangChain components directly:
+
+```python
 from langchat import LangChat, LangChatConfig
 
-async def main():
-    # Load configuration from environment variables
-    config = LangChatConfig.from_env()
-    
-    # Initialize LangChat
-    langchat = LangChat(config=config)
-    
-    # Chat with the AI
-    # Note: Response is automatically displayed in a Rich panel box in the console
-    # You don't need to print it manually
-    result = await langchat.chat(
-        query="Hello! What can you help me with?",
-        user_id="user123",
-        domain="general"
-    )
-    
-    # Response already shown in panel above
-    # Access response data programmatically if needed:
-    print(f"Status: {result['status']}")
-    print(f"Response Time: {result.get('response_time', 0):.2f}s")
+config = LangChatConfig.from_env()
+langchat = LangChat(config=config)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# Access LangChain components
+engine = langchat.engine
+vector_adapter = engine.vector_adapter
+
+# Use LangChain vector store directly
+vector_store = vector_adapter.vector_store
+retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+
+# Use LangChain embeddings
+embeddings = vector_adapter.embeddings
+query_embedding = embeddings.embed_query("your query")
 ```
 
-### Step 4: Run It!
+## LangChain Version Compatibility
 
-```bash
-python main.py
-```
+LangChat is compatible with:
 
-<Callout type="success">
-🎉 Congratulations! You just built your first LangChat application!
+- **LangChain**: `0.3.27`
+- **LangChain Core**: `>=0.3.72,<1.0.0`
+- **LangChain Community**: `>=0.3.0,<0.4.0`
+- **LangChain OpenAI**: `>=0.2.0,<0.3.0`
+- **LangChain Pinecone**: `>=0.1.0,<0.3.0`
+
+<Callout type="warning">
+Make sure your LangChain versions are compatible. LangChat handles version management automatically.
 </Callout>
 
-## Using LangChat as an API Server
+## Extending with LangChain
 
-LangChat can also run as a FastAPI server with an auto-generated frontend interface.
+You can extend LangChat using LangChain components:
 
-### Create API Server
-
-Create `server.py`:
+### Custom Document Loaders
 
 ```python
-from langchat.api.app import create_app
-from langchat.config import LangChatConfig
-import uvicorn
+from langchain_community.document_loaders import PyPDFLoader
 
-# Create configuration
-config = LangChatConfig.from_env()
-
-# Create FastAPI app (auto-generates interface and Dockerfile)
-app = create_app(
-    config=config,
-    auto_generate_interface=True,
-    auto_generate_docker=True
-)
-
-if __name__ == "__main__":
-    print(f"🚀 Starting LangChat API server on port {config.server_port}")
-    print(f"📱 Chat interface: http://localhost:{config.server_port}/frontend")
-    print(f"📡 API endpoint: http://localhost:{config.server_port}/chat")
-    uvicorn.run(app, host="0.0.0.0", port=config.server_port)
+# Use custom LangChain loader
+loader = PyPDFLoader("document.pdf")
+documents = loader.load()
 ```
 
-### Run the Server
-
-```bash
-python server.py
-```
-
-Now you can:
-
-- **Frontend Interface**: Visit `http://localhost:8000/frontend`
-- **API Endpoint**: POST to `http://localhost:8000/chat`
-- **Health Check**: GET `http://localhost:8000/health`
-
-## Configuration Options
-
-LangChat supports configuration in multiple ways:
-
-### 1. Environment Variables (Recommended)
+### Custom Text Splitters
 
 ```python
-config = LangChatConfig.from_env()
-```
+from langchain.text_splitter import CharacterTextSplitter
 
-### 2. Direct Configuration
-
-```python
-config = LangChatConfig(
-    openai_api_keys=["sk-...", "sk-..."],
-    openai_model="gpt-4o-mini",
-    openai_temperature=1.0,
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    supabase_url="https://xxxxx.supabase.co",
-    supabase_key="eyJhbGc...",
-    server_port=8000
+# Use custom LangChain splitter
+splitter = CharacterTextSplitter(
+    separator="\n\n",
+    chunk_size=1000,
+    chunk_overlap=200
 )
 ```
 
-### 3. Hybrid Approach
+### Custom Chains
 
 ```python
-config = LangChatConfig.from_env()
-# Override specific settings
-config.openai_model = "gpt-4"
-config.server_port = 8080
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+
+# Create custom LangChain chain
+prompt = PromptTemplate(
+    input_variables=["question"],
+    template="Answer: {question}"
+)
+chain = LLMChain(llm=llm, prompt=prompt)
 ```
 
-<CardGroup cols={2}>
-  <Card
-    title="Configuration Guide"
-    icon="gear"
-    href="/guides/configuration"
-  >
-    Learn about all configuration options
-  </Card>
-  <Card
-    title="Custom Prompts"
-    icon="comments"
-    href="/guides/prompts"
-  >
-    Customize your chatbot's behavior
-  </Card>
-</CardGroup>
+## Benefits of LangChain Integration
 
-## What Happens Under the Hood?
+1. **🔌 Ecosystem**: Access to 100+ LangChain integrations
+2. **📚 Documentation**: Extensive LangChain documentation and examples
+3. **🔄 Compatibility**: Works with existing LangChain code
+4. **🚀 Performance**: Optimized LangChain components
+5. **🛠️ Flexibility**: Easy to extend and customize
 
-When you initialize LangChat, it automatically:
+## Learning Resources
 
-1. **Initializes Adapters**: Sets up OpenAI, Pinecone, Supabase, and Flashrank
-2. **Creates Database Tables**: Sets up chat history, metrics, and feedback tables
-3. **Downloads Reranker Models**: Automatically downloads Flashrank reranker models
-4. **Sets Up Sessions**: Prepares user session management
-
-<Callout type="info">
-All initialization happens automatically - you don't need to configure each component separately!
-</Callout>
+- **[LangChain Documentation](https://python.langchain.com/)** - Official LangChain docs
+- **[LangChain Integrations](https://python.langchain.com/docs/integrations/)** - Available integrations
+- **[LangChain Examples](https://github.com/langchain-ai/langchain/tree/master/templates)** - Example projects
 
 ## Next Steps
 
-Now that you have LangChat running, explore these topics:
+Now that you understand LangChain integration:
 
-- **[Configuration Guide](/guides/configuration)** - Customize LangChat for your needs
-- **[Custom Prompts](/guides/prompts)** - Make your chatbot unique
-- **[API Reference](/api-reference/langchat)** - Learn about all available methods
-- **[Examples](/examples/basic-usage)** - See more complex use cases
+1. **[Quick Start](/quick-start)** - Get started with LangChat
+2. **[Document Indexing](/guides/document-indexing)** - Index documents using LangChain loaders
+3. **[Vector Search](/guides/vector-search)** - Understand vector search with LangChain
+4. **[Customization](/advanced/customization)** - Extend LangChat with LangChain
 
-## Common Issues
-
-### Issue: "Supabase URL and key must be provided"
-
-**Solution**: Make sure you've set `SUPABASE_URL` and `SUPABASE_KEY` environment variables.
-
-### Issue: "Pinecone index name must be provided"
-
-**Solution**: Create a Pinecone index first, then set `PINECONE_INDEX_NAME`.
-
-### Issue: "OpenAI API keys must be provided"
-
-**Solution**: Set `OPENAI_API_KEYS` or `OPENAI_API_KEY` environment variable.
-
-### Issue: Reranker model download fails
-
-**Solution**: The reranker model is downloaded automatically to `rerank_models/`. Make sure you have write permissions.
-
-## Need Help?
-
-- Check our [Troubleshooting Guide](/advanced/troubleshooting)
-- Open an issue on [GitHub](https://github.com/neurobrains/langchat/issues)
-- Review the [API Reference](/api-reference/langchat)
+<Callout type="info">
+**Need help? Reach out!** Join our [Discord community](https://discord.gg/v9rqMDR2) for support and discussions.
+</Callout>
 
 ---
 
-Ready to build something amazing? Let's continue with [Configuration](/guides/configuration)!
-
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
