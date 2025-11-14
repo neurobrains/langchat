@@ -2,6 +2,10 @@
   "$schema": "https://mintlify.com/schema.json",
   "name": "LangChat",
   "favicon": "/favicon.png",
+  "logo": {
+    "light": "/logo.png",
+    "dark": "/logo.png"
+  },
   "colors": {
     "primary": "#6366F1",
     "light": "#818CF8",
