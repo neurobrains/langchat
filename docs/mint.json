@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/schema.json",
   "name": "LangChat",
-  "favicon": "/favicon.svg",
+  "favicon": "https://i.postimg.cc/prp9gdxq/Chat-GPT-Image-Nov-14-2025-05-55-47-PM.png",
   "colors": {
     "primary": "#6366F1",
     "light": "#818CF8",
