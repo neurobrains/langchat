@@ -1,0 +1,40 @@
+name: 🚀 Auto Publish langchat to PyPI
+
+on:
+  push:
+    branches:
+      - main  # Only deploy when main branch is updated
+
+jobs:
+  build-and-publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # 3️⃣ Install build tools
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      # 4️⃣ Build package
+      - name: Build distribution
+        run: python -m build
+
+      # 5️⃣ Publish to PyPI (existing langchat project)
+      - name: Upload to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python -m twine upload --non-interactive dist/*
