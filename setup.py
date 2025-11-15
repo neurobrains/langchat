@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="langchat",
-    version="0.0.3",
+    version="0.0.4",
     author="Sifat Hasan <sihabhossan633@gmail.com>, NeuroBrain",
     author_email="contact@neurobrain.co",
     description="A conversational AI library with vector search capabilities",

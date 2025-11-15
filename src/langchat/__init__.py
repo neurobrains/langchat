@@ -9,5 +9,6 @@ from langchat.core.session import UserSession
 from langchat.config import LangChatConfig
 from langchat.main import LangChat
 from langchat.utils.document_indexer import DocumentIndexer
+from langchat.exceptions import UnsupportedFileTypeError
 
-__all__ = ["LangChat", "LangChatEngine", "UserSession", "LangChatConfig", "DocumentIndexer"]
+__all__ = ["LangChat", "LangChatEngine", "UserSession", "LangChatConfig", "DocumentIndexer", "UnsupportedFileTypeError"]

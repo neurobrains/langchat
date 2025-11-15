@@ -9,7 +9,7 @@ import uuid
 import hashlib
 from typing import Optional, List, Dict
 from docsuite import UnifiedDocumentLoader
-from docsuite.exceptions import UnsupportedFileTypeError
+from langchat.exceptions import UnsupportedFileTypeError
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
@@ -196,6 +196,11 @@ class DocumentIndexer:
             logger.error(f"Unsupported file type: {str(e)}")
             raise
         except Exception as e:
+            # Check if the error is related to unsupported file types
+            error_msg = str(e).lower()
+            if any(keyword in error_msg for keyword in ['unsupported', 'file type', 'format not supported', 'cannot load']):
+                logger.error(f"Unsupported file type: {str(e)}")
+                raise UnsupportedFileTypeError(f"File type not supported: {str(e)}")
             logger.error(f"Error loading document: {str(e)}")
             raise
 
