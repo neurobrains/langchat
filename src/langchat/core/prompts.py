@@ -3,11 +3,6 @@ Prompt templates and question generation utilities.
 """
 
 import warnings
-
-# Suppress warnings before importing langchain
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", message=".*deprecated.*")
-
 from typing import List, Optional, Tuple
 
 from langchain.chains import LLMChain
@@ -15,6 +10,10 @@ from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
 from langchat.adapters.services.openai_service import OpenAILLMService
+
+# Suppress warnings before importing langchain
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=".*deprecated.*")
 
 
 def create_standalone_question_prompt(

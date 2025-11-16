@@ -132,7 +132,6 @@ class IDManager:
             self.initialize()
 
         attempts = 0
-        last_error = None
 
         while attempts < self.retry_attempts:
             try:
@@ -150,7 +149,6 @@ class IDManager:
 
             except Exception as e:
                 attempts += 1
-                last_error = e
 
                 # Check if it's a duplicate key error
                 error_str = str(e).lower()

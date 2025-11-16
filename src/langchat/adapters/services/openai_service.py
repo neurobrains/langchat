@@ -93,4 +93,4 @@ class OpenAILLMService:
 
                 raise Exception(
                     f"All API keys exhausted after {attempts} attempts. Last error: {str(last_error)}"
-                )
+                ) from last_error

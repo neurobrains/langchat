@@ -72,7 +72,6 @@ class DocumentIndexer:
 
         # Verify index is accessible and get dimension
         try:
-            stats = self.index.describe_index_stats()
             # Get dimension from index stats (if available) or use default
             # For OpenAI embeddings, dimensions are typically 1536 (ada-002) or 3072 (text-embedding-3-large)
             # We'll determine it from the embedding model
@@ -83,10 +82,11 @@ class DocumentIndexer:
             else:
                 # Default to 1536 for older models
                 self.embedding_dimension = 1536
+            self.index.describe_index_stats()
             logger.info(f"Successfully connected to Pinecone index: {pinecone_index_name}")
         except Exception as e:
             logger.error(f"Error connecting to Pinecone index: {str(e)}")
-            raise RuntimeError(f"Error connecting to Pinecone: {str(e)}")
+            raise RuntimeError(f"Error connecting to Pinecone: {str(e)}") from e
 
     def _generate_document_hash(self, file_path: str, chunk_content: str) -> str:
         """
@@ -198,7 +198,7 @@ class DocumentIndexer:
                 for keyword in ["unsupported", "file type", "format not supported", "cannot load"]
             ):
                 logger.error(f"Unsupported file type: {str(e)}")
-                raise UnsupportedFileTypeError(f"File type not supported: {str(e)}")
+                raise UnsupportedFileTypeError(f"File type not supported: {str(e)}") from e
             logger.error(f"Error loading document: {str(e)}")
             raise
 
@@ -322,7 +322,7 @@ class DocumentIndexer:
 
         except Exception as e:
             logger.error(f"Error indexing documents to Pinecone: {str(e)}")
-            raise RuntimeError(f"Failed to index documents: {str(e)}")
+            raise RuntimeError(f"Failed to index documents: {str(e)}") from e
 
     def load_and_index_multiple_documents(
         self,

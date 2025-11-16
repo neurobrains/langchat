@@ -21,10 +21,10 @@ except ImportError:
         except ImportError:
             try:
                 from langchain.retrievers.document_compressors import FlashrankRerank
-            except ImportError:
+            except ImportError as err:
                 raise ImportError(
                     "Could not import FlashrankRerank. Please install langchain and langchain-community: pip install langchain langchain-community"
-                )
+                ) from err
 
 try:
     from langchain.retrievers.contextual_compression import (
@@ -33,10 +33,10 @@ try:
 except ImportError:
     try:
         from langchain_core.retrievers import ContextualCompressionRetriever
-    except ImportError:
+    except ImportError as err:
         raise ImportError(
             "Could not import ContextualCompressionRetriever. Please install langchain: pip install langchain"
-        )
+        ) from err
 
 
 class FlashrankRerankAdapter:

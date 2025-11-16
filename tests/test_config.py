@@ -2,11 +2,11 @@
 Test configuration functionality.
 """
 
+import importlib.util
 from pathlib import Path
 
 # Import config directly to avoid triggering __init__.py imports
 config_module_path = Path(__file__).parent.parent / "src" / "langchat" / "config.py"
-import importlib.util
 
 spec = importlib.util.spec_from_file_location("langchat.config", config_module_path)
 config_module = importlib.util.module_from_spec(spec)

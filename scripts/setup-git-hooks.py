@@ -6,11 +6,12 @@ Works on Windows, Linux, and Mac.
 """
 
 import os
-import stat
-import shutil
-import sys
 import platform
+import shutil
+import stat
+import sys
 from pathlib import Path
+
 
 def make_executable(filepath):
     """Make a file executable."""
@@ -20,6 +21,7 @@ def make_executable(filepath):
     except Exception:
         pass  # On Windows, this might not work, but that's okay
 
+
 def create_universal_wrapper(hook_name, hooks_target_dir, hooks_source_dir, python_exe):
     """Create a universal shell script wrapper for Python hooks that works on Windows (Git Bash) and Unix."""
     hook_file = hooks_target_dir / hook_name
@@ -28,19 +30,19 @@ def create_universal_wrapper(hook_name, hooks_target_dir, hooks_source_dir, pyth
     # Convert Windows paths to Unix-style for Git Bash compatibility
     if platform.system() == "Windows":
         # Convert Windows path to Git Bash compatible path
-        source_script_str = str(source_script).replace('\\', '/')
+        source_script_str = str(source_script).replace("\\", "/")
         # Handle drive letters (E:/path -> /e/path for Git Bash)
-        if len(source_script_str) > 1 and source_script_str[1] == ':':
+        if len(source_script_str) > 1 and source_script_str[1] == ":":
             drive_letter = source_script_str[0].lower()
-            source_script_str = f'/{drive_letter}{source_script_str[2:]}'
-        python_exe_str = str(python_exe).replace('\\', '/')
-        if len(python_exe_str) > 1 and python_exe_str[1] == ':':
+            source_script_str = f"/{drive_letter}{source_script_str[2:]}"
+        python_exe_str = str(python_exe).replace("\\", "/")
+        if len(python_exe_str) > 1 and python_exe_str[1] == ":":
             drive_letter = python_exe_str[0].lower()
-            python_exe_str = f'/{drive_letter}{python_exe_str[2:]}'
+            python_exe_str = f"/{drive_letter}{python_exe_str[2:]}"
     else:
         source_script_str = str(source_script)
         python_exe_str = python_exe
-    
+
     # Create shell script that works with Git Bash and Unix shells
     shell_content = f'''#!/bin/sh
 # {hook_name} hook wrapper
@@ -60,10 +62,11 @@ fi
 # Execute the hook script
 exec "$PYTHON_CMD" "{source_script_str}" "$@"
 '''
-    with open(hook_file, 'w', encoding='utf-8', newline='\n') as f:
+    with open(hook_file, "w", encoding="utf-8", newline="\n") as f:
         f.write(shell_content)
     make_executable(hook_file)
     return hook_file
+
 
 def setup_hooks():
     """Set up git hooks by copying from scripts/hooks/ to .git/hooks/."""
@@ -71,33 +74,33 @@ def setup_hooks():
     repo_root = script_dir.parent
     hooks_source_dir = script_dir / "hooks"
     hooks_target_dir = repo_root / ".git" / "hooks"
-    
+
     if not hooks_source_dir.exists():
         print(f"❌ Hooks source directory not found: {hooks_source_dir}")
         return False
-    
+
     if not hooks_target_dir.exists():
         hooks_target_dir.mkdir(parents=True, exist_ok=True)
         print(f"Created hooks directory: {hooks_target_dir}")
-    
+
     # Get Python executable
     python_exe = sys.executable
-    
+
     # Detect Windows
-    is_windows = platform.system() == "Windows"
-    
+    platform.system() == "Windows"
+
     # List of hooks to copy
     hook_files = ["pre-commit", "pre-push", "prepare-commit-msg"]
-    
+
     success = True
     for hook_name in hook_files:
         source_file = hooks_source_dir / hook_name
         target_file = hooks_target_dir / hook_name
-        
+
         if not source_file.exists():
             print(f"⚠ {hook_name} source file not found: {source_file}")
             continue
-        
+
         try:
             # For Python hooks, create a universal shell script wrapper
             if hook_name in ["pre-commit", "pre-push"]:
@@ -112,13 +115,14 @@ def setup_hooks():
         except Exception as e:
             print(f"❌ Failed to install {hook_name}: {e}")
             success = False
-    
+
     return success
+
 
 if __name__ == "__main__":
     print("Setting up git hooks...")
     print("=" * 60)
-    
+
     if setup_hooks():
         print("=" * 60)
         print("\n✅ Git hooks setup complete!")
@@ -128,7 +132,9 @@ if __name__ == "__main__":
         print("  - prepare-commit-msg: Automatically adds DCO sign-off (bash script)")
         print("\nHooks source: scripts/hooks/")
         print("Hooks target: .git/hooks/")
-        print("\nNote: Shell script wrappers are created that work on Windows (Git Bash), Linux, and Mac")
+        print(
+            "\nNote: Shell script wrappers are created that work on Windows (Git Bash), Linux, and Mac"
+        )
     else:
         print("\n❌ Failed to setup some hooks")
         sys.exit(1)

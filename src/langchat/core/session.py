@@ -3,11 +3,6 @@ User session management for LangChat.
 """
 
 import warnings
-
-# Suppress warnings before importing langchain
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", message=".*deprecated.*")
-
 from datetime import datetime, timezone
 from typing import List, Tuple
 
@@ -22,6 +17,10 @@ from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
 from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
 from langchat.config import LangChatConfig
 from langchat.logger import logger
+
+# Suppress warnings before importing langchain
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=".*deprecated.*")
 
 
 class UserSession:

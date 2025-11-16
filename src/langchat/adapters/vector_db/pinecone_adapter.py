@@ -57,7 +57,7 @@ class PineconeVectorAdapter:
             logger.info(f"Successfully connected to Pinecone index: {index_name}")
         except Exception as e:
             logger.error(f"Error connecting to Pinecone index: {str(e)}")
-            raise RuntimeError(f"Error loading Pinecone: {str(e)}")
+            raise RuntimeError(f"Error loading Pinecone: {str(e)}") from e
 
     def get_retriever(self, k: int = 5):
         """

@@ -3,10 +3,10 @@ LangChat Engine - Main entry point for using LangChat.
 """
 
 import asyncio
-import os
 import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, Optional
 
 from rich.console import Console
@@ -103,8 +103,8 @@ class LangChatEngine:
 
         # Initialize Flashrank reranker
         # Use config's reranker_cache_dir (relative to current working directory)
-        reranker_cache_dir = self.config.reranker_cache_dir
-        os.makedirs(reranker_cache_dir, exist_ok=True)
+        reranker_cache_dir = Path(self.config.reranker_cache_dir)
+        reranker_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
 
         # Initialize ranker (this will download the model if not already present)
@@ -282,9 +282,9 @@ class LangChatEngine:
             # Create task to run in background (fire and forget for performance)
             try:
                 # Schedule the save task
-                task = asyncio.create_task(save_message_background())
                 # Store task reference to prevent garbage collection issues
                 # The task will complete in background
+                asyncio.create_task(save_message_background())
             except RuntimeError:
                 # Fallback if no event loop is running (shouldn't happen in async context)
                 # Use thread as fallback
@@ -350,6 +350,7 @@ class LangChatEngine:
 
             # Save error metrics in background (non-blocking)
             response_time = time.time() - start_time
+            error_message = str(e)
 
             def save_error_metrics_background():
                 try:
@@ -360,7 +361,7 @@ class LangChatEngine:
                             "request_time": datetime.now(timezone.utc).isoformat(),
                             "response_time": response_time,
                             "success": False,
-                            "error_message": str(e),
+                            "error_message": error_message,
                         },
                     )
                 except Exception as save_error:
