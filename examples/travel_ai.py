@@ -4,6 +4,7 @@ This uses the langchat library from src/langchat.
 """
 
 import logging
+
 from langchat.config import LangChatConfig
 
 # Set up logging
@@ -42,8 +43,9 @@ Standalone query:"""
 
 def main():
     """Main function to start the LangChat API server"""
-    from langchat.api.app import create_app
     import uvicorn
+
+    from langchat.api.app import create_app
 
     # Create configuration
     # You can customize this or use environment variables
@@ -60,9 +62,7 @@ def main():
     )
 
     # Create FastAPI app
-    app = create_app(
-        config=config, auto_generate_interface=True, auto_generate_docker=True
-    )
+    app = create_app(config=config, auto_generate_interface=True, auto_generate_docker=True)
 
     # Start the server
     logger.info(f"🚀 Starting LangChat API server on port {config.server_port}")

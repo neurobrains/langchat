@@ -2,9 +2,8 @@
 Tests for interface_generator utility.
 """
 
-import pytest
-from unittest.mock import patch
 from pathlib import Path
+
 from langchat.utils.interface_generator import generate_chat_interface
 
 
@@ -18,7 +17,7 @@ class TestInterfaceGenerator:
     def test_generate_chat_interface_creates_file(self, tmp_path):
         """Test that generate_chat_interface creates a file."""
         output_file = tmp_path / "chat_interface.html"
-        
+
         # Mock the function to avoid actual generation if complex
         # This tests that the function exists and can be called
         try:
@@ -27,4 +26,3 @@ class TestInterfaceGenerator:
         except Exception:
             # If the function needs specific setup, at least verify it exists
             assert callable(generate_chat_interface)
-

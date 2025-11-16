@@ -2,13 +2,10 @@
 Tests for docker_generator utility.
 """
 
-import pytest
-from unittest.mock import patch, mock_open
-from pathlib import Path
 from langchat.utils.docker_generator import (
+    extract_dependencies_from_setup,
     generate_dockerfile,
     generate_dockerignore,
-    extract_dependencies_from_setup,
 )
 
 
@@ -22,13 +19,13 @@ class TestDockerGenerator:
     def test_generate_dockerfile_creates_file(self, tmp_path):
         """Test that generate_dockerfile creates a file."""
         output_file = tmp_path / "Dockerfile"
-        
+
         result = generate_dockerfile(
             output_path=str(output_file),
             port=8000,
             python_version="3.11",
         )
-        
+
         assert result == str(output_file)
         assert output_file.exists()
         assert output_file.read_text()
@@ -37,12 +34,12 @@ class TestDockerGenerator:
     def test_generate_dockerfile_custom_port(self, tmp_path):
         """Test generate_dockerfile with custom port."""
         output_file = tmp_path / "Dockerfile"
-        
+
         generate_dockerfile(
             output_path=str(output_file),
             port=9000,
         )
-        
+
         content = output_file.read_text()
         assert "EXPOSE 9000" in content
 
@@ -53,9 +50,9 @@ class TestDockerGenerator:
     def test_generate_dockerignore_creates_file(self, tmp_path):
         """Test that generate_dockerignore creates a file."""
         output_file = tmp_path / ".dockerignore"
-        
+
         result = generate_dockerignore(output_path=str(output_file))
-        
+
         assert result == str(output_file)
         assert output_file.exists()
         content = output_file.read_text()
@@ -77,10 +74,9 @@ setup(
     ]
 )
         """)
-        
+
         deps = extract_dependencies_from_setup(str(setup_file))
-        
+
         assert isinstance(deps, list)
         assert len(deps) > 0
         assert any("fastapi" in dep for dep in deps)
-

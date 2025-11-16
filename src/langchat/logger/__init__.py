@@ -3,15 +3,14 @@ Custom logger with Rich library for beautiful console output.
 """
 
 import logging
+import os
 import sys
 import warnings
-import os
 from typing import Optional
 
-from rich.logging import RichHandler
 from rich.console import Console
+from rich.logging import RichHandler
 from rich.theme import Theme
-from rich import print as rprint
 
 # Suppress all LangChain deprecation warnings immediately on import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -63,9 +62,7 @@ def setup_logger(
     """
     # Create console if not provided
     if console is None:
-        console = Console(
-            theme=custom_theme, stderr=True if sys.stderr.isatty() else False
-        )
+        console = Console(theme=custom_theme, stderr=bool(sys.stderr.isatty()))
 
     # Create Rich handler with clean formatting
     handler = RichHandler(
@@ -102,8 +99,6 @@ def configure_logging():
     - Suppress LangChain deprecation warnings
     - Setup root logger with Rich handler
     """
-    import warnings
-
     # Suppress httpx and urllib3 verbose logs
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)

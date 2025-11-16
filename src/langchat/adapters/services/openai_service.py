@@ -2,8 +2,9 @@
 OpenAI LLM service with API key rotation support.
 """
 
-from typing import List
 from itertools import cycle
+from typing import List
+
 from langchain_openai import ChatOpenAI
 
 from langchat.logger import logger
@@ -47,7 +48,7 @@ class OpenAILLMService:
         return ChatOpenAI(
             model=self.model,
             temperature=self.temperature,
-            openai_api_key=self.current_key,
+            openai_api_key=self.current_key,  # type: ignore[call-arg]
             max_retries=1,
         )
 
@@ -83,9 +84,7 @@ class OpenAILLMService:
             except Exception as e:
                 attempts += 1
                 last_error = e
-                logger.warning(
-                    f"API call failed (attempt {attempts}/{self.max_retries}): {str(e)}"
-                )
+                logger.warning(f"API call failed (attempt {attempts}/{self.max_retries}): {str(e)}")
 
                 # Rotate to next key and retry
                 if attempts < self.max_retries:
@@ -94,4 +93,4 @@ class OpenAILLMService:
 
                 raise Exception(
                     f"All API keys exhausted after {attempts} attempts. Last error: {str(last_error)}"
-                )
+                ) from last_error

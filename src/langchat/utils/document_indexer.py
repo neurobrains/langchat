@@ -4,17 +4,18 @@ This module provides a simple interface to load documents and index them to Pine
 without requiring the full LangChat configuration.
 """
 
+import hashlib
 import os
 import uuid
-import hashlib
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
+
 from docsuite import UnifiedDocumentLoader
-from langchat.exceptions import UnsupportedFileTypeError
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from pinecone import Pinecone
 from langchain_pinecone.vectorstores import PineconeVectorStore
+from pinecone import Pinecone
 
+from langchat.exceptions import UnsupportedFileTypeError
 from langchat.logger import logger
 
 
@@ -65,17 +66,15 @@ class DocumentIndexer:
 
         # Initialize embeddings
         self.embeddings = OpenAIEmbeddings(
-            model=embedding_model, openai_api_key=openai_api_key
+            model=embedding_model,
+            openai_api_key=openai_api_key,  # type: ignore[call-arg]
         )
 
         # Initialize vector store
-        self.vector_store = PineconeVectorStore(
-            index=self.index, embedding=self.embeddings
-        )
+        self.vector_store = PineconeVectorStore(index=self.index, embedding=self.embeddings)
 
         # Verify index is accessible and get dimension
         try:
-            stats = self.index.describe_index_stats()
             # Get dimension from index stats (if available) or use default
             # For OpenAI embeddings, dimensions are typically 1536 (ada-002) or 3072 (text-embedding-3-large)
             # We'll determine it from the embedding model
@@ -86,10 +85,11 @@ class DocumentIndexer:
             else:
                 # Default to 1536 for older models
                 self.embedding_dimension = 1536
+            self.index.describe_index_stats()
             logger.info(f"Successfully connected to Pinecone index: {pinecone_index_name}")
         except Exception as e:
             logger.error(f"Error connecting to Pinecone index: {str(e)}")
-            raise RuntimeError(f"Error connecting to Pinecone: {str(e)}")
+            raise RuntimeError(f"Error connecting to Pinecone: {str(e)}") from e
 
     def _generate_document_hash(self, file_path: str, chunk_content: str) -> str:
         """
@@ -106,9 +106,7 @@ class DocumentIndexer:
         content = f"{file_path}:{chunk_content}"
         return hashlib.sha256(content.encode()).hexdigest()
 
-    def _check_chunk_exists(
-        self, chunk_hash: str, namespace: Optional[str] = None
-    ) -> bool:
+    def _check_chunk_exists(self, chunk_hash: str, namespace: Optional[str] = None) -> bool:
         """
         Check if a chunk with the given hash already exists in Pinecone.
 
@@ -198,9 +196,12 @@ class DocumentIndexer:
         except Exception as e:
             # Check if the error is related to unsupported file types
             error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['unsupported', 'file type', 'format not supported', 'cannot load']):
+            if any(
+                keyword in error_msg
+                for keyword in ["unsupported", "file type", "format not supported", "cannot load"]
+            ):
                 logger.error(f"Unsupported file type: {str(e)}")
-                raise UnsupportedFileTypeError(f"File type not supported: {str(e)}")
+                raise UnsupportedFileTypeError(f"File type not supported: {str(e)}") from e
             logger.error(f"Error loading document: {str(e)}")
             raise
 
@@ -220,7 +221,9 @@ class DocumentIndexer:
             length_function=len,
         )
 
-        logger.info(f"Splitting documents into chunks (size: {chunk_size}, overlap: {chunk_overlap})")
+        logger.info(
+            f"Splitting documents into chunks (size: {chunk_size}, overlap: {chunk_overlap})"
+        )
         chunks = text_splitter.split_documents(documents)
         logger.info(f"Created {len(chunks)} chunks from {len(documents)} document(s)")
 
@@ -232,7 +235,7 @@ class DocumentIndexer:
             logger.info("Checking for duplicate chunks...")
             for chunk in chunks:
                 chunk_hash = self._generate_document_hash(file_path, chunk.page_content)
-                
+
                 # Add hash to metadata for future duplicate detection
                 if not chunk.metadata:
                     chunk.metadata = {}
@@ -245,8 +248,10 @@ class DocumentIndexer:
                     logger.debug(f"Skipping duplicate chunk (hash: {chunk_hash[:8]}...)")
                 else:
                     chunks_to_index.append(chunk)
-            
-            logger.info(f"Found {chunks_skipped} duplicate chunks, {len(chunks_to_index)} new chunks to index")
+
+            logger.info(
+                f"Found {chunks_skipped} duplicate chunks, {len(chunks_to_index)} new chunks to index"
+            )
         else:
             # Add metadata without duplicate checking
             for chunk in chunks:
@@ -320,7 +325,7 @@ class DocumentIndexer:
 
         except Exception as e:
             logger.error(f"Error indexing documents to Pinecone: {str(e)}")
-            raise RuntimeError(f"Failed to index documents: {str(e)}")
+            raise RuntimeError(f"Failed to index documents: {str(e)}") from e
 
     def load_and_index_multiple_documents(
         self,
@@ -386,4 +391,3 @@ class DocumentIndexer:
             "results": results,
             "errors": errors if errors else None,
         }
-

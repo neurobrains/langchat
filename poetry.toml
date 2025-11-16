@@ -1,0 +1,9 @@
+[virtualenvs]
+create = true
+in-project = true
+path = ".venv"
+
+[virtualenvs.options]
+no-pip = false
+no-setuptools = false
+

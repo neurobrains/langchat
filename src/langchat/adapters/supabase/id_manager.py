@@ -3,7 +3,7 @@ ID Manager module for handling sequential IDs with error recovery and conflict p
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from langchat.logger import logger
 
@@ -13,9 +13,7 @@ class IDManager:
     Manages sequential IDs for database tables with conflict resolution.
     """
 
-    def __init__(
-        self, supabase_client, initial_value: int = 1, retry_attempts: int = 3
-    ):
+    def __init__(self, supabase_client, initial_value: int = 1, retry_attempts: int = 3):
         """
         Initialize ID Manager.
 
@@ -67,9 +65,7 @@ class IDManager:
             # Set default values if initialization fails
             self.table_counters["chat_history"] = self.initial_value
             self.table_counters["request_metrics"] = self.initial_value
-            self.initialized = (
-                True  # Mark as initialized even on error to prevent retry loops
-            )
+            self.initialized = True  # Mark as initialized even on error to prevent retry loops
         finally:
             self._initializing = False
 
@@ -80,9 +76,7 @@ class IDManager:
         try:
             # First get the total count of rows in the table
             count_response = (
-                self.supabase_client.table(table_name)
-                .select("*", count="exact")
-                .execute()
+                self.supabase_client.table(table_name).select("*", count="exact").execute()
             )
 
             row_count = count_response.count if hasattr(count_response, "count") else 0
@@ -123,9 +117,7 @@ class IDManager:
         self.table_counters[table_name] += 1
         return current_id
 
-    def insert_with_retry(
-        self, table_name: str, data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    def insert_with_retry(self, table_name: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Insert data into the specified table with automatic ID generation and retry on conflicts.
 
@@ -140,7 +132,6 @@ class IDManager:
             self.initialize()
 
         attempts = 0
-        last_error = None
 
         while attempts < self.retry_attempts:
             try:
@@ -151,16 +142,13 @@ class IDManager:
                 insert_data = {"id": current_id, **data}
 
                 # Attempt to insert
-                response = (
-                    self.supabase_client.table(table_name).insert(insert_data).execute()
-                )
+                response = self.supabase_client.table(table_name).insert(insert_data).execute()
 
                 # If successful, return the response
-                return response.data
+                return response.data  # type: ignore[no-any-return]
 
             except Exception as e:
                 attempts += 1
-                last_error = e
 
                 # Check if it's a duplicate key error
                 error_str = str(e).lower()
@@ -175,9 +163,7 @@ class IDManager:
                     # Add a small delay before retry
                     time.sleep(0.2)
                 else:
-                    logger.error(
-                        f"Non-duplicate error inserting into {table_name}: {str(e)}"
-                    )
+                    logger.error(f"Non-duplicate error inserting into {table_name}: {str(e)}")
 
                 if attempts >= self.retry_attempts:
                     logger.error(

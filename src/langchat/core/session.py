@@ -3,25 +3,24 @@ User session management for LangChat.
 """
 
 import warnings
+from datetime import datetime, timezone
+from typing import List, Tuple, cast
+
+# Fix langchain imports - handle different versions
+from langchain.memory import ConversationBufferWindowMemory
+from langchain.prompts import PromptTemplate
+
+from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
+from langchat.adapters.services.openai_service import OpenAILLMService
+from langchat.adapters.supabase.id_manager import IDManager
+from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
+from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+from langchat.config import LangChatConfig
+from langchat.logger import logger
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message=".*deprecated.*")
-
-from typing import List, Tuple, Optional
-from datetime import datetime, timezone
-
-# Fix langchain imports - handle different versions
-from langchain.memory import ConversationBufferWindowMemory
-
-from langchain.prompts import PromptTemplate
-from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
-from langchat.adapters.supabase.id_manager import IDManager
-from langchat.adapters.services.openai_service import OpenAILLMService
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
-from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
-from langchat.config import LangChatConfig
-from langchat.logger import logger
 
 
 class UserSession:
@@ -105,7 +104,11 @@ class UserSession:
             )
 
             # Extract data from response
-            history = [(item["query"], item["response"]) for item in response.data]
+            history = [
+                (cast("str", item.get("query", "")), cast("str", item.get("response", "")))
+                for item in response.data
+                if isinstance(item, dict)
+            ]
 
             # Return history in chronological order
             return history[::-1]
@@ -122,9 +125,7 @@ class UserSession:
             response: AI response
         """
         try:
-            logger.info(
-                f"Attempting to save message for user {self.user_id}, domain {self.domain}"
-            )
+            logger.info(f"Attempting to save message for user {self.user_id}, domain {self.domain}")
             result = self.id_manager.insert_with_retry(
                 "chat_history",
                 {
@@ -151,9 +152,7 @@ class UserSession:
         """
         try:
             # Get retriever from vector adapter
-            base_retriever = self.vector_adapter.get_retriever(
-                k=self.config.retrieval_k
-            )
+            base_retriever = self.vector_adapter.get_retriever(k=self.config.retrieval_k)
 
             # Create compression retriever with reranker
             compression_retriever = self.reranker_adapter.create_compression_retriever(
@@ -173,9 +172,7 @@ class UserSession:
             return CustomConversationChain(retrieval_qa, self.memory, self.chat_history)
 
         except Exception as e:
-            logger.error(
-                f"Error creating conversation chain for user {self.user_id}: {str(e)}"
-            )
+            logger.error(f"Error creating conversation chain for user {self.user_id}: {str(e)}")
             raise
 
 
@@ -184,9 +181,7 @@ class SimpleRetrievalQA:
     Simple retrieval QA wrapper that handles document retrieval.
     """
 
-    def __init__(
-        self, retriever, llm, prompt_template: str, verbose_chains: bool = False
-    ):
+    def __init__(self, retriever, llm, prompt_template: str, verbose_chains: bool = False):
         self.retriever = retriever
         self.llm = llm
         self.prompt_template = prompt_template
@@ -216,9 +211,7 @@ class CustomConversationChain:
         self.memory = memory
         # Store a direct reference to the session's chat_history list (not a copy)
         # This ensures updates to the session's chat_history are reflected here
-        self.session_chat_history = (
-            session_chat_history if session_chat_history is not None else []
-        )
+        self.session_chat_history = session_chat_history if session_chat_history is not None else []
 
     async def ainvoke(self, inputs: dict):
         """
@@ -237,9 +230,7 @@ class CustomConversationChain:
         # Format chat history from session chat_history list
         # IMPORTANT: Use the current session_chat_history (it's a reference, so it's always up-to-date)
         # But exclude the current query/response if it's already been added
-        chat_history_to_use = (
-            self.session_chat_history if self.session_chat_history else []
-        )
+        chat_history_to_use = self.session_chat_history if self.session_chat_history else []
 
         # Format the chat history
         if chat_history_to_use:
@@ -268,10 +259,7 @@ class CustomConversationChain:
                     formatted_chat_history = str(chat_history_messages)
 
         # Show verbose output if enabled (to debug chat_history)
-        if (
-            hasattr(self.retrieval_qa, "verbose_chains")
-            and self.retrieval_qa.verbose_chains
-        ):
+        if hasattr(self.retrieval_qa, "verbose_chains") and self.retrieval_qa.verbose_chains:
             from rich.console import Console
             from rich.panel import Panel
 
@@ -294,9 +282,7 @@ class CustomConversationChain:
             docs = self.retrieval_qa.retriever.invoke(standalone_question)
         except AttributeError:
             # Fallback to deprecated method if invoke doesn't exist
-            docs = self.retrieval_qa.retriever.get_relevant_documents(
-                standalone_question
-            )
+            docs = self.retrieval_qa.retriever.get_relevant_documents(standalone_question)
 
         # Combine documents into context
         context = "\n\n".join([doc.page_content for doc in docs])
@@ -313,10 +299,7 @@ class CustomConversationChain:
         )
 
         # Show verbose output if enabled (to debug chat_history)
-        if (
-            hasattr(self.retrieval_qa, "verbose_chains")
-            and self.retrieval_qa.verbose_chains
-        ):
+        if hasattr(self.retrieval_qa, "verbose_chains") and self.retrieval_qa.verbose_chains:
             from rich.console import Console
             from rich.panel import Panel
 

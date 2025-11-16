@@ -3,6 +3,7 @@ Auto-generate chat interface HTML file.
 """
 
 import os
+from pathlib import Path
 from typing import Optional
 
 
@@ -291,7 +292,7 @@ def generate_chat_interface(
         <div class="settings-panel">
             <label for="userId">User ID:</label>
             <input type="text" id="userId" placeholder="Enter your user ID" value="{default_user_id}">
-            
+
             <label for="domain">Domain:</label>
             <select id="domain">
                 <option value="{default_domain}" selected>{default_domain.title()}</option>
@@ -299,7 +300,7 @@ def generate_chat_interface(
                 <option value="education">Education</option>
                 <option value="travel">Travel</option>
             </select>
-            
+
             <label for="apiUrl">API URL:</label>
             <input type="text" id="apiUrl" placeholder="Enter API URL" value="{api_url}">
         </div>
@@ -321,8 +322,8 @@ def generate_chat_interface(
 
         <div class="chat-input">
             <div class="input-container">
-                <textarea 
-                    id="messageInput" 
+                <textarea
+                    id="messageInput"
                     placeholder="Type your message here..."
                     rows="1"
                     onkeypress="handleKeyPress(event)"
@@ -402,7 +403,7 @@ def generate_chat_interface(
                 }}
 
                 const data = await response.json();
-                
+
                 // Hide typing indicator
                 hideTypingIndicator();
 
@@ -441,7 +442,7 @@ def generate_chat_interface(
         function showTypingIndicator() {{
             const typingIndicator = document.getElementById('typingIndicator');
             const chatMessages = document.getElementById('chatMessages');
-            
+
             typingIndicator.style.display = 'block';
             chatMessages.appendChild(typingIndicator);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -456,7 +457,7 @@ def generate_chat_interface(
         document.addEventListener('DOMContentLoaded', function() {{
             const messageInput = document.getElementById('messageInput');
             messageInput.focus();
-            
+
             // Generate random user ID if not set
             if (!document.getElementById('userId').value) {{
                 const randomId = 'user_' + Math.random().toString(36).substr(2, 9);
@@ -467,7 +468,6 @@ def generate_chat_interface(
 </body>
 </html>"""
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
+    Path(output_path).write_text(html_content, encoding="utf-8")
 
     return output_path

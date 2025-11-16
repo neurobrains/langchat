@@ -28,6 +28,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+**/*.egg-info/
 
 # PyInstaller
 *.manifest
@@ -139,6 +140,26 @@ dmypy.json
 rerank_models/
 src/langchat/models/rerank_models/
 *.onnx
+
+# Cache directories
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Poetry
+poetry.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # Auto-generated files
 chat_interface.html

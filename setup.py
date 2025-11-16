@@ -2,14 +2,14 @@
 Setup script for LangChat package.
 """
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-with open("README.md", "r", encoding="utf-8") as fh:
+with open("README.md", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name="langchat",
-    version="0.0.5",
+    version="1.0.0",
     author="Sifat Hasan <sihabhossan633@gmail.com>, NeuroBrain",
     author_email="contact@neurobrain.co",
     description="A conversational AI library with vector search capabilities",

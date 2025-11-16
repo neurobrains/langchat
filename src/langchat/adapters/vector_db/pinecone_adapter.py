@@ -4,10 +4,11 @@ Pinecone vector database adapter.
 
 import os
 from typing import Optional
-from pinecone import Pinecone
-from langchain_pinecone.vectorstores import PineconeVectorStore
 
 from langchain_openai import OpenAIEmbeddings
+from langchain_pinecone.vectorstores import PineconeVectorStore
+from pinecone import Pinecone
+
 from langchat.logger import logger
 
 
@@ -46,13 +47,12 @@ class PineconeVectorAdapter:
 
         # Initialize embeddings
         self.embeddings = OpenAIEmbeddings(
-            model=embedding_model, openai_api_key=embedding_api_key
+            model=embedding_model,
+            openai_api_key=embedding_api_key,  # type: ignore[call-arg]
         )
 
         # Initialize vector store
-        self.vector_store = PineconeVectorStore(
-            index=self.index, embedding=self.embeddings
-        )
+        self.vector_store = PineconeVectorStore(index=self.index, embedding=self.embeddings)
 
         # Verify index is accessible
         try:
@@ -60,7 +60,7 @@ class PineconeVectorAdapter:
             logger.info(f"Successfully connected to Pinecone index: {index_name}")
         except Exception as e:
             logger.error(f"Error connecting to Pinecone index: {str(e)}")
-            raise RuntimeError(f"Error loading Pinecone: {str(e)}")
+            raise RuntimeError(f"Error loading Pinecone: {str(e)}") from e
 
     def get_retriever(self, k: int = 5):
         """

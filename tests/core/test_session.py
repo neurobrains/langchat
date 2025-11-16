@@ -2,8 +2,10 @@
 Tests for UserSession.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+
 from langchat.config import LangChatConfig
 from langchat.core.session import UserSession
 
@@ -28,7 +30,7 @@ def mock_adapters():
     reranker_adapter = MagicMock()
     supabase_adapter = MagicMock()
     id_manager = MagicMock()
-    
+
     return {
         "llm": llm,
         "vector_adapter": vector_adapter,
@@ -42,7 +44,7 @@ def mock_adapters():
 def session(mock_config, mock_adapters):
     """Create a session instance for testing."""
     prompt_template = "You are a helpful assistant. Question: {question} Answer: {answer}"
-    
+
     with patch("langchat.core.session.ConversationBufferWindowMemory"):
         session = UserSession(
             domain="test-domain",
@@ -92,4 +94,3 @@ class TestUserSessionAsync:
         # The session uses internal methods that are part of the conversation chain
         assert hasattr(session, "_create_conversation")
         assert callable(session._create_conversation)
-

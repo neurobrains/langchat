@@ -2,23 +2,24 @@
 LangChat Engine - Main entry point for using LangChat.
 """
 
-import os
-import time
 import asyncio
 import threading
-from typing import Dict, Optional
+import time
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Optional
+
 from rich.console import Console
 from rich.panel import Panel
 
-from langchat.config import LangChatConfig
-from langchat.core.session import UserSession
-from langchat.core.prompts import generate_standalone_question
-from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
-from langchat.adapters.supabase.id_manager import IDManager
-from langchat.adapters.services.openai_service import OpenAILLMService
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
 from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
+from langchat.adapters.services.openai_service import OpenAILLMService
+from langchat.adapters.supabase.id_manager import IDManager
+from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
+from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+from langchat.config import LangChatConfig
+from langchat.core.prompts import generate_standalone_question
+from langchat.core.session import UserSession
 from langchat.logger import logger
 
 # Global flag to track if running as API server
@@ -71,9 +72,7 @@ class LangChatEngine:
             raise ValueError("Supabase URL and key must be provided")
 
         # Initialize ID manager
-        self.id_manager = IDManager(
-            self.supabase_adapter.client, initial_value=0, retry_attempts=5
-        )
+        self.id_manager = IDManager(self.supabase_adapter.client, initial_value=0, retry_attempts=5)
 
         # Initialize LLM service (OpenAI)
         if not self.config.openai_api_keys:
@@ -92,9 +91,7 @@ class LangChatEngine:
             raise ValueError("Pinecone index name must be provided")
 
         # Get embedding API key (OpenAI)
-        embedding_api_key = (
-            self.config.openai_api_keys[0] if self.config.openai_api_keys else None
-        )
+        embedding_api_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
 
         self.vector_adapter = PineconeVectorAdapter(
             api_key=self.config.pinecone_api_key,
@@ -102,14 +99,12 @@ class LangChatEngine:
             embedding_model=self.config.openai_embedding_model,
             embedding_api_key=embedding_api_key,
         )
-        logger.info(
-            f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}"
-        )
+        logger.info(f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}")
 
         # Initialize Flashrank reranker
         # Use config's reranker_cache_dir (relative to current working directory)
-        reranker_cache_dir = self.config.reranker_cache_dir
-        os.makedirs(reranker_cache_dir, exist_ok=True)
+        reranker_cache_dir = Path(self.config.reranker_cache_dir)
+        reranker_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
 
         # Initialize ranker (this will download the model if not already present)
@@ -123,51 +118,50 @@ class LangChatEngine:
     def _initialize_database(self):
         """Initialize database tables."""
         try:
-            # Check if tables exist
-            self.supabase_adapter.client.table("chat_history").select("id").limit(
-                1
-            ).execute()
-            self.supabase_adapter.client.table("request_metrics").select("id").limit(
-                1
-            ).execute()
-            logger.info("Database Connection Successfully")
+            # First, try to create tables if they don't exist
+            logger.info("Checking database tables...")
+            tables_created = self.supabase_adapter.create_tables_if_not_exist()
+
+            if not tables_created:
+                # If automatic creation failed, try to check if tables exist anyway
+                # (they might have been created manually)
+                try:
+                    self.supabase_adapter.client.table("chat_history").select("id").limit(
+                        1
+                    ).execute()
+                    self.supabase_adapter.client.table("request_metrics").select("id").limit(
+                        1
+                    ).execute()
+                    logger.info("Database tables exist (created manually)")
+                except Exception as e:
+                    error_str = str(e).lower()
+                    if "pgrst205" in error_str or "could not find the table" in error_str:
+                        logger.error(
+                            "Tables do not exist and could not be created automatically. "
+                            "Please create them manually using the SQL provided in the logs above, "
+                            "or use a service role key for automatic creation."
+                        )
+                        # Don't raise - allow the app to continue, but operations will fail
+                        return
+                    else:
+                        # Some other error
+                        logger.warning(f"Error checking tables: {str(e)}")
 
             # Always initialize ID Manager early to prevent initialization during save
             # This ensures counters are set up before any inserts happen
             if not self.id_manager.initialized:
                 self.id_manager.initialize()
-        except Exception:
-            # Tables don't exist, initialize ID manager to set up counters
+
+            logger.info("Database connection successful")
+
+        except Exception as e:
+            logger.error(f"Error initializing database: {str(e)}")
+            # Try to initialize ID manager anyway (with default values)
             if not self.id_manager.initialized:
-                self.id_manager.initialize()
-
-            # Create initial records to ensure tables exist
-            try:
-                self.id_manager.insert_with_retry(
-                    "chat_history",
-                    {
-                        "user_id": "system",
-                        "domain": "system",
-                        "query": "init",
-                        "response": "init",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    },
-                )
-
-                self.id_manager.insert_with_retry(
-                    "request_metrics",
-                    {
-                        "user_id": "system",
-                        "request_time": datetime.now(timezone.utc).isoformat(),
-                        "response_time": 0.0,
-                        "success": True,
-                        "error_message": None,
-                    },
-                )
-
-                logger.info("Database Connection Successfully")
-            except Exception as e:
-                logger.error(f"Error creating database tables: {str(e)}")
+                try:
+                    self.id_manager.initialize()
+                except Exception as init_error:
+                    logger.error(f"Error initializing ID Manager: {str(init_error)}")
 
     def get_session(self, user_id: str, domain: str = "default") -> UserSession:
         """
@@ -185,8 +179,7 @@ class LangChatEngine:
         if session_key not in self.sessions:
             # Get prompt template
             prompt_template = (
-                self.config.system_prompt_template
-                or self.config.get_default_prompt_template()
+                self.config.system_prompt_template or self.config.get_default_prompt_template()
             )
 
             self.sessions[session_key] = UserSession(
@@ -282,20 +275,16 @@ class LangChatEngine:
                 try:
                     # Get event loop and run sync save_message in thread pool
                     loop = asyncio.get_event_loop()
-                    await loop.run_in_executor(
-                        None, session.save_message, query, response_text
-                    )
+                    await loop.run_in_executor(None, session.save_message, query, response_text)
                 except Exception as e:
-                    logger.error(
-                        f"Exception in save_message_background: {str(e)}", exc_info=True
-                    )
+                    logger.error(f"Exception in save_message_background: {str(e)}", exc_info=True)
 
             # Create task to run in background (fire and forget for performance)
             try:
                 # Schedule the save task
-                task = asyncio.create_task(save_message_background())
                 # Store task reference to prevent garbage collection issues
                 # The task will complete in background
+                asyncio.create_task(save_message_background())
             except RuntimeError:
                 # Fallback if no event loop is running (shouldn't happen in async context)
                 # Use thread as fallback
@@ -303,17 +292,13 @@ class LangChatEngine:
                     try:
                         session.save_message(query, response_text)
                     except Exception as e:
-                        logger.error(
-                            f"Exception in save_in_thread: {str(e)}", exc_info=True
-                        )
+                        logger.error(f"Exception in save_in_thread: {str(e)}", exc_info=True)
 
                 threading.Thread(
                     target=save_in_thread, daemon=False, name="save-message-thread"
                 ).start()
             except Exception as e:
-                logger.error(
-                    f"Error scheduling save_message task: {str(e)}", exc_info=True
-                )
+                logger.error(f"Error scheduling save_message task: {str(e)}", exc_info=True)
                 # Last resort: try direct save (will block but ensures save)
                 try:
                     session.save_message(query, response_text)
@@ -365,6 +350,7 @@ class LangChatEngine:
 
             # Save error metrics in background (non-blocking)
             response_time = time.time() - start_time
+            error_message = str(e)
 
             def save_error_metrics_background():
                 try:
@@ -375,7 +361,7 @@ class LangChatEngine:
                             "request_time": datetime.now(timezone.utc).isoformat(),
                             "response_time": response_time,
                             "success": False,
-                            "error_message": str(e),
+                            "error_message": error_message,
                         },
                     )
                 except Exception as save_error:

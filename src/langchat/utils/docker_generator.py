@@ -2,9 +2,7 @@
 Auto-generate Dockerfile, .dockerignore, and requirements.txt for LangChat.
 """
 
-import os
 import ast
-from typing import Optional
 from pathlib import Path
 
 
@@ -57,8 +55,7 @@ ENV PORT={port}
 CMD ["python", "{app_file}"]
 """
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(dockerfile_content)
+    Path(output_path).write_text(dockerfile_content, encoding="utf-8")
 
     return output_path
 
@@ -147,8 +144,7 @@ README.md
 LICENSE
 """
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(dockerignore_content)
+    Path(output_path).write_text(dockerignore_content, encoding="utf-8")
 
     return output_path
 
@@ -166,9 +162,9 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
     dependencies = []
 
     try:
-        if os.path.exists(setup_path):
-            with open(setup_path, "r", encoding="utf-8") as f:
-                content = f.read()
+        setup_path_obj = Path(setup_path)
+        if setup_path_obj.exists():
+            content = setup_path_obj.read_text(encoding="utf-8")
 
             # Parse setup.py to extract install_requires
             tree = ast.parse(content)
@@ -180,22 +176,19 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
                     and node.func.id == "setup"
                 ):
                     for keyword in node.keywords:
-                        if keyword.arg == "install_requires":
-                            if isinstance(keyword.value, ast.List):
-                                for item in keyword.value.elts:
-                                    # Skip comments (they appear as Constant or Str with #)
-                                    if isinstance(item, ast.Constant):
-                                        value = item.value
-                                        if isinstance(
-                                            value, str
-                                        ) and not value.strip().startswith("#"):
-                                            dependencies.append(value)
-                                    elif isinstance(
-                                        item, ast.Str
-                                    ):  # Python < 3.8 compatibility
-                                        value = item.s
-                                        if not value.strip().startswith("#"):
-                                            dependencies.append(value)
+                        if keyword.arg == "install_requires" and isinstance(
+                            keyword.value, ast.List
+                        ):
+                            for item in keyword.value.elts:
+                                # Skip comments (they appear as Constant or Str with #)
+                                if isinstance(item, ast.Constant):
+                                    value = item.value
+                                    if isinstance(value, str) and not value.strip().startswith("#"):
+                                        dependencies.append(value)
+                                elif isinstance(item, ast.Str):  # Python < 3.8 compatibility
+                                    value = item.s
+                                    if isinstance(value, str) and not value.strip().startswith("#"):
+                                        dependencies.append(value)
         else:
             # If setup.py doesn't exist, use default dependencies
             dependencies = [
@@ -269,8 +262,7 @@ def generate_requirements_txt(
     for dep in dependencies:
         dep_lower = dep.lower()
         if any(
-            kw in dep_lower
-            for kw in ["fastapi", "uvicorn", "starlette", "pydantic", "multipart"]
+            kw in dep_lower for kw in ["fastapi", "uvicorn", "starlette", "pydantic", "multipart"]
         ):
             web_framework.append(dep)
         elif any(kw in dep_lower for kw in ["pytz", "requests"]):
@@ -320,8 +312,7 @@ def generate_requirements_txt(
     # Remove trailing newlines
     requirements_content = requirements_content.strip() + "\n"
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(requirements_content)
+    Path(output_path).write_text(requirements_content, encoding="utf-8")
 
     return output_path
 
@@ -344,22 +335,20 @@ def generate_all_docker_files(
     Returns:
         Dictionary with paths to generated files
     """
-    output_dir = Path(output_dir)
+    output_dir_path = Path(output_dir)
 
     dockerfile_path = generate_dockerfile(
-        output_path=str(output_dir / "Dockerfile"),
+        output_path=str(output_dir_path / "Dockerfile"),
         port=port,
         python_version=python_version,
         app_file=app_file,
     )
 
-    dockerignore_path = generate_dockerignore(
-        output_path=str(output_dir / ".dockerignore")
-    )
+    dockerignore_path = generate_dockerignore(output_path=str(output_dir_path / ".dockerignore"))
 
     requirements_path = generate_requirements_txt(
-        output_path=str(output_dir / "requirements.txt"),
-        setup_path=str(output_dir / "setup.py"),
+        output_path=str(output_dir_path / "requirements.txt"),
+        setup_path=str(output_dir_path / "setup.py"),
     )
 
     return {

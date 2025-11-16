@@ -2,8 +2,10 @@
 Tests for LangChat main module.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
 from langchat.config import LangChatConfig
 from langchat.main import LangChat
 
@@ -66,16 +68,18 @@ class TestLangChatAsync:
         """Test that chat method can be called."""
         with patch("langchat.main.LangChatEngine") as mock_engine_class:
             mock_engine = MagicMock()
+
             # Mock the async chat method properly
             async def mock_chat(*args, **kwargs):
                 return {"response": "test"}
+
             mock_engine.chat = mock_chat
             mock_engine_class.return_value = mock_engine
-            
+
             langchat = LangChat(config=mock_config)
-            
+
             result = await langchat.chat("test query", "user1")
-            
+
             assert result is not None
             assert isinstance(result, dict)
 
@@ -83,15 +87,16 @@ class TestLangChatAsync:
         """Test chat method with custom domain."""
         with patch("langchat.main.LangChatEngine") as mock_engine_class:
             mock_engine = MagicMock()
+
             # Mock the async chat method properly
             async def mock_chat(*args, **kwargs):
                 return {"response": "test"}
+
             mock_engine.chat = mock_chat
             mock_engine_class.return_value = mock_engine
-            
-            langchat = LangChat(config=mock_config)
-            
-            result = await langchat.chat("test query", "user1", domain="custom")
-            
-            assert result is not None
 
+            langchat = LangChat(config=mock_config)
+
+            result = await langchat.chat("test query", "user1", domain="custom")
+
+            assert result is not None

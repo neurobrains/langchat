@@ -2,22 +2,23 @@
 FastAPI application setup for LangChat API.
 """
 
-import asyncio
+from typing import Optional
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from langchat.config import LangChatConfig
 from langchat.core.engine import LangChatEngine, set_api_server_mode
 from langchat.logger import logger
 
 # Global engine instance
-_engine: LangChatEngine = None
-_config: LangChatConfig = None
+_engine: Optional[LangChatEngine] = None
+_config: Optional[LangChatConfig] = None
+_app: Optional[FastAPI] = None
 
 
 def create_app(
-    config: LangChatConfig = None,
+    config: Optional[LangChatConfig] = None,
     auto_generate_interface: bool = True,
     auto_generate_docker: bool = True,
 ) -> FastAPI:
@@ -67,9 +68,7 @@ def create_app(
                         if _config
                         else "http://localhost:8000"
                     )
-                    generate_chat_interface(
-                        output_path="chat_interface.html", api_url=api_url
-                    )
+                    generate_chat_interface(output_path="chat_interface.html", api_url=api_url)
                     logger.info("Chat interface auto-generated: chat_interface.html")
                 except Exception as e:
                     logger.warning(f"Failed to auto-generate chat interface: {str(e)}")
@@ -94,9 +93,7 @@ def create_app(
                     logger.info(".dockerignore auto-generated")
 
                     # Generate requirements.txt from setup.py
-                    generate_requirements_txt(
-                        output_path="requirements.txt", setup_path="setup.py"
-                    )
+                    generate_requirements_txt(output_path="requirements.txt", setup_path="setup.py")
                     logger.info("requirements.txt auto-generated from setup.py")
                 except Exception as e:
                     logger.warning(f"Failed to auto-generate Docker files: {str(e)}")
@@ -104,9 +101,7 @@ def create_app(
             logger.info("LangChat API started successfully")
             logger.info(f"Server running at: http://localhost:{_config.server_port}")
             logger.info(f"API endpoint: http://localhost:{_config.server_port}/chat")
-            logger.info(
-                f"Frontend interface: http://localhost:{_config.server_port}/frontend"
-            )
+            logger.info(f"Frontend interface: http://localhost:{_config.server_port}/frontend")
         except Exception as e:
             logger.error(f"Error initializing API: {str(e)}")
 
@@ -116,6 +111,8 @@ def create_app(
     # Include routers
     app.include_router(routes.router)
 
+    global _app
+    _app = app
     return app
 
 
@@ -127,9 +124,9 @@ def get_app() -> FastAPI:
     Returns:
         FastAPI application instance
     """
-    if _engine is None:
+    if _app is None:
         raise RuntimeError("App not initialized. Call create_app() first.")
-    return _engine
+    return _app
 
 
 def get_engine() -> LangChatEngine:

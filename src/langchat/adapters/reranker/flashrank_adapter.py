@@ -2,43 +2,72 @@
 Flashrank reranker adapter.
 """
 
+# mypy: disable-error-code=no-redef
+
+from typing import Any
+
 from flashrank import Ranker
 
-# Fix langchain imports - handle different versions
-# Use the new recommended import path first to avoid deprecation warnings
-try:
-    from langchain_community.document_compressors.flashrank_rerank import (
-        FlashrankRerank,
-    )
-except ImportError:
+
+def _import_flashrank_rerank() -> Any:  # type: ignore[no-redef]
+    """Import FlashrankRerank with fallback to different import paths."""
     try:
-        from langchain.retrievers.document_compressors.flashrank_rerank import (
+        from langchain_community.document_compressors.flashrank_rerank import (
             FlashrankRerank,
         )
+
+        return FlashrankRerank
     except ImportError:
         try:
-            from langchain_community.cross_encoders import FlashrankRerank
+            from langchain.retrievers.document_compressors.flashrank_rerank import (
+                FlashrankRerank,  # type: ignore[no-redef]
+            )
+
+            return FlashrankRerank
         except ImportError:
             try:
-                from langchain.retrievers.document_compressors import FlashrankRerank
-            except ImportError:
-                raise ImportError(
-                    "Could not import FlashrankRerank. Please install langchain and langchain-community: pip install langchain langchain-community"
+                from langchain_community.cross_encoders import (
+                    FlashrankRerank,  # type: ignore[no-redef]
                 )
 
-try:
-    from langchain.retrievers.contextual_compression import (
-        ContextualCompressionRetriever,
-    )
-except ImportError:
+                return FlashrankRerank
+            except ImportError:
+                try:
+                    from langchain.retrievers.document_compressors import (
+                        FlashrankRerank,  # type: ignore[no-redef]
+                    )
+
+                    return FlashrankRerank
+                except ImportError as err:
+                    raise ImportError(
+                        "Could not import FlashrankRerank. Please install langchain and langchain-community: pip install langchain langchain-community"
+                    ) from err
+
+
+def _import_contextual_compression_retriever() -> Any:
+    """Import ContextualCompressionRetriever with fallback to different import paths."""
     try:
-        from langchain_core.retrievers import ContextualCompressionRetriever
-    except ImportError:
-        raise ImportError(
-            "Could not import ContextualCompressionRetriever. Please install langchain: pip install langchain"
+        from langchain.retrievers.contextual_compression import (
+            ContextualCompressionRetriever,
         )
 
-from langchat.logger import logger
+        return ContextualCompressionRetriever
+    except ImportError:
+        try:
+            from langchain_core.retrievers import (  # type: ignore[attr-defined,no-redef]
+                ContextualCompressionRetriever,
+            )
+
+            return ContextualCompressionRetriever
+        except ImportError as err:
+            raise ImportError(
+                "Could not import ContextualCompressionRetriever. Please install langchain: pip install langchain"
+            ) from err
+
+
+# Import with fallback logic
+FlashrankRerank = _import_flashrank_rerank()
+ContextualCompressionRetriever = _import_contextual_compression_retriever()
 
 
 class FlashrankRerankAdapter:

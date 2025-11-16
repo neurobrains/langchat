@@ -2,16 +2,14 @@
 FastAPI routes for LangChat API.
 """
 
-import asyncio
-import os
-from typing import Optional
-from fastapi import APIRouter, Form, File, UploadFile, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
-from pydantic import BaseModel
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
 
-from langchat.api.app import get_engine, get_config
-from langchat.api.models import QueryRequest
+from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+
+from langchat.api.app import get_config, get_engine
 from langchat.logger import logger
 
 router = APIRouter()
@@ -28,10 +26,9 @@ async def frontend():
     """Serve the chat interface HTML"""
     try:
         # Try to read the generated chat interface
-        interface_path = "chat_interface.html"
-        if os.path.exists(interface_path):
-            with open(interface_path, "r", encoding="utf-8") as f:
-                html_content = f.read()
+        interface_path = Path("chat_interface.html")
+        if interface_path.exists():
+            html_content = interface_path.read_text(encoding="utf-8")
             return HTMLResponse(content=html_content)
         else:
             # Generate interface on the fly if not exists
@@ -39,13 +36,10 @@ async def frontend():
 
             config = get_config()
             api_url = (
-                f"http://localhost:{config.server_port}"
-                if config
-                else "http://localhost:8000"
+                f"http://localhost:{config.server_port}" if config else "http://localhost:8000"
             )
-            generate_chat_interface(output_path=interface_path, api_url=api_url)
-            with open(interface_path, "r", encoding="utf-8") as f:
-                html_content = f.read()
+            generate_chat_interface(output_path=str(interface_path), api_url=api_url)
+            html_content = interface_path.read_text(encoding="utf-8")
             return HTMLResponse(content=html_content)
     except Exception as e:
         logger.error(f"Error serving frontend: {str(e)}")

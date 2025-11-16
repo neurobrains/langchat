@@ -3,17 +3,17 @@ Prompt templates and question generation utilities.
 """
 
 import warnings
+from typing import List, Optional, Tuple, cast
+
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+
+from langchat.adapters.services.openai_service import OpenAILLMService
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message=".*deprecated.*")
-
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain_openai import ChatOpenAI
-from typing import List, Tuple, Optional
-
-from langchat.adapters.services.openai_service import OpenAILLMService
 
 
 def create_standalone_question_prompt(
@@ -61,13 +61,10 @@ async def generate_standalone_question(
         Standalone question string
     """
     # Format chat history
-    formatted_chat_history = "\n".join(
-        [f"Human: {q}\nAI: {a}" for q, a in chat_history]
-    )
+    formatted_chat_history = "\n".join([f"Human: {q}\nAI: {a}" for q, a in chat_history])
 
     # Show verbose output if enabled (to debug chat_history)
     if verbose_chains:
-        from langchat.logger import logger
         from rich.console import Console
         from rich.panel import Panel
 
@@ -95,7 +92,7 @@ async def generate_standalone_question(
     standalone_llm = ChatOpenAI(
         model=llm.model,
         temperature=llm.temperature,
-        openai_api_key=llm.current_key,
+        openai_api_key=llm.current_key,  # type: ignore[call-arg]
         max_retries=1,
     )
 
@@ -108,8 +105,11 @@ async def generate_standalone_question(
     )
 
     # Generate standalone question
-    result = await chain.ainvoke(
-        {"question": query, "chat_history": formatted_chat_history}
-    )
+    result = await chain.ainvoke({"question": query, "chat_history": formatted_chat_history})
 
-    return result.get("standalone_question", query).strip()
+    standalone_question = result.get("standalone_question", query)
+    return (
+        cast("str", standalone_question).strip()
+        if isinstance(standalone_question, str)
+        else query.strip()
+    )
