@@ -47,7 +47,8 @@ class PineconeVectorAdapter:
 
         # Initialize embeddings
         self.embeddings = OpenAIEmbeddings(
-            model=embedding_model, openai_api_key=embedding_api_key  # type: ignore[call-arg]
+            model=embedding_model,
+            openai_api_key=embedding_api_key,  # type: ignore[call-arg]
         )
 
         # Initialize vector store

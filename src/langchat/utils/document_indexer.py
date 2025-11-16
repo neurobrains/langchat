@@ -66,7 +66,8 @@ class DocumentIndexer:
 
         # Initialize embeddings
         self.embeddings = OpenAIEmbeddings(
-            model=embedding_model, openai_api_key=openai_api_key  # type: ignore[call-arg]
+            model=embedding_model,
+            openai_api_key=openai_api_key,  # type: ignore[call-arg]
         )
 
         # Initialize vector store

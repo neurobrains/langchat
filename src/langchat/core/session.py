@@ -4,7 +4,7 @@ User session management for LangChat.
 
 import warnings
 from datetime import datetime, timezone
-from typing import Any, List, Tuple, cast
+from typing import List, Tuple, cast
 
 # Fix langchain imports - handle different versions
 from langchain.memory import ConversationBufferWindowMemory
@@ -105,7 +105,7 @@ class UserSession:
 
             # Extract data from response
             history = [
-                (cast(str, item.get("query", "")), cast(str, item.get("response", "")))
+                (cast("str", item.get("query", "")), cast("str", item.get("response", "")))
                 for item in response.data
                 if isinstance(item, dict)
             ]

@@ -3,7 +3,7 @@ Prompt templates and question generation utilities.
 """
 
 import warnings
-from typing import Any, List, Optional, Tuple, cast
+from typing import List, Optional, Tuple, cast
 
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
@@ -108,4 +108,8 @@ async def generate_standalone_question(
     result = await chain.ainvoke({"question": query, "chat_history": formatted_chat_history})
 
     standalone_question = result.get("standalone_question", query)
-    return cast(str, standalone_question).strip() if isinstance(standalone_question, str) else query.strip()
+    return (
+        cast("str", standalone_question).strip()
+        if isinstance(standalone_question, str)
+        else query.strip()
+    )
