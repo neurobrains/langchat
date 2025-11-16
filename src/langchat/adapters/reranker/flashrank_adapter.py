@@ -13,14 +13,14 @@ try:
 except ImportError:
     try:
         from langchain.retrievers.document_compressors.flashrank_rerank import (
-            FlashrankRerank,
+            FlashrankRerank,  # type: ignore[no-redef]
         )
     except ImportError:
         try:
-            from langchain_community.cross_encoders import FlashrankRerank
+            from langchain_community.cross_encoders import FlashrankRerank  # type: ignore[no-redef]
         except ImportError:
             try:
-                from langchain.retrievers.document_compressors import FlashrankRerank
+                from langchain.retrievers.document_compressors import FlashrankRerank  # type: ignore[no-redef]
             except ImportError as err:
                 raise ImportError(
                     "Could not import FlashrankRerank. Please install langchain and langchain-community: pip install langchain langchain-community"
@@ -32,7 +32,7 @@ try:
     )
 except ImportError:
     try:
-        from langchain_core.retrievers import ContextualCompressionRetriever
+        from langchain_core.retrievers import ContextualCompressionRetriever  # type: ignore[attr-defined,no-redef]
     except ImportError as err:
         raise ImportError(
             "Could not import ContextualCompressionRetriever. Please install langchain: pip install langchain"

@@ -145,7 +145,7 @@ class IDManager:
                 response = self.supabase_client.table(table_name).insert(insert_data).execute()
 
                 # If successful, return the response
-                return response.data
+                return response.data  # type: ignore[no-any-return]
 
             except Exception as e:
                 attempts += 1

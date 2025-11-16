@@ -48,7 +48,7 @@ class OpenAILLMService:
         return ChatOpenAI(
             model=self.model,
             temperature=self.temperature,
-            openai_api_key=self.current_key,
+            openai_api_key=self.current_key,  # type: ignore[call-arg]
             max_retries=1,
         )
 

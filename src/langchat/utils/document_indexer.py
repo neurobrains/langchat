@@ -65,7 +65,9 @@ class DocumentIndexer:
         self.index = self.pc.Index(pinecone_index_name)
 
         # Initialize embeddings
-        self.embeddings = OpenAIEmbeddings(model=embedding_model, openai_api_key=openai_api_key)
+        self.embeddings = OpenAIEmbeddings(
+            model=embedding_model, openai_api_key=openai_api_key  # type: ignore[call-arg]
+        )
 
         # Initialize vector store
         self.vector_store = PineconeVectorStore(index=self.index, embedding=self.embeddings)

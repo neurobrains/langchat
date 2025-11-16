@@ -3,7 +3,7 @@ Prompt templates and question generation utilities.
 """
 
 import warnings
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple, cast
 
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
@@ -92,7 +92,7 @@ async def generate_standalone_question(
     standalone_llm = ChatOpenAI(
         model=llm.model,
         temperature=llm.temperature,
-        openai_api_key=llm.current_key,
+        openai_api_key=llm.current_key,  # type: ignore[call-arg]
         max_retries=1,
     )
 
@@ -107,4 +107,5 @@ async def generate_standalone_question(
     # Generate standalone question
     result = await chain.ainvoke({"question": query, "chat_history": formatted_chat_history})
 
-    return result.get("standalone_question", query).strip()
+    standalone_question = result.get("standalone_question", query)
+    return cast(str, standalone_question).strip() if isinstance(standalone_question, str) else query.strip()

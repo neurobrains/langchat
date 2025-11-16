@@ -46,7 +46,9 @@ class PineconeVectorAdapter:
         self.index = self.pc.Index(index_name)
 
         # Initialize embeddings
-        self.embeddings = OpenAIEmbeddings(model=embedding_model, openai_api_key=embedding_api_key)
+        self.embeddings = OpenAIEmbeddings(
+            model=embedding_model, openai_api_key=embedding_api_key  # type: ignore[call-arg]
+        )
 
         # Initialize vector store
         self.vector_store = PineconeVectorStore(index=self.index, embedding=self.embeddings)
