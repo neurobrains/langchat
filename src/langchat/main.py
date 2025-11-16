@@ -4,11 +4,12 @@ This module provides an easy-to-use interface for creating conversational AI app
 """
 
 import asyncio
-from typing import Optional, List
+from typing import List, Optional
+
 from langchat.config import LangChatConfig
 from langchat.core.engine import LangChatEngine
-from langchat.utils.document_indexer import DocumentIndexer
 from langchat.logger import logger
+from langchat.utils.document_indexer import DocumentIndexer
 
 
 class LangChat:
@@ -168,9 +169,7 @@ class LangChat:
 
         # Check if required config values are available
         if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-            raise ValueError(
-                "Pinecone API key and index name must be configured in LangChatConfig"
-            )
+            raise ValueError("Pinecone API key and index name must be configured in LangChatConfig")
 
         if not self.config.openai_api_keys:
             raise ValueError("OpenAI API keys must be configured in LangChatConfig")
@@ -232,9 +231,7 @@ class LangChat:
 
         # Check if required config values are available
         if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-            raise ValueError(
-                "Pinecone API key and index name must be configured in LangChatConfig"
-            )
+            raise ValueError("Pinecone API key and index name must be configured in LangChatConfig")
 
         if not self.config.openai_api_keys:
             raise ValueError("OpenAI API keys must be configured in LangChatConfig")

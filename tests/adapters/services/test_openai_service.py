@@ -2,8 +2,10 @@
 Tests for OpenAILLMService.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
 from langchat.adapters.services.openai_service import OpenAILLMService
 
 
@@ -50,7 +52,7 @@ class TestOpenAILLMService:
         with patch("langchat.adapters.services.openai_service.ChatOpenAI") as mock_llm:
             mock_instance = MagicMock()
             mock_llm.return_value = mock_instance
-            
+
             service = OpenAILLMService(
                 model="gpt-4o-mini",
                 temperature=1.0,
@@ -79,4 +81,3 @@ class TestOpenAILLMService:
             )
             assert hasattr(service, "_create_llm")
             assert callable(service._create_llm)
-

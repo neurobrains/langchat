@@ -2,8 +2,10 @@
 Tests for LangChatEngine.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
 from langchat.config import LangChatConfig
 from langchat.core.engine import LangChatEngine
 
@@ -23,11 +25,11 @@ def mock_config():
 @pytest.fixture
 def engine(mock_config):
     """Create an engine instance with mocked dependencies."""
-    with patch("langchat.core.engine.PineconeVectorAdapter"), \
-         patch("langchat.core.engine.SupabaseAdapter"), \
-         patch("langchat.core.engine.OpenAILLMService"), \
-         patch("langchat.core.engine.FlashrankRerankAdapter"), \
-         patch("langchat.core.engine.IDManager"):
+    with patch("langchat.core.engine.PineconeVectorAdapter"), patch(
+        "langchat.core.engine.SupabaseAdapter"
+    ), patch("langchat.core.engine.OpenAILLMService"), patch(
+        "langchat.core.engine.FlashrankRerankAdapter"
+    ), patch("langchat.core.engine.IDManager"):
         engine = LangChatEngine(config=mock_config)
         return engine
 
@@ -37,11 +39,11 @@ class TestLangChatEngine:
 
     def test_engine_initialization_with_config(self, mock_config):
         """Test engine initialization with provided config."""
-        with patch("langchat.core.engine.PineconeVectorAdapter"), \
-             patch("langchat.core.engine.SupabaseAdapter"), \
-             patch("langchat.core.engine.OpenAILLMService"), \
-             patch("langchat.core.engine.FlashrankRerankAdapter"), \
-             patch("langchat.core.engine.IDManager"):
+        with patch("langchat.core.engine.PineconeVectorAdapter"), patch(
+            "langchat.core.engine.SupabaseAdapter"
+        ), patch("langchat.core.engine.OpenAILLMService"), patch(
+            "langchat.core.engine.FlashrankRerankAdapter"
+        ), patch("langchat.core.engine.IDManager"):
             engine = LangChatEngine(config=mock_config)
             assert engine.config == mock_config
 
@@ -53,11 +55,11 @@ class TestLangChatEngine:
         monkeypatch.setenv("SUPABASE_URL", "https://test.supabase.co")
         monkeypatch.setenv("SUPABASE_KEY", "test-supabase-key")
 
-        with patch("langchat.core.engine.PineconeVectorAdapter"), \
-             patch("langchat.core.engine.SupabaseAdapter"), \
-             patch("langchat.core.engine.OpenAILLMService"), \
-             patch("langchat.core.engine.FlashrankRerankAdapter"), \
-             patch("langchat.core.engine.IDManager"):
+        with patch("langchat.core.engine.PineconeVectorAdapter"), patch(
+            "langchat.core.engine.SupabaseAdapter"
+        ), patch("langchat.core.engine.OpenAILLMService"), patch(
+            "langchat.core.engine.FlashrankRerankAdapter"
+        ), patch("langchat.core.engine.IDManager"):
             engine = LangChatEngine()
             assert engine.config is not None
             assert engine.config.openai_api_keys == ["test-key"]
@@ -74,8 +76,8 @@ class TestLangChatEngine:
 
     def test_api_server_mode_flag(self):
         """Test API server mode setting."""
-        from langchat.core.engine import set_api_server_mode, _is_api_server_mode
-        
+        from langchat.core.engine import set_api_server_mode
+
         # Note: This might affect other tests, so we'll just check it exists
         assert callable(set_api_server_mode)
 
@@ -92,7 +94,6 @@ class TestLangChatEngineAsync:
         engine.get_session = MagicMock(return_value=mock_session)
 
         result = await engine.chat("test query", "user1")
-        
+
         assert result is not None
         assert "response" in result
-

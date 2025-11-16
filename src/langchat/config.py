@@ -4,9 +4,10 @@ All settings can be customized by developers.
 """
 
 import os
-from typing import List, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from typing import List, Optional
+
 import pytz
 
 
@@ -46,9 +47,7 @@ class LangChatConfig:
 
     # Prompt Configuration
     system_prompt_template: Optional[str] = None
-    standalone_question_prompt: Optional[str] = (
-        None  # Custom standalone question prompt
-    )
+    standalone_question_prompt: Optional[str] = None  # Custom standalone question prompt
 
     # LLM Retry Configuration
     max_llm_retries: int = 2  # Retry count per API key
@@ -77,13 +76,9 @@ class LangChatConfig:
             openai_api_keys=openai_keys,
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             openai_temperature=float(os.getenv("OPENAI_TEMPERATURE", "1.0")),
-            openai_embedding_model=os.getenv(
-                "OPENAI_EMBEDDING_MODEL", "text-embedding-3-large"
-            ),
+            openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large"),
             pinecone_api_key=os.getenv("PINECONE_API_KEY"),
-            pinecone_index_name=os.getenv(
-                "PINECONE_INDEX_NAME", "abroad-inquiry-json-qa"
-            ),
+            pinecone_index_name=os.getenv("PINECONE_INDEX_NAME", "abroad-inquiry-json-qa"),
             supabase_url=os.getenv("SUPABASE_URL"),
             supabase_key=os.getenv("SUPABASE_KEY"),
             retrieval_k=int(os.getenv("RETRIEVAL_K", "5")),
@@ -94,8 +89,7 @@ class LangChatConfig:
             memory_window=int(os.getenv("MEMORY_WINDOW", "20")),
             timezone=os.getenv("TIMEZONE", "Asia/Dhaka"),
             server_port=int(os.getenv("PORT", os.getenv("SERVER_PORT", "8000"))),
-            verbose_chains=os.getenv("VERBOSE_CHAINS", "false").lower()
-            in ("true", "1", "yes"),
+            verbose_chains=os.getenv("VERBOSE_CHAINS", "false").lower() in ("true", "1", "yes"),
         )
 
     def get_formatted_time(self) -> str:

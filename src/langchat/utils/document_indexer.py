@@ -4,17 +4,18 @@ This module provides a simple interface to load documents and index them to Pine
 without requiring the full LangChat configuration.
 """
 
+import hashlib
 import os
 import uuid
-import hashlib
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
+
 from docsuite import UnifiedDocumentLoader
-from langchat.exceptions import UnsupportedFileTypeError
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from pinecone import Pinecone
 from langchain_pinecone.vectorstores import PineconeVectorStore
+from pinecone import Pinecone
 
+from langchat.exceptions import UnsupportedFileTypeError
 from langchat.logger import logger
 
 
@@ -64,14 +65,10 @@ class DocumentIndexer:
         self.index = self.pc.Index(pinecone_index_name)
 
         # Initialize embeddings
-        self.embeddings = OpenAIEmbeddings(
-            model=embedding_model, openai_api_key=openai_api_key
-        )
+        self.embeddings = OpenAIEmbeddings(model=embedding_model, openai_api_key=openai_api_key)
 
         # Initialize vector store
-        self.vector_store = PineconeVectorStore(
-            index=self.index, embedding=self.embeddings
-        )
+        self.vector_store = PineconeVectorStore(index=self.index, embedding=self.embeddings)
 
         # Verify index is accessible and get dimension
         try:
@@ -106,9 +103,7 @@ class DocumentIndexer:
         content = f"{file_path}:{chunk_content}"
         return hashlib.sha256(content.encode()).hexdigest()
 
-    def _check_chunk_exists(
-        self, chunk_hash: str, namespace: Optional[str] = None
-    ) -> bool:
+    def _check_chunk_exists(self, chunk_hash: str, namespace: Optional[str] = None) -> bool:
         """
         Check if a chunk with the given hash already exists in Pinecone.
 
@@ -198,7 +193,10 @@ class DocumentIndexer:
         except Exception as e:
             # Check if the error is related to unsupported file types
             error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ['unsupported', 'file type', 'format not supported', 'cannot load']):
+            if any(
+                keyword in error_msg
+                for keyword in ["unsupported", "file type", "format not supported", "cannot load"]
+            ):
                 logger.error(f"Unsupported file type: {str(e)}")
                 raise UnsupportedFileTypeError(f"File type not supported: {str(e)}")
             logger.error(f"Error loading document: {str(e)}")
@@ -220,7 +218,9 @@ class DocumentIndexer:
             length_function=len,
         )
 
-        logger.info(f"Splitting documents into chunks (size: {chunk_size}, overlap: {chunk_overlap})")
+        logger.info(
+            f"Splitting documents into chunks (size: {chunk_size}, overlap: {chunk_overlap})"
+        )
         chunks = text_splitter.split_documents(documents)
         logger.info(f"Created {len(chunks)} chunks from {len(documents)} document(s)")
 
@@ -232,7 +232,7 @@ class DocumentIndexer:
             logger.info("Checking for duplicate chunks...")
             for chunk in chunks:
                 chunk_hash = self._generate_document_hash(file_path, chunk.page_content)
-                
+
                 # Add hash to metadata for future duplicate detection
                 if not chunk.metadata:
                     chunk.metadata = {}
@@ -245,8 +245,10 @@ class DocumentIndexer:
                     logger.debug(f"Skipping duplicate chunk (hash: {chunk_hash[:8]}...)")
                 else:
                     chunks_to_index.append(chunk)
-            
-            logger.info(f"Found {chunks_skipped} duplicate chunks, {len(chunks_to_index)} new chunks to index")
+
+            logger.info(
+                f"Found {chunks_skipped} duplicate chunks, {len(chunks_to_index)} new chunks to index"
+            )
         else:
             # Add metadata without duplicate checking
             for chunk in chunks:
@@ -386,4 +388,3 @@ class DocumentIndexer:
             "results": results,
             "errors": errors if errors else None,
         }
-

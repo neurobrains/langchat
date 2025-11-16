@@ -2,10 +2,12 @@
 Tests for API app module.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from langchat.config import LangChatConfig
+
 from langchat.api.app import create_app
+from langchat.config import LangChatConfig
 
 
 @pytest.fixture
@@ -53,9 +55,8 @@ class TestApp:
         with patch("langchat.api.app.FastAPI") as mock_fastapi:
             mock_app_instance = MagicMock()
             mock_fastapi.return_value = mock_app_instance
-            
+
             app = create_app(config=mock_config)
-            
+
             # Verify routes were added
             assert hasattr(app, "include_router") or hasattr(mock_app_instance, "include_router")
-

@@ -2,9 +2,8 @@
 Auto-generate Dockerfile, .dockerignore, and requirements.txt for LangChat.
 """
 
-import os
 import ast
-from typing import Optional
+import os
 from pathlib import Path
 
 
@@ -167,7 +166,7 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
 
     try:
         if os.path.exists(setup_path):
-            with open(setup_path, "r", encoding="utf-8") as f:
+            with open(setup_path, encoding="utf-8") as f:
                 content = f.read()
 
             # Parse setup.py to extract install_requires
@@ -186,15 +185,13 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
                                     # Skip comments (they appear as Constant or Str with #)
                                     if isinstance(item, ast.Constant):
                                         value = item.value
-                                        if isinstance(
-                                            value, str
-                                        ) and not value.strip().startswith("#"):
+                                        if isinstance(value, str) and not value.strip().startswith(
+                                            "#"
+                                        ):
                                             dependencies.append(value)
-                                    elif isinstance(
-                                        item, ast.Str
-                                    ):  # Python < 3.8 compatibility
+                                    elif isinstance(item, ast.Str):  # Python < 3.8 compatibility
                                         value = item.s
-                                        if not value.strip().startswith("#"):
+                                        if isinstance(value, str) and not value.strip().startswith("#"):
                                             dependencies.append(value)
         else:
             # If setup.py doesn't exist, use default dependencies
@@ -269,8 +266,7 @@ def generate_requirements_txt(
     for dep in dependencies:
         dep_lower = dep.lower()
         if any(
-            kw in dep_lower
-            for kw in ["fastapi", "uvicorn", "starlette", "pydantic", "multipart"]
+            kw in dep_lower for kw in ["fastapi", "uvicorn", "starlette", "pydantic", "multipart"]
         ):
             web_framework.append(dep)
         elif any(kw in dep_lower for kw in ["pytz", "requests"]):
@@ -344,22 +340,20 @@ def generate_all_docker_files(
     Returns:
         Dictionary with paths to generated files
     """
-    output_dir = Path(output_dir)
+    output_dir_path = Path(output_dir)
 
     dockerfile_path = generate_dockerfile(
-        output_path=str(output_dir / "Dockerfile"),
+        output_path=str(output_dir_path / "Dockerfile"),
         port=port,
         python_version=python_version,
         app_file=app_file,
     )
 
-    dockerignore_path = generate_dockerignore(
-        output_path=str(output_dir / ".dockerignore")
-    )
+    dockerignore_path = generate_dockerignore(output_path=str(output_dir_path / ".dockerignore"))
 
     requirements_path = generate_requirements_txt(
-        output_path=str(output_dir / "requirements.txt"),
-        setup_path=str(output_dir / "setup.py"),
+        output_path=str(output_dir_path / "requirements.txt"),
+        setup_path=str(output_dir_path / "setup.py"),
     )
 
     return {

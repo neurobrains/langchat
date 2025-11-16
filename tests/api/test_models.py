@@ -2,7 +2,6 @@
 Tests for API models module.
 """
 
-import pytest
 from langchat.api.models import QueryRequest
 
 
@@ -16,7 +15,7 @@ class TestModels:
             userId="test-user",
             domain="default",
         )
-        
+
         assert request.query == "test query"
         assert request.userId == "test-user"
         assert request.domain == "default"
@@ -28,7 +27,7 @@ class TestModels:
             userId="test-user",
             domain="custom-domain",
         )
-        
+
         assert request.domain == "custom-domain"
 
     def test_query_request_optional_image(self):
@@ -39,7 +38,7 @@ class TestModels:
             domain="default",
             image=None,
         )
-        
+
         assert request.image is None
 
     def test_query_request_with_image(self):
@@ -50,6 +49,5 @@ class TestModels:
             domain="default",
             image="base64encodedimage",
         )
-        
-        assert request.image == "base64encodedimage"
 
+        assert request.image == "base64encodedimage"

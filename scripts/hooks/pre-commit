@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""
+Pre-commit hook to run Ruff linting and formatting checks.
+Works on Windows, Linux, and Mac.
+"""
+
+import subprocess
+import sys
+import os
+
+def run_command(cmd, description, check=True):
+    """Run a command and return success status."""
+    print(f"\n{description}...")
+    try:
+        # Use shell=True for Windows compatibility
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            check=check,
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr and result.returncode != 0:
+            print(result.stderr, file=sys.stderr)
+        return result.returncode == 0
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e.stderr if e.stderr else e.stdout}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        return False
+
+def main():
+    """Main hook function."""
+    print("=" * 60)
+    print("Running Ruff linting and formatting checks...")
+    print("=" * 60)
+    
+    # Run ruff check with auto-fix
+    if not run_command(
+        "python -m ruff check --fix src/ tests/",
+        "Running Ruff linting (with auto-fix)",
+        check=False
+    ):
+        print("\n❌ Ruff found issues that couldn't be auto-fixed.")
+        print("Please fix them manually before committing.")
+        print("Run: python -m ruff check src/ tests/")
+        sys.exit(1)
+    
+    # Run ruff format
+    if not run_command(
+        "python -m ruff format src/ tests/",
+        "Running Ruff formatting",
+        check=False
+    ):
+        print("\n❌ Ruff formatting found issues.")
+        print("Files have been auto-formatted. Please review and commit again.")
+        sys.exit(1)
+    
+    print("\n✅ Ruff checks passed!")
+    print("=" * 60)
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()
+

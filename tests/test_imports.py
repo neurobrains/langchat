@@ -2,8 +2,6 @@
 Test that all imports work correctly.
 """
 
-import pytest
-import sys
 import importlib.util
 from pathlib import Path
 
@@ -37,12 +35,12 @@ def test_config_get_formatted_time():
 def test_dependencies_import():
     """Test that all required dependencies can be imported."""
     import fastapi
-    import uvicorn
-    import starlette
-    import pydantic
-    import requests
     import langchain
     import openai
+    import pydantic
+    import requests
+    import starlette
+    import uvicorn
 
     assert fastapi is not None
     assert uvicorn is not None

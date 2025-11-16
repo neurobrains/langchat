@@ -2,9 +2,6 @@
 Test configuration functionality.
 """
 
-import os
-import sys
-import pytest
 from pathlib import Path
 
 # Import config directly to avoid triggering __init__.py imports

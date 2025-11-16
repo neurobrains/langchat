@@ -38,8 +38,6 @@ except ImportError:
             "Could not import ContextualCompressionRetriever. Please install langchain: pip install langchain"
         )
 
-from langchat.logger import logger
-
 
 class FlashrankRerankAdapter:
     """

@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""
+Pre-push hook to run MyPy type checking.
+Works on Windows, Linux, and Mac.
+"""
+
+import subprocess
+import sys
+
+def main():
+    """Main hook function."""
+    print("=" * 60)
+    print("Running MyPy type checking on total project...")
+    print("=" * 60)
+    
+    try:
+        result = subprocess.run(
+            ["python", "-m", "mypy", "src/", "--config-file", "mypy.ini"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.stdout:
+            print(result.stdout)
+        
+        print("\n✅ MyPy type checking passed!")
+        print("=" * 60)
+        sys.exit(0)
+        
+    except subprocess.CalledProcessError as e:
+        print("\n❌ MyPy found type errors. Please fix them before pushing.")
+        print("\nError details:")
+        print(e.stderr if e.stderr else e.stdout)
+        print("\nRun manually: python -m mypy src/ --config-file mypy.ini")
+        print("=" * 60)
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error running MyPy: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
