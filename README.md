@@ -101,50 +101,6 @@
 
 ---
 
-## ✨ Key Features
-
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
-
-<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
-<h3>🤖 LLM Integration</h3>
-<ul>
-  <li>OpenAI with automatic key rotation</li>
-  <li>Fault-tolerant retry logic</li>
-  <li>Production-ready error handling</li>
-</ul>
-</div>
-
-<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
-<h3>🔍 Vector Search</h3>
-<ul>
-  <li>Pinecone integration</li>
-  <li>Flashrank reranking</li>
-  <li>Configurable retrieval</li>
-</ul>
-</div>
-
-<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
-<h3>💾 Database Management</h3>
-<ul>
-  <li>Supabase integration</li>
-  <li>Automatic ID management</li>
-  <li>User session management</li>
-</ul>
-</div>
-
-<div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px;">
-<h3>🎨 Customization</h3>
-<ul>
-  <li>Custom prompts</li>
-  <li>Flexible configuration</li>
-  <li>Modular architecture</li>
-</ul>
-</div>
-
-</div>
-
----
-
 ## 📦 Installation
 
 <pre><code>pip install langchat</code></pre>
@@ -271,16 +227,15 @@ if __name__ == "__main__":
 
 ## 💡 Use Cases
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0;">
+## 🌟 Where You Can Use Our AI Assistants
 
-<div>📚 <strong>Education Chatbots</strong><br/>Help students find universities</div>
-<div>✈️ <strong>Travel Assistants</strong><br/>Travel recommendations</div>
-<div>🛒 <strong>Customer Support</strong><br/>Answer product questions</div>
-<div>💼 <strong>Business Assistants</strong><br/>Knowledge base queries</div>
-<div>🎓 <strong>Learning Platforms</strong><br/>Course material Q&A</div>
-<div>🏥 <strong>Healthcare</strong><br/>Medical information</div>
+| 📚 Education Chatbots | ✈️ Travel Assistants | 🛒 Customer Support |
+|----------------------|----------------------|----------------------|
+| Help students find universities | Give travel recommendations | Answer product questions |
 
-</div>
+| 💼 Business Assistants | 🎓 Learning Platforms | 🏥 Healthcare |
+|------------------------|------------------------|----------------|
+| Knowledge base queries | Course material Q&A | Medical information |
 
 ---
 
@@ -315,12 +270,6 @@ if __name__ == "__main__":
 <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
 <strong>⚠️ Important:</strong> All contributions require a <a href="DCO.md">Developer Certificate of Origin (DCO)</a> sign-off.
 </div>
-
----
-
-## 📄 License
-
-<p>This project is licensed under the MIT License - see the <a href="LICENSE">LICENSE</a> file for details.</p>
 
 ---
 
