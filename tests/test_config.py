@@ -26,7 +26,13 @@ from pathlib import Path
 config_module_path = Path(__file__).parent.parent / "src" / "langchat" / "config.py"
 
 spec = importlib.util.spec_from_file_location("langchat.config", config_module_path)
+if spec is None:
+    raise ImportError(f"Could not load spec from {config_module_path}")
+
 config_module = importlib.util.module_from_spec(spec)
+if spec.loader is None:
+    raise ImportError(f"Spec loader is None for {config_module_path}")
+
 spec.loader.exec_module(config_module)
 LangChatConfig = config_module.LangChatConfig
 

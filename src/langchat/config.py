@@ -122,15 +122,15 @@ class LangChatConfig:
         # Simple template - use {{context}}, {{chat_history}}, {{question}} as placeholders for PromptTemplate
         template = """You are a helpful assistant. Answer correctly the user question.
 
-Use the following context and chat history to answer:
+        Use the following context and chat history to answer:
 
-Context:
-{{context}}
+        Context:
+        {{context}}
 
-Current conversation:
-{{chat_history}}
+        Current conversation:
+        {{chat_history}}
 
-Human: {{question}}
-AI Assistant:"""
+        Human: {{question}}
+        AI Assistant:"""
 
         return template
