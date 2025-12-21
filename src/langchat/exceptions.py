@@ -1,8 +1,3 @@
-"""
-Custom exceptions for LangChat.
-"""
-
-
 class UnsupportedFileTypeError(Exception):
     """
     Exception raised when a file type is not supported.
