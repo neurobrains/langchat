@@ -46,7 +46,7 @@ class SupabaseAdapter:
             SupabaseAdapter instance
         """
         return cls(url=supabase_url, key=supabase_key)
-    
+
     def check_tables_exist(self) -> bool:
         """
         Check if the tables exist by attempting to query them.
@@ -62,7 +62,11 @@ class SupabaseAdapter:
         except Exception as e:
             # Check if it's a "table not found" error
             error_str = str(e).lower()
-            if "pgrst205" in error_str or "could not find the table" in error_str or "does not exist" in error_str:
+            if (
+                "pgrst205" in error_str
+                or "could not find the table" in error_str
+                or "does not exist" in error_str
+            ):
                 return False
             # For other errors (permissions, etc.), assume tables might exist
             # but we can't access them - return False to be safe

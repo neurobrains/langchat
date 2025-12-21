@@ -8,8 +8,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
-import pyperclip
 
+import pyperclip
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
@@ -137,7 +137,7 @@ class LangChatEngine:
                 console = Console()
 
                 sql_text = self.supabase_adapter.get_create_tables_sql().strip()
-                
+
                 # Create formatted SQL code block
                 # Note: lexer is the second positional argument, not a keyword
                 sql_code = Syntax(
@@ -146,7 +146,7 @@ class LangChatEngine:
                     theme="monokai",
                     line_numbers=True,
                 )
-                
+
                 # Create info panel
                 info_text = (
                     "[bold yellow]⚠ Could not create tables automatically[/bold yellow]\n\n"
@@ -156,27 +156,39 @@ class LangChatEngine:
                     "[dim]Alternatively, use a service role key for automatic table creation.[/dim]\n\n"
                     "[bold green]✓ RLS (Row Level Security) is included in the SQL[/bold green]"
                 )
-                
+
                 # Print warning message
                 logger.warning("Table was not created automatically")
-                
+
                 # Print formatted SQL in a beautiful panel
                 console.print()
-                console.print(Panel(info_text, title="[bold yellow]Database Setup Required[/bold yellow]", border_style="yellow"))
+                console.print(
+                    Panel(
+                        info_text,
+                        title="[bold yellow]Database Setup Required[/bold yellow]",
+                        border_style="yellow",
+                    )
+                )
                 console.print()
-                console.print(Panel(sql_code, title="[bold cyan]SQL Schema with RLS[/bold cyan]", border_style="cyan"))
+                console.print(
+                    Panel(
+                        sql_code,
+                        title="[bold cyan]SQL Schema with RLS[/bold cyan]",
+                        border_style="cyan",
+                    )
+                )
                 console.print()
-                
+
                 # Copy SQL to clipboard (with error handling)
                 try:
                     pyperclip.copy(sql_text)
                     logger.info("SQL has been copied to clipboard")
                 except Exception as e:
                     logger.debug(f"Could not copy to clipboard: {str(e)}")
-            
+
             elif tables_exist:
                 logger.info("Database tables already exist and are accessible")
-           
+
             # Always initialize ID Manager early to prevent initialization during save
             # This ensures counters are set up before any inserts happen
             if not self.id_manager.initialized:
