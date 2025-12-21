@@ -40,6 +40,7 @@ dependencies = [
     "flashrank>=0.2.10",
     "supabase>=2.15.2",
     "docsuite>=0.1.0",
+    "pyperclip>=1.11.0",
 ]
 
 [project.optional-dependencies]

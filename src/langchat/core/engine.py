@@ -8,9 +8,11 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Optional
+import pyperclip
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.syntax import Syntax
 
 from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
 from langchat.adapters.services.openai_service import OpenAILLMService
@@ -24,6 +26,9 @@ from langchat.logger import logger
 
 # Global flag to track if running as API server
 _is_api_server_mode = False
+
+# Class-level flag to prevent duplicate SQL printing
+_sql_printed = False
 
 
 def set_api_server_mode(enabled: bool = True):
@@ -117,36 +122,61 @@ class LangChatEngine:
 
     def _initialize_database(self):
         """Initialize database tables."""
+
+        global _sql_printed
+
         try:
             # First, try to create tables if they don't exist
             logger.info("Checking database tables...")
-            tables_created = self.supabase_adapter.create_tables_if_not_exist()
+            tables_exist = self.supabase_adapter.check_tables_exist()
 
-            if not tables_created:
-                # If automatic creation failed, try to check if tables exist anyway
-                # (they might have been created manually)
+            if not tables_exist and not _sql_printed:
+                _sql_printed = True
+
+                # Provide SQL for manual execution (only print once)
+                console = Console()
+
+                sql_text = self.supabase_adapter.get_create_tables_sql().strip()
+                
+                # Create formatted SQL code block
+                # Note: lexer is the second positional argument, not a keyword
+                sql_code = Syntax(
+                    sql_text,
+                    "sql",  # lexer as second positional argument
+                    theme="monokai",
+                    line_numbers=True,
+                )
+                
+                # Create info panel
+                info_text = (
+                    "[bold yellow]⚠ Could not create tables automatically[/bold yellow]\n\n"
+                    "[bold]Please run the following SQL in your Supabase SQL Editor:[/bold]\n"
+                    "[dim]Go to: Supabase Dashboard > SQL Editor > New Query[/dim]\n\n"
+                    "[dim]After running the SQL, the tables will be created automatically.[/dim]\n"
+                    "[dim]Alternatively, use a service role key for automatic table creation.[/dim]\n\n"
+                    "[bold green]✓ RLS (Row Level Security) is included in the SQL[/bold green]"
+                )
+                
+                # Print warning message
+                logger.warning("Table was not created automatically")
+                
+                # Print formatted SQL in a beautiful panel
+                console.print()
+                console.print(Panel(info_text, title="[bold yellow]Database Setup Required[/bold yellow]", border_style="yellow"))
+                console.print()
+                console.print(Panel(sql_code, title="[bold cyan]SQL Schema with RLS[/bold cyan]", border_style="cyan"))
+                console.print()
+                
+                # Copy SQL to clipboard (with error handling)
                 try:
-                    self.supabase_adapter.client.table("chat_history").select("id").limit(
-                        1
-                    ).execute()
-                    self.supabase_adapter.client.table("request_metrics").select("id").limit(
-                        1
-                    ).execute()
-                    logger.info("Database tables exist (created manually)")
+                    pyperclip.copy(sql_text)
+                    logger.info("SQL has been copied to clipboard")
                 except Exception as e:
-                    error_str = str(e).lower()
-                    if "pgrst205" in error_str or "could not find the table" in error_str:
-                        logger.error(
-                            "Tables do not exist and could not be created automatically. "
-                            "Please create them manually using the SQL provided in the logs above, "
-                            "or use a service role key for automatic creation."
-                        )
-                        # Don't raise - allow the app to continue, but operations will fail
-                        return
-                    else:
-                        # Some other error
-                        logger.warning(f"Error checking tables: {str(e)}")
-
+                    logger.debug(f"Could not copy to clipboard: {str(e)}")
+            
+            elif tables_exist:
+                logger.info("Database tables already exist and are accessible")
+           
             # Always initialize ID Manager early to prevent initialization during save
             # This ensures counters are set up before any inserts happen
             if not self.id_manager.initialized:
