@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
 ## Use Cases
 
-| Education            | E-commerce | E-commerce |
+| Education            | E-commerce | Enterprise|
 |----------------------|----------------------|----------------------|
 | Intelligent tutoring and course Q&A | Customer support and product discovery | Internal knowledge base search |
 
