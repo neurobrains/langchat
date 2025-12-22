@@ -1,13 +1,6 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
-"""
-Abstract base classes for LangChat adapters.
-
-This module defines the adapter pattern interfaces that allow the library
-to support multiple providers for LLM, vector stores, history storage, and reranking.
-"""
-
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
