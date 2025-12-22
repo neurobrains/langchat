@@ -1,3 +1,6 @@
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
 Setup script for LangChat package.
 """

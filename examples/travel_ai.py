@@ -1,3 +1,6 @@
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
 Main entry point for running LangChat API server.
 This uses the langchat library from src/langchat.

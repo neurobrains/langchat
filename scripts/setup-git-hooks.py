@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
 Setup git hooks for code quality checks.
 Copies hooks from scripts/hooks/ to .git/hooks/
