@@ -131,7 +131,7 @@ class LangChatEngine:
         # Initialize ranker (this will download the model if not already present)
         self.reranker_adapter = FlashrankRerankAdapter(
             model_name=self.config.reranker_model,
-            cache_dir=reranker_cache_dir,
+            cache_dir=str(reranker_cache_dir),
             top_n=self.config.reranker_top_n,
         )
         logger.info(f"Reranker model '{self.config.reranker_model}' initialized")

@@ -201,7 +201,7 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
                                     value = item.value
                                     if isinstance(value, str) and not value.strip().startswith("#"):
                                         dependencies.append(value)
-                                elif isinstance(item, ast.Str):  # Python < 3.8 compatibility
+                                elif isinstance(item, ast.Str):  # Python < 3.8 compatibility  # ty: ignore[deprecated]
                                     value = item.s
                                     if isinstance(value, str) and not value.strip().startswith("#"):
                                         dependencies.append(value)

@@ -103,3 +103,9 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.ty.rules]
+# Ty type checker configuration
+# Ignore unresolved imports for third-party packages that are installed at runtime
+# These packages are available when the code runs but ty can't resolve them statically
+unresolved-import = "ignore"
