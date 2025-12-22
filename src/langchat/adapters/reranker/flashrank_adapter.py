@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# mypy: disable-error-code=no-redef
+# ty: disable-error-code=no-redef
 
 from typing import Any
 

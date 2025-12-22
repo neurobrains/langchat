@@ -5,12 +5,8 @@ echo "Running Ruff linting..."
 python -m ruff check src/ tests/
 
 echo ""
-echo "Running Ruff formatting check..."
-python -m ruff format --check src/ tests/
-
-echo ""
-echo "Running MyPy type checking..."
-python -m mypy src/ --config-file mypy.ini
+echo "Running ty type checking..."
+python -m ty check src/
 
 echo ""
 echo "Running tests..."

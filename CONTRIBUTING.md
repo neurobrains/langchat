@@ -39,7 +39,7 @@ We welcome feature suggestions! Please open an issue with:
    ```
 4. Install development dependencies:
    ```bash
-   pip install pytest pytest-asyncio black flake8 mypy
+   pip install pytest pytest-asyncio black flake8 ty
    ```
 
 #### Development Workflow
