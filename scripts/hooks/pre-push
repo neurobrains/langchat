@@ -10,7 +10,7 @@ import sys
 def main():
     """Main hook function."""
     print("=" * 60)
-    print("Running ty type checking on total project...")
+    print("Running ty type checking on Langchat...")
     print("=" * 60)
     
     try:

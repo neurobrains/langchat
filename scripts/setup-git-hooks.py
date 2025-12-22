@@ -127,7 +127,7 @@ if __name__ == "__main__":
         print("=" * 60)
         print("\n✅ Git hooks setup complete!")
         print("\nHooks installed:")
-        print("  - pre-commit: Runs Ruff linting (auto-fixes issues)")
+        print("  - pre-commit: Runs Ruff linting checks")
         print("  - pre-push: Runs ty type checking on entire project")
         print("  - prepare-commit-msg: Automatically adds DCO sign-off (bash script)")
         print("\nHooks source: scripts/hooks/")

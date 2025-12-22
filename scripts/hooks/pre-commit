@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pre-commit hook to run Ruff linting checks (with auto-fix).
+Pre-commit hook to run Ruff linting checks.
 Works on Windows, Linux, and Mac.
 """
 
@@ -35,16 +35,16 @@ def run_command(cmd, description, check=True):
 def main():
     """Main hook function."""
     print("=" * 60)
-    print("Running Ruff linting checks (with auto-fix)...")
+    print("Running Ruff linting checks...")
     print("=" * 60)
     
-    # Run ruff check with auto-fix
+    # Run ruff check (no auto-fix)
     if not run_command(
-        "python -m ruff check --fix src/ tests/",
-        "Running Ruff linting (with auto-fix)",
+        "python -m ruff check src/ tests/",
+        "Running Ruff linting",
         check=False
     ):
-        print("\n❌ Ruff found issues that couldn't be auto-fixed.")
+        print("\n❌ Ruff found issues.")
         print("Please fix them manually before committing.")
         print("Run: python -m ruff check src/ tests/")
         sys.exit(1)
