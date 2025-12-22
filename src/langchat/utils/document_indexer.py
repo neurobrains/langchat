@@ -23,11 +23,11 @@ import os
 import uuid
 from typing import Dict, List, Optional
 
-from docsuite import UnifiedDocumentLoader # type: ignore[import-untyped]
-from langchain.text_splitter import RecursiveCharacterTextSplitter # type: ignore[import-untyped]
-from langchain_openai import OpenAIEmbeddings # type: ignore[import-untyped]
-from langchain_pinecone.vectorstores import PineconeVectorStore # type: ignore[import-untyped]
-from pinecone import Pinecone # type: ignore[import-untyped]
+from docsuite import UnifiedDocumentLoader  # type: ignore[import-untyped]
+from langchain.text_splitter import RecursiveCharacterTextSplitter  # type: ignore[import-untyped]
+from langchain_openai import OpenAIEmbeddings  # type: ignore[import-untyped]
+from langchain_pinecone.vectorstores import PineconeVectorStore  # type: ignore[import-untyped]
+from pinecone import Pinecone  # type: ignore[import-untyped]
 
 from langchat.exceptions import UnsupportedFileTypeError
 from langchat.logger import logger
