@@ -7,6 +7,8 @@ from typing import Any
 
 from flashrank import Ranker
 
+from langchat.adapters.base import RerankerProvider
+
 
 def _import_flashrank_rerank() -> Any:  # type: ignore[no-redef]
     """Import FlashrankRerank with fallback to different import paths."""
@@ -69,7 +71,7 @@ FlashrankRerank = _import_flashrank_rerank()
 ContextualCompressionRetriever = _import_contextual_compression_retriever()
 
 
-class FlashrankRerankAdapter:
+class FlashrankRerankAdapter(RerankerProvider):
     """
     Adapter for Flashrank reranker.
     """

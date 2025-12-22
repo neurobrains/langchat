@@ -9,11 +9,8 @@ from typing import List, Tuple, cast
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 
-from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
-from langchat.adapters.services.openai_service import OpenAILLMService
+from langchat.adapters.base import HistoryStore, LLMProvider, RerankerProvider, VectorStoreProvider
 from langchat.adapters.supabase.id_manager import IDManager
-from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
 from langchat.config import LangChatConfig
 from langchat.logger import logger
 
@@ -32,10 +29,10 @@ class UserSession:
         domain: str,
         user_id: str,
         config: LangChatConfig,
-        llm: OpenAILLMService,
-        vector_adapter: PineconeVectorAdapter,
-        reranker_adapter: FlashrankRerankAdapter,
-        supabase_adapter: SupabaseAdapter,
+        llm: LLMProvider,
+        vector_adapter: VectorStoreProvider,
+        reranker_adapter: RerankerProvider,
+        history_store: HistoryStore,
         id_manager: IDManager,
         prompt_template: str,
     ):
@@ -49,7 +46,7 @@ class UserSession:
             llm: LLM provider instance
             vector_adapter: Vector database adapter
             reranker_adapter: Reranker adapter
-            supabase_adapter: Supabase database adapter
+            history_store: History storage adapter
             id_manager: ID manager instance
             prompt_template: System prompt template
         """
@@ -59,7 +56,7 @@ class UserSession:
         self.llm = llm
         self.vector_adapter = vector_adapter
         self.reranker_adapter = reranker_adapter
-        self.supabase_adapter = supabase_adapter
+        self.history_store = history_store
         self.id_manager = id_manager
         self.prompt_template = prompt_template
         self.last_active = datetime.now()
@@ -93,7 +90,7 @@ class UserSession:
         """
         try:
             response = (
-                self.supabase_adapter.client.table("chat_history")
+                self.history_store.client.table("chat_history")
                 .select("query, response")
                 .eq("user_id", self.user_id)
                 .eq("domain", self.domain)

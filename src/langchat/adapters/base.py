@@ -9,13 +9,13 @@ to support multiple providers for LLM, vector stores, history storage, and reran
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 
 class LLMProvider(ABC):
     """
     Abstract base class for LLM providers.
-    
+
     Implementations should provide methods for invoking language models
     with support for synchronous and asynchronous operations.
     """
@@ -37,7 +37,7 @@ class LLMProvider(ABC):
     def current_llm(self) -> Any:
         """
         Get the current LLM instance.
-        
+
         This should return the underlying LangChain-compatible LLM object
         that can be used directly in chains.
         """
@@ -48,7 +48,7 @@ class LLMProvider(ABC):
     def current_key(self) -> Optional[str]:
         """
         Get the current API key being used.
-        
+
         Returns None if no key is available or if the provider
         doesn't use API keys.
         """
@@ -58,11 +58,11 @@ class LLMProvider(ABC):
     def invoke(self, messages: Any, **kwargs: Any) -> Any:
         """
         Invoke the LLM synchronously.
-        
+
         Args:
             messages: Chat messages (format depends on implementation)
             **kwargs: Additional arguments for the LLM
-            
+
         Returns:
             LLM response
         """
@@ -71,25 +71,35 @@ class LLMProvider(ABC):
     async def ainvoke(self, messages: Any, **kwargs: Any) -> Any:
         """
         Invoke the LLM asynchronously.
-        
+
         Default implementation calls invoke in a thread pool.
         Implementations can override for better async performance.
-        
+
         Args:
             messages: Chat messages (format depends on implementation)
             **kwargs: Additional arguments for the LLM
-            
+
         Returns:
             LLM response
         """
         import asyncio
-        return await asyncio.to_thread(self.invoke, messages, **kwargs)
+        import sys
+        from functools import partial
+
+        # Use asyncio.to_thread for Python 3.9+, fallback to run_in_executor for 3.8
+        if sys.version_info >= (3, 9):
+            return await asyncio.to_thread(self.invoke, messages, **kwargs)
+        else:
+            # Python 3.8 compatibility
+            loop = asyncio.get_event_loop()
+            func = partial(self.invoke, messages, **kwargs)
+            return await loop.run_in_executor(None, func)
 
 
 class VectorStoreProvider(ABC):
     """
     Abstract base class for vector store providers.
-    
+
     Implementations should provide methods for retrieving documents
     from vector databases.
     """
@@ -98,10 +108,10 @@ class VectorStoreProvider(ABC):
     def get_retriever(self, k: int = 5) -> Any:
         """
         Get a retriever from the vector store.
-        
+
         Args:
             k: Number of documents to retrieve
-            
+
         Returns:
             LangChain-compatible retriever instance
         """
@@ -111,7 +121,7 @@ class VectorStoreProvider(ABC):
 class HistoryStore(ABC):
     """
     Abstract base class for history storage providers.
-    
+
     Implementations should provide methods for storing and retrieving
     chat history and managing database operations.
     """
@@ -121,7 +131,7 @@ class HistoryStore(ABC):
     def client(self) -> Any:
         """
         Get the underlying client for database operations.
-        
+
         The exact type depends on the implementation (e.g., Supabase Client).
         """
         pass
@@ -130,7 +140,7 @@ class HistoryStore(ABC):
     def check_tables_exist(self) -> bool:
         """
         Check if required database tables exist.
-        
+
         Returns:
             True if tables exist and are accessible, False otherwise
         """
@@ -140,7 +150,7 @@ class HistoryStore(ABC):
     def get_create_tables_sql(self) -> str:
         """
         Get SQL statements needed to create required tables.
-        
+
         Returns:
             SQL string with table creation statements
         """
@@ -150,7 +160,7 @@ class HistoryStore(ABC):
 class RerankerProvider(ABC):
     """
     Abstract base class for reranker providers.
-    
+
     Implementations should provide methods for reranking retrieved documents
     to improve relevance.
     """
@@ -159,10 +169,10 @@ class RerankerProvider(ABC):
     def create_compression_retriever(self, base_retriever: Any) -> Any:
         """
         Create a contextual compression retriever.
-        
+
         Args:
             base_retriever: Base retriever to compress/rerank
-            
+
         Returns:
             LangChain-compatible compression retriever instance
         """

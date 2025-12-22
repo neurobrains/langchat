@@ -8,7 +8,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
-from langchat.adapters.services.openai_service import OpenAILLMService
+from langchat.adapters.base import LLMProvider
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -44,7 +44,7 @@ def create_standalone_question_prompt(
 async def generate_standalone_question(
     query: str,
     chat_history: List[Tuple[str, str]],
-    llm: OpenAILLMService,
+    llm: LLMProvider,
     custom_prompt: Optional[str] = None,
     verbose_chains: bool = False,
 ) -> str:
@@ -84,16 +84,19 @@ async def generate_standalone_question(
     prompt = create_standalone_question_prompt(custom_prompt=custom_prompt)
 
     # Use standalone LLM for question generation (can use a simpler/cheaper model)
-    # OpenAI service
-    if not hasattr(llm, "current_key") or not llm.current_key:
-        raise ValueError("No API key available for standalone question generation")
-
-    standalone_llm = ChatOpenAI(
-        model=llm.model,
-        temperature=llm.temperature,
-        openai_api_key=llm.current_key,  # type: ignore[call-arg]
-        max_retries=1,
-    )
+    # For OpenAI provider, create a ChatOpenAI instance
+    # For other providers, use their current_llm directly
+    if llm.current_key:
+        # OpenAI-specific: create a new ChatOpenAI instance
+        standalone_llm = ChatOpenAI(
+            model=llm.model,
+            temperature=llm.temperature,
+            openai_api_key=llm.current_key,  # type: ignore[call-arg]
+            max_retries=1,
+        )
+    else:
+        # For other providers, use the current_llm directly
+        standalone_llm = llm.current_llm
 
     # Create chain with verbose based on config
     chain = LLMChain(

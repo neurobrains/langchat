@@ -6,7 +6,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import pyperclip
 from rich.console import Console
@@ -22,6 +22,14 @@ from langchat.config import LangChatConfig
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
 from langchat.logger import logger
+
+if TYPE_CHECKING:
+    from langchat.adapters.base import (
+        HistoryStore,
+        LLMProvider,
+        RerankerProvider,
+        VectorStoreProvider,
+    )
 
 # Global flag to track if running as API server
 _is_api_server_mode = False
@@ -67,28 +75,28 @@ class LangChatEngine:
 
     def _initialize_adapters(self):
         """Initialize all adapters."""
-        # Initialize Supabase adapter
+        # Initialize Supabase adapter (default HistoryStore implementation)
         if self.config.supabase_url and self.config.supabase_key:
-            self.supabase_adapter = SupabaseAdapter.from_config(
+            self.history_store: HistoryStore = SupabaseAdapter.from_config(
                 self.config.supabase_url, self.config.supabase_key
             )
         else:
             raise ValueError("Supabase URL and key must be provided")
 
         # Initialize ID manager
-        self.id_manager = IDManager(self.supabase_adapter.client, initial_value=0, retry_attempts=5)
+        self.id_manager = IDManager(self.history_store.client, initial_value=0, retry_attempts=5)
 
-        # Initialize LLM service (OpenAI)
+        # Initialize LLM service (default OpenAI implementation)
         if not self.config.openai_api_keys:
             raise ValueError("OpenAI API keys must be provided")
-        self.llm = OpenAILLMService(
+        self.llm: LLMProvider = OpenAILLMService(
             model=self.config.openai_model,
             temperature=self.config.openai_temperature,
             api_keys=self.config.openai_api_keys,
             max_retries_per_key=self.config.max_llm_retries,
         )
 
-        # Initialize Pinecone vector adapter
+        # Initialize Pinecone vector adapter (default VectorStoreProvider implementation)
         if not self.config.pinecone_api_key:
             raise ValueError("Pinecone API key must be provided")
         if not self.config.pinecone_index_name:
@@ -97,7 +105,7 @@ class LangChatEngine:
         # Get embedding API key (OpenAI)
         embedding_api_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
 
-        self.vector_adapter = PineconeVectorAdapter(
+        self.vector_adapter: VectorStoreProvider = PineconeVectorAdapter(
             api_key=self.config.pinecone_api_key,
             index_name=self.config.pinecone_index_name,
             embedding_model=self.config.openai_embedding_model,
@@ -105,14 +113,14 @@ class LangChatEngine:
         )
         logger.info(f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}")
 
-        # Initialize Flashrank reranker
+        # Initialize Flashrank reranker (default RerankerProvider implementation)
         # Use config's reranker_cache_dir (relative to current working directory)
         reranker_cache_dir = Path(self.config.reranker_cache_dir)
         reranker_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
 
         # Initialize ranker (this will download the model if not already present)
-        self.reranker_adapter = FlashrankRerankAdapter(
+        self.reranker_adapter: RerankerProvider = FlashrankRerankAdapter(
             model_name=self.config.reranker_model,
             cache_dir=str(reranker_cache_dir),
             top_n=self.config.reranker_top_n,
@@ -127,7 +135,7 @@ class LangChatEngine:
         try:
             # First, try to create tables if they don't exist
             logger.info("Checking database tables...")
-            tables_exist = self.supabase_adapter.check_tables_exist()
+            tables_exist = self.history_store.check_tables_exist()
 
             if not tables_exist and not _sql_printed:
                 _sql_printed = True
@@ -135,7 +143,7 @@ class LangChatEngine:
                 # Provide SQL for manual execution (only print once)
                 console = Console()
 
-                sql_text = self.supabase_adapter.get_create_tables_sql().strip()
+                sql_text = self.history_store.get_create_tables_sql().strip()
 
                 # Create formatted SQL code block
                 # Note: lexer is the second positional argument, not a keyword
@@ -230,7 +238,7 @@ class LangChatEngine:
                 llm=self.llm,
                 vector_adapter=self.vector_adapter,
                 reranker_adapter=self.reranker_adapter,
-                supabase_adapter=self.supabase_adapter,
+                history_store=self.history_store,
                 id_manager=self.id_manager,
                 prompt_template=prompt_template,
             )
