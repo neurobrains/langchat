@@ -21,9 +21,9 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from langchat.main import LangChat
 
 from langchat.config import LangChatConfig
-from langchat.main import LangChat
 
 
 @pytest.fixture

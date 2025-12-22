@@ -89,7 +89,7 @@ export SUPABASE_KEY="your-key"
 
 ```python
 import asyncio
-from langchat import LangChat, LangChatConfig
+from langchat.sdk import LangChat, LangChatConfig
 
 async def main():
     # Load configuration from environment variables
