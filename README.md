@@ -102,8 +102,8 @@ async def main():
     # Note: Response is automatically displayed in a Rich panel
     result = await ai.chat(
         query="Hello! What can you help me with?",
-        user_id="user123",
-        domain="general"
+        user_id="guest",
+        domain="www.neurobrains.co"
     )
 
 if __name__ == "__main__":
