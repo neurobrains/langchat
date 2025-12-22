@@ -2,14 +2,15 @@
 # Licensed under the MIT License.
 
 from itertools import cycle
-from typing import List
+from typing import List, Optional
 
 from langchain_openai import ChatOpenAI
 
+from langchat.adapters.base import LLMProvider
 from langchat.logger import logger
 
 
-class OpenAILLMService:
+class OpenAILLMService(LLMProvider):
     """
     OpenAI LLM service with automatic API key rotation and retry logic.
     """
@@ -30,24 +31,44 @@ class OpenAILLMService:
             api_keys: List of OpenAI API keys for rotation
             max_retries_per_key: Maximum retries per API key
         """
-        self.model = model
-        self.temperature = temperature
+        self._model = model
+        self._temperature = temperature
         self.api_keys = cycle(api_keys) if api_keys else cycle([])
-        self.current_key = next(self.api_keys) if api_keys else None
+        self._current_key = next(self.api_keys) if api_keys else None
         self.max_retries = len(api_keys) * max_retries_per_key if api_keys else 0
-        self.current_llm = self._create_llm()
+        self._current_llm = self._create_llm()
+
+    @property
+    def model(self) -> str:
+        """Get the model name."""
+        return self._model
+
+    @property
+    def temperature(self) -> float:
+        """Get the temperature setting."""
+        return self._temperature
+
+    @property
+    def current_llm(self) -> ChatOpenAI:
+        """Get the current LLM instance."""
+        return self._current_llm
+
+    @property
+    def current_key(self) -> Optional[str]:
+        """Get the current API key being used."""
+        return self._current_key
 
     def _create_llm(self) -> ChatOpenAI:
         """
         Create an instance of ChatOpenAI with the current API key.
         """
-        if not self.current_key:
+        if not self._current_key:
             raise ValueError("No API keys provided")
 
         return ChatOpenAI(
-            model=self.model,
-            temperature=self.temperature,
-            openai_api_key=self.current_key,  # type: ignore[call-arg]
+            model=self._model,
+            temperature=self._temperature,
+            openai_api_key=self._current_key,  # type: ignore[call-arg]
             max_retries=1,
         )
 
@@ -55,9 +76,9 @@ class OpenAILLMService:
         """
         Rotate to the next API key in the list.
         """
-        self.current_key = next(self.api_keys)
-        logger.info(f"Rotating to new API key: {self.current_key[:8]}...")
-        self.current_llm = self._create_llm()
+        self._current_key = next(self.api_keys)
+        logger.info(f"Rotating to new API key: {self._current_key[:8]}...")
+        self._current_llm = self._create_llm()
 
     def invoke(self, messages, **kwargs):
         """
@@ -79,7 +100,7 @@ class OpenAILLMService:
         while attempts < self.max_retries:
             try:
                 # Make the API call
-                return self.current_llm(messages=messages, **kwargs)
+                return self._current_llm(messages=messages, **kwargs)
             except Exception as e:
                 attempts += 1
                 last_error = e

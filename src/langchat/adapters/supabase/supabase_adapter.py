@@ -5,8 +5,10 @@ from typing import Optional
 
 from supabase import Client, create_client
 
+from langchat.adapters.base import HistoryStore
 
-class SupabaseAdapter:
+
+class SupabaseAdapter(HistoryStore):
     """
     Adapter for Supabase database operations.
     """

@@ -8,10 +8,11 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone.vectorstores import PineconeVectorStore
 from pinecone import Pinecone
 
+from langchat.adapters.base import VectorStoreProvider
 from langchat.logger import logger
 
 
-class PineconeVectorAdapter:
+class PineconeVectorAdapter(VectorStoreProvider):
     """
     Adapter for Pinecone vector database operations.
     """
