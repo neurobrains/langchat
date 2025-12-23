@@ -11,18 +11,24 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from langchat.adapters.logger import logger
-from langchat.core.config import LangChatConfig
 from langchat.core.engine import LangChatEngine, set_api_server_mode
 
 # Global engine instance
 _engine: Optional[LangChatEngine] = None
-_config: Optional[LangChatConfig] = None
 _app: Optional[FastAPI] = None
 
 
 def create_lifespan(
     auto_generate_interface: bool = True,
     auto_generate_docker: bool = True,
+    llm=None,
+    vector_db=None,
+    db=None,
+    reranker=None,
+    prompt_template: Optional[str] = None,
+    standalone_question_prompt: Optional[str] = None,
+    verbose: Optional[bool] = None,
+    max_chat_history: int = 20,
 ):
     """
     Create lifespan context manager for FastAPI application.
@@ -31,6 +37,14 @@ def create_lifespan(
     Args:
         auto_generate_interface: Whether to auto-generate chat interface
         auto_generate_docker: Whether to auto-generate Docker files
+        llm: LLM provider instance (required)
+        vector_db: Vector database adapter (required)
+        db: Database adapter for history storage (required)
+        reranker: Reranker adapter (optional)
+        prompt_template: System prompt template (optional)
+        standalone_question_prompt: Standalone question prompt (optional)
+        verbose: Enable verbose logging (optional)
+        max_chat_history: Maximum chat history to keep (default: 20)
     """
 
     @asynccontextmanager
@@ -39,14 +53,21 @@ def create_lifespan(
         Lifespan context manager for FastAPI application.
         Handles startup and shutdown events.
         """
-        global _engine, _config
-
-        _config = _config or LangChatConfig.from_env()
+        global _engine
 
         # Set API server mode to disable console panel output
         set_api_server_mode(True)
 
-        _engine = LangChatEngine(config=_config)
+        _engine = LangChatEngine(
+            llm=llm,
+            vector_db=vector_db,
+            db=db,
+            reranker=reranker,
+            prompt_template=prompt_template,
+            standalone_question_prompt=standalone_question_prompt,
+            verbose=verbose,
+            max_chat_history=max_chat_history,
+        )
 
         # Startup logic
         try:
@@ -59,7 +80,7 @@ def create_lifespan(
                         generate_requirements_txt,
                     )
 
-                    port = _config.server_port if _config else 8000
+                    port = 8000
 
                     # Generate Dockerfile
                     generate_dockerfile(output_path="Dockerfile", port=port)
@@ -76,9 +97,9 @@ def create_lifespan(
                     logger.warning(f"Failed to auto-generate Docker files: {str(e)}")
 
             logger.info("LangChat API started successfully")
-            logger.info(f"Server running at: http://localhost:{_config.server_port}")
-            logger.info(f"API endpoint: http://localhost:{_config.server_port}/chat")
-            logger.info(f"Frontend interface: http://localhost:{_config.server_port}/frontend")
+            logger.info("Server running at: http://localhost:8000")
+            logger.info("API endpoint: http://localhost:8000/chat")
+            logger.info("Frontend interface: http://localhost:8000/frontend")
         except Exception as e:
             logger.error(f"Error initializing API: {str(e)}")
 
@@ -152,45 +173,36 @@ def _mount_ui(app: FastAPI) -> None:
 
 
 def create_app(
-    config: Optional[LangChatConfig] = None,
     auto_generate_interface: bool = False,
     auto_generate_docker: bool = False,
-    llm_provider: Optional[str] = None,
-    llm_api_key: Optional[str] = None,
+    llm=None,
+    vector_db=None,
+    db=None,
+    reranker=None,
+    prompt_template: Optional[str] = None,
+    standalone_question_prompt: Optional[str] = None,
+    verbose: Optional[bool] = None,
+    max_chat_history: int = 20,
 ) -> FastAPI:
     """
     Create and configure FastAPI application.
 
     Args:
-        config: LangChat configuration. If None, uses default.
         auto_generate_interface: Whether to auto-generate chat interface
         auto_generate_docker: Whether to auto-generate Docker files
+        llm: LLM provider instance (required)
+        vector_db: Vector database adapter (required)
+        db: Database adapter for history storage (required)
+        reranker: Reranker adapter (optional)
+        prompt_template: System prompt template (optional)
+        standalone_question_prompt: Standalone question prompt (optional)
+        verbose: Enable verbose logging (optional)
+        max_chat_history: Maximum chat history to keep (default: 20)
 
     Returns:
         FastAPI application instance
     """
-    global _engine, _config
-
-    _config = config or LangChatConfig.from_env()
-
-    # Convenience overrides (avoid requiring callers to build LangChatConfig manually)
-    if llm_provider:
-        _config.llm_provider = llm_provider
-    if llm_api_key:
-        provider = (_config.llm_provider or "auto").strip().lower()
-        if provider == "auto":
-            provider = "openai"
-            _config.llm_provider = provider
-        if provider == "openai":
-            _config.openai_api_keys = [llm_api_key]
-        elif provider == "gemini":
-            _config.gemini_api_keys = [llm_api_key]
-        elif provider == "anthropic":
-            _config.anthropic_api_keys = [llm_api_key]
-        else:
-            raise ValueError(
-                f"Unknown llm_provider: {_config.llm_provider!r} (expected auto/openai/gemini/anthropic)"
-            )
+    global _engine
 
     app = FastAPI(
         title="LangChat API",
@@ -198,6 +210,14 @@ def create_app(
         lifespan=create_lifespan(
             auto_generate_interface=auto_generate_interface,
             auto_generate_docker=auto_generate_docker,
+            llm=llm,
+            vector_db=vector_db,
+            db=db,
+            reranker=reranker,
+            prompt_template=prompt_template,
+            standalone_question_prompt=standalone_question_prompt,
+            verbose=verbose,
+            max_chat_history=max_chat_history,
         ),
     )
 
@@ -250,14 +270,4 @@ def get_engine() -> LangChatEngine:
     return _engine
 
 
-def get_config() -> LangChatConfig:
-    """
-    Get the LangChat configuration instance.
-    Must be called after create_app().
 
-    Returns:
-        LangChatConfig instance
-    """
-    if _config is None:
-        raise RuntimeError("Config not initialized. Call create_app() first.")
-    return _config

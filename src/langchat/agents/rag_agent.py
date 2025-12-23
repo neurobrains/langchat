@@ -8,17 +8,10 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from langchat.adapters.db.utils.id_manager import IDManager
 from langchat.adapters.logger import logger
-from langchat.core.config import LangChatConfig
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
-from langchat.providers import (
-    create_database_provider,
-    create_llm_provider,
-    create_reranker_provider,
-    create_vector_db_provider,
-)
+from langchat.database.id_manager import IDManager
 
 
 class RAGAgent:
@@ -57,47 +50,40 @@ class RAGAgent:
         vector_db: Any = None,
         db: Any = None,
         reranker: Any = None,
-        config: LangChatConfig | None = None,
         prompt_template: str | None = None,
         standalone_question_prompt: str | None = None,
         verbose: bool = False,
+        max_chat_history: int = 20,
     ):
         """
         Initialize RAG agent.
 
         Args:
-            llm: LLM provider instance (e.g., OpenAIProvider, GeminiProvider)
-            vector_db: Vector database provider (e.g., PineconeProvider)
-            db: Database provider for chat history (e.g., SupabaseProvider)
-            reranker: Reranker provider (e.g., FlashrankProvider)
-            config: LangChatConfig instance (used if providers not specified)
+            llm: LLM provider instance (REQUIRED, e.g., OpenAI, Gemini, Anthropic)
+            vector_db: Vector database provider (REQUIRED, e.g., Pinecone)
+            db: Database provider for chat history (REQUIRED, e.g., Supabase)
+            reranker: Reranker provider (REQUIRED, e.g., Flashrank)
             prompt_template: Custom prompt template
             standalone_question_prompt: Custom standalone question prompt
             verbose: Enable verbose logging
+            max_chat_history: Maximum number of chat messages to keep in history
         """
-        self.config = config or LangChatConfig.from_env()
-
-        # Initialize providers
-        self.llm = llm or create_llm_provider("auto", self.config)
-        self.vector_db = vector_db or create_vector_db_provider("pinecone", self.config)
-        self.db = db or create_database_provider("supabase", self.config)
-        self.reranker = reranker or create_reranker_provider("flashrank", self.config)
+        # Validate required providers
+        if not all([llm, vector_db, db, reranker]):
+            self.llm = llm
+            self.vector_db = vector_db
+            self.db = db
+            self.reranker = reranker
 
         # Internal state
         self.sessions: dict[str, UserSession] = {}
         self.id_manager = IDManager(self.db.client)
 
         # Configuration
-        self.prompt_template = (
-            prompt_template
-            or self.config.system_prompt_template
-            or self.config.get_default_prompt_template()
-        )
-        self.standalone_question_prompt = (
-            standalone_question_prompt or self.config.standalone_question_prompt
-        )
+        self.prompt_template = prompt_template
+        self.standalone_question_prompt = standalone_question_prompt
         self.verbose = verbose
-        self.max_chat_history = self.config.max_chat_history
+        self.max_chat_history = max_chat_history
 
         logger.info("RAG Agent initialized successfully")
 
@@ -118,13 +104,15 @@ class RAGAgent:
             self.sessions[session_key] = UserSession(
                 domain=domain,
                 user_id=user_id,
-                config=self.config,
                 llm=self.llm,
                 vector_adapter=self.vector_db,
                 reranker_adapter=self.reranker,
                 history_store=self.db,
                 id_manager=self.id_manager,
                 prompt_template=self.prompt_template,
+                memory_window=20,
+                max_chat_history=self.max_chat_history,
+                retrieval_k=5,
             )
 
         return self.sessions[session_key]
@@ -249,6 +237,8 @@ class RAGAgent:
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         namespace: str | None = None,
+        pinecone_api_key: str | None = None,
+        embedding_api_key: str | None = None,
     ) -> dict[str, Any]:
         """
         Load and index documents into the vector database.
@@ -258,24 +248,31 @@ class RAGAgent:
             chunk_size: Size of text chunks
             chunk_overlap: Overlap between chunks
             namespace: Optional namespace for documents
+            pinecone_api_key: Pinecone API key (uses vector_db config if not provided)
+            embedding_api_key: OpenAI API key for embeddings (uses vector_db config if not provided)
 
         Returns:
             Dictionary with indexing results
         """
         from langchat.core.utils.document_indexer import DocumentIndexer
 
-        # Validate required config values
-        if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-            raise ValueError("Pinecone API key and index name must be configured")
+        # Get config from vector_db adapter
+        pinecone_api_key = pinecone_api_key or getattr(self.vector_db, 'api_key', None)
+        index_name = getattr(self.vector_db, 'index_name', None)
+        embedding_api_key = embedding_api_key or getattr(self.vector_db, 'embedding_api_key', None)
+        embedding_model = getattr(self.vector_db, 'embedding_model', 'text-embedding-3-large')
 
-        if not self.config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be configured for embeddings")
+        if not pinecone_api_key or not index_name:
+            raise ValueError("Pinecone API key and index name must be configured in vector_db")
+
+        if not embedding_api_key:
+            raise ValueError("OpenAI API key must be configured for embeddings")
 
         indexer = DocumentIndexer(
-            pinecone_api_key=self.config.pinecone_api_key,
-            pinecone_index_name=self.config.pinecone_index_name,
-            openai_api_key=self.config.openai_api_keys[0],
-            embedding_model=self.config.openai_embedding_model,
+            pinecone_api_key=pinecone_api_key,
+            pinecone_index_name=index_name,
+            openai_api_key=embedding_api_key,
+            embedding_model=embedding_model,
         )
 
         return indexer.load_and_index_documents(
@@ -291,6 +288,8 @@ class RAGAgent:
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         namespace: str | None = None,
+        pinecone_api_key: str | None = None,
+        embedding_api_key: str | None = None,
     ) -> dict[str, Any]:
         """
         Load and index multiple documents.
@@ -300,24 +299,31 @@ class RAGAgent:
             chunk_size: Size of text chunks
             chunk_overlap: Overlap between chunks
             namespace: Optional namespace for documents
+            pinecone_api_key: Pinecone API key (uses vector_db config if not provided)
+            embedding_api_key: OpenAI API key for embeddings (uses vector_db config if not provided)
 
         Returns:
             Dictionary with indexing results
         """
         from langchat.core.utils.document_indexer import DocumentIndexer
 
-        # Validate required config values
-        if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-            raise ValueError("Pinecone API key and index name must be configured")
+        # Get config from vector_db adapter
+        pinecone_api_key = pinecone_api_key or getattr(self.vector_db, 'api_key', None)
+        index_name = getattr(self.vector_db, 'index_name', None)
+        embedding_api_key = embedding_api_key or getattr(self.vector_db, 'embedding_api_key', None)
+        embedding_model = getattr(self.vector_db, 'embedding_model', 'text-embedding-3-large')
 
-        if not self.config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be configured for embeddings")
+        if not pinecone_api_key or not index_name:
+            raise ValueError("Pinecone API key and index name must be configured in vector_db")
+
+        if not embedding_api_key:
+            raise ValueError("OpenAI API key must be configured for embeddings")
 
         indexer = DocumentIndexer(
-            pinecone_api_key=self.config.pinecone_api_key,
-            pinecone_index_name=self.config.pinecone_index_name,
-            openai_api_key=self.config.openai_api_keys[0],
-            embedding_model=self.config.openai_embedding_model,
+            pinecone_api_key=pinecone_api_key,
+            pinecone_index_name=index_name,
+            openai_api_key=embedding_api_key,
+            embedding_model=embedding_model,
         )
 
         return indexer.load_and_index_multiple_documents(

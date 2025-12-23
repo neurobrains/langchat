@@ -10,7 +10,7 @@ from typing import Any
 import requests
 
 from langchat.adapters.logger import logger
-from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
+from langchat.llm._base_llm import BaseLLM, messages_to_text
 
 
 class Ollama:

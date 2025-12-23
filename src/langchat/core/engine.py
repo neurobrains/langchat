@@ -10,15 +10,11 @@ from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 
-from langchat.adapters.db.supabase_adapter import SupabaseAdapter
-from langchat.adapters.db.utils.id_manager import IDManager
 from langchat.adapters.logger import logger
-from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
-from langchat.adapters.services.factory import create_llm_service
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
-from langchat.core.config import LangChatConfig
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
+from langchat.database.id_manager import IDManager
+from langchat.reranker.flashrank_adapter import FlashrankRerankAdapter
 
 # Global flag to track if running as API server
 _is_api_server_mode = False
@@ -38,7 +34,6 @@ class LangChatEngine:
 
     def __init__(
         self,
-        config: Optional[LangChatConfig] = None,
         *,
         llm=None,
         vector_db=None,
@@ -46,48 +41,36 @@ class LangChatEngine:
         reranker=None,
         prompt_template: Optional[str] = None,
         standalone_question_prompt: Optional[str] = None,
-        verbose: Optional[bool] = None,
+        verbose: Optional[bool] = False,
+        max_chat_history: int = 20,
     ):
         """
         Initialize LangChat engine.
 
-        You can either:
-        - pass `config` (recommended), or
-        - pass concrete adapters/services via the keyword args (advanced use).
+        Args:
+            llm: LLM provider instance (required)
+            vector_db: Vector database adapter (required)
+            db: Database adapter for history storage (required)
+            reranker: Reranker adapter (optional, defaults to FlashrankRerankAdapter)
+            prompt_template: System prompt template (optional)
+            standalone_question_prompt: Standalone question prompt (optional)
+            verbose: Enable verbose logging (default: False)
+            max_chat_history: Maximum chat history to keep (default: 20)
         """
+        if llm is None:
+            raise ValueError("LLM provider is required")
+        if vector_db is None:
+            raise ValueError("Vector database adapter is required")
+        if db is None:
+            raise ValueError("Database adapter is required")
 
-        self.config = config or LangChatConfig.from_env()
-
-        # Core dependencies (allow injection for advanced usage/testing)
-        self.llm = llm or create_llm_service(self.config)
-
-        if vector_db is not None:
-            self.vector_adapter = vector_db
-        else:
-            if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-                raise ValueError("Pinecone API key and index name must be configured")
-            embedding_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
-            self.vector_adapter = PineconeVectorAdapter(
-                api_key=self.config.pinecone_api_key,
-                index_name=self.config.pinecone_index_name,
-                embedding_model=self.config.openai_embedding_model,
-                embedding_api_key=embedding_key,
-            )
-
-        if db is not None:
-            self.history_store = db
-        else:
-            if not self.config.supabase_url or not self.config.supabase_key:
-                raise ValueError("Supabase URL and key must be configured")
-            self.history_store = SupabaseAdapter.from_config(
-                supabase_url=self.config.supabase_url,
-                supabase_key=self.config.supabase_key,
-            )
-
+        self.llm = llm
+        self.vector_adapter = vector_db
+        self.history_store = db
         self.reranker_adapter = reranker or FlashrankRerankAdapter(
-            model_name=self.config.reranker_model,
-            cache_dir=self.config.reranker_cache_dir,
-            top_n=self.config.reranker_top_n,
+            model_name="ms-marco-MiniLM-L-12-v2",
+            cache_dir="rerank_models",
+            top_n=3,
         )
 
         # Internal state
@@ -95,16 +78,29 @@ class LangChatEngine:
         self.id_manager = IDManager(self.history_store.client)
 
         # Prompts / behavior
-        self.prompt_template = (
-            prompt_template
-            or self.config.system_prompt_template
-            or self.config.get_default_prompt_template()
-        )
-        self.standalone_question_prompt = standalone_question_prompt or self.config.standalone_question_prompt
-        self.verbose = self.config.verbose_chains if verbose is None else verbose
+        self.prompt_template = prompt_template or self._get_default_prompt_template()
+        self.standalone_question_prompt = standalone_question_prompt
+        self.verbose = verbose or False
 
         # Session tuning
-        self.max_chat_history = self.config.max_chat_history
+        self.max_chat_history = max_chat_history
+
+    def _get_default_prompt_template(self) -> str:
+        """Get default prompt template."""
+        return """You are a highly skilled AI assistant with access to relevant documentation and past conversations.
+
+Your task is to provide accurate, helpful, and contextually aware responses.
+
+Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+Context: {context}
+
+Chat History:
+{chat_history}
+
+Question: {question}
+
+Answer:"""
 
     def get_session(self, user_id: str, domain: str = "default") -> UserSession:
         """
@@ -120,19 +116,15 @@ class LangChatEngine:
         session_key = f"{user_id}_{domain}"
 
         if session_key not in self.sessions:
-            # Get prompt template
-            prompt_template = self.prompt_template or self.config.get_default_prompt_template()
-
             self.sessions[session_key] = UserSession(
                 domain=domain,
                 user_id=user_id,
-                config=self.config,
                 llm=self.llm,
                 vector_adapter=self.vector_adapter,
                 reranker_adapter=self.reranker_adapter,
                 history_store=self.history_store,
                 id_manager=self.id_manager,
-                prompt_template=prompt_template,
+                prompt_template=self.prompt_template,
             )
 
         return self.sessions[session_key]

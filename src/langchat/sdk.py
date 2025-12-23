@@ -8,7 +8,6 @@ from typing import List, Optional
 from dotenv import load_dotenv
 
 from langchat.adapters.logger import logger
-from langchat.core.config import LangChatConfig
 from langchat.core.engine import LangChatEngine
 from langchat.core.utils.document_indexer import DocumentIndexer
 
@@ -21,7 +20,6 @@ class LangChat:
 
     def __init__(
         self,
-        config: Optional[LangChatConfig] = None,
         *,
         llm=None,
         vector_db=None,
@@ -30,33 +28,38 @@ class LangChat:
         prompt_template: Optional[str] = None,
         standalone_question_prompt: Optional[str] = None,
         verbose: Optional[bool] = None,
+        max_chat_history: int = 20,
     ):
         """
         Initialize LangChat instance.
 
         Args:
-            config: LangChat configuration. If None, creates config from environment variables.
+            llm: LLM provider instance (required)
+            vector_db: Vector database adapter (required)
+            db: Database adapter for history storage (required)
+            reranker: Reranker adapter (optional)
+            prompt_template: System prompt template (optional)
+            standalone_question_prompt: Standalone question prompt (optional)
+            verbose: Enable verbose logging (optional)
+            max_chat_history: Maximum chat history to keep (default: 20)
 
         Example:
             ```python
-            from langchat import LangChat, LangChatConfig
+            from langchat import LangChat
+            from langchat.llm import OpenAI
+            from langchat.vector_db import Pinecone
+            from langchat.database import Supabase
 
-            # Create custom config
-            config = LangChatConfig(
-                openai_api_keys=["your-api-key"],
-                pinecone_api_key="your-pinecone-key",
-                supabase_url="your-supabase-url",
-                supabase_key="your-supabase-key"
-            )
+            # Initialize providers
+            llm = OpenAI(api_keys=["sk-..."], model="gpt-4o-mini")
+            vector_db = Pinecone(api_key="...", index_name="my-index", ...)
+            db = Supabase.from_config(supabase_url="...", supabase_key="...")
 
             # Initialize LangChat
-            langchat = LangChat(config=config)
+            langchat = LangChat(llm=llm, vector_db=vector_db, db=db)
             ```
         """
-        self.config = config or LangChatConfig.from_env()
-
-        self.engine = LangChatEngine(config=self.config) if config else LangChatEngine(
-            config=self.config,
+        self.engine = LangChatEngine(
             llm=llm,
             vector_db=vector_db,
             db=db,
@@ -64,6 +67,7 @@ class LangChat:
             prompt_template=prompt_template,
             standalone_question_prompt=standalone_question_prompt,
             verbose=verbose,
+            max_chat_history=max_chat_history,
         )
         logger.info("LangChat initialized successfully")
 
@@ -162,10 +166,15 @@ class LangChat:
 
         Example:
             ```python
-            from langchat import LangChat, LangChatConfig
+            from langchat import LangChat
+            from langchat.llm import OpenAI
+            from langchat.vector_db import Pinecone
+            from langchat.database import Supabase
 
-            config = LangChatConfig.from_env()
-            langchat = LangChat(config=config)
+            llm = OpenAI(api_keys=["sk-..."], model="gpt-4o-mini")
+            vector_db = Pinecone(api_key="...", index_name="my-index", ...)
+            db = Supabase.from_config(supabase_url="...", supabase_key="...")
+            langchat = LangChat(llm=llm, vector_db=vector_db, db=db)
 
             # Load and index a PDF document (prevents duplicates by default)
             result = langchat.load_and_index_documents(
@@ -178,27 +187,42 @@ class LangChat:
             ```
 
         Raises:
-            ValueError: If vector adapter is not initialized or config is missing
+            ValueError: If vector adapter is not initialized or required parameters are missing
         """
         # Check if vector adapter is initialized
         if not hasattr(self.engine, "vector_adapter") or self.engine.vector_adapter is None:
             raise ValueError(
-                "Vector adapter not initialized. Please ensure Pinecone API key and index name are configured."
+                "Vector adapter not initialized. Please provide a vector_db adapter when initializing LangChat."
             )
 
-        # Check if required config values are available
-        if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-            raise ValueError("Pinecone API key and index name must be configured in LangChatConfig")
+        # Get required parameters from vector adapter
+        vector_adapter = self.engine.vector_adapter
+        if not hasattr(vector_adapter, "api_key") or not hasattr(vector_adapter, "index_name"):
+            raise ValueError("Vector adapter must have api_key and index_name attributes")
 
-        if not self.config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be configured in LangChatConfig")
+        # Get embedding API key from LLM if available
+        embedding_api_key = None
+        if hasattr(self.engine.llm, "api_keys") and self.engine.llm.api_keys:
+            embedding_api_key = self.engine.llm.api_keys[0]
+        elif hasattr(self.engine.llm, "current_llm") and hasattr(self.engine.llm.current_llm, "api_key"):
+            embedding_api_key = self.engine.llm.current_llm.api_key
 
-        # Create DocumentIndexer instance using config values
+        # Check if embedding API key is available
+        if embedding_api_key is None:
+            raise ValueError(
+                "Embedding API key is required for document indexing. "
+                "Please ensure your LLM provider has API keys configured."
+            )
+
+        # Get embedding model from vector adapter
+        embedding_model = getattr(vector_adapter, "embedding_model", "text-embedding-3-large")
+
+        # Create DocumentIndexer instance
         indexer = DocumentIndexer(
-            pinecone_api_key=self.config.pinecone_api_key,
-            pinecone_index_name=self.config.pinecone_index_name,
-            openai_api_key=self.config.openai_api_keys[0],
-            embedding_model=self.config.openai_embedding_model,
+            pinecone_api_key=vector_adapter.api_key,
+            pinecone_index_name=vector_adapter.index_name,
+            openai_api_key=embedding_api_key,
+            embedding_model=embedding_model,
         )
 
         # Use DocumentIndexer to load and index documents
@@ -245,22 +269,37 @@ class LangChat:
         # Check if vector adapter is initialized
         if not hasattr(self.engine, "vector_adapter") or self.engine.vector_adapter is None:
             raise ValueError(
-                "Vector adapter not initialized. Please ensure Pinecone API key and index name are configured."
+                "Vector adapter not initialized. Please provide a vector_db adapter when initializing LangChat."
             )
 
-        # Check if required config values are available
-        if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
-            raise ValueError("Pinecone API key and index name must be configured in LangChatConfig")
+        # Get required parameters from vector adapter
+        vector_adapter = self.engine.vector_adapter
+        if not hasattr(vector_adapter, "api_key") or not hasattr(vector_adapter, "index_name"):
+            raise ValueError("Vector adapter must have api_key and index_name attributes")
 
-        if not self.config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be configured in LangChatConfig")
+        # Get embedding API key from LLM if available
+        embedding_api_key = None
+        if hasattr(self.engine.llm, "api_keys") and self.engine.llm.api_keys:
+            embedding_api_key = self.engine.llm.api_keys[0]
+        elif hasattr(self.engine.llm, "current_llm") and hasattr(self.engine.llm.current_llm, "api_key"):
+            embedding_api_key = self.engine.llm.current_llm.api_key
 
-        # Create DocumentIndexer instance using config values
+        # Check if embedding API key is available
+        if embedding_api_key is None:
+            raise ValueError(
+                "Embedding API key is required for document indexing. "
+                "Please ensure your LLM provider has API keys configured."
+            )
+
+        # Get embedding model from vector adapter
+        embedding_model = getattr(vector_adapter, "embedding_model", "text-embedding-3-large")
+
+        # Create DocumentIndexer instance
         indexer = DocumentIndexer(
-            pinecone_api_key=self.config.pinecone_api_key,
-            pinecone_index_name=self.config.pinecone_index_name,
-            openai_api_key=self.config.openai_api_keys[0],
-            embedding_model=self.config.openai_embedding_model,
+            pinecone_api_key=vector_adapter.api_key,
+            pinecone_index_name=vector_adapter.index_name,
+            openai_api_key=embedding_api_key,
+            embedding_model=embedding_model,
         )
 
         # Use DocumentIndexer to load and index multiple documents

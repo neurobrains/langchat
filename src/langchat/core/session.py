@@ -9,9 +9,7 @@ from typing import Any, List, Tuple, cast
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 
-from langchat.adapters.base import HistoryStore, LLMProvider, RerankerProvider, VectorStoreProvider
 from langchat.adapters.logger import logger
-from langchat.core.config import LangChatConfig
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -27,13 +25,15 @@ class UserSession:
         self,
         domain: str,
         user_id: str,
-        config: LangChatConfig,
-        llm: LLMProvider,
-        vector_adapter: VectorStoreProvider,
-        reranker_adapter: RerankerProvider,
-        history_store: HistoryStore,
+        llm: Any,
+        vector_adapter: Any,
+        reranker_adapter: Any,
+        history_store: Any,
         id_manager: Any,
-        prompt_template: str,
+        prompt_template: str | None = None,
+        memory_window: int = 20,
+        max_chat_history: int = 20,
+        retrieval_k: int = 5,
     ):
         """
         Initialize user session.
@@ -41,23 +41,27 @@ class UserSession:
         Args:
             domain: User domain
             user_id: User ID
-            config: LangChat configuration
             llm: LLM provider instance
             vector_adapter: Vector database adapter
             reranker_adapter: Reranker adapter
             history_store: History storage adapter
             id_manager: ID manager instance
-            prompt_template: System prompt template
+            prompt_template: System prompt template (optional)
+            memory_window: Number of messages to keep in memory window
+            max_chat_history: Maximum number of chat messages to load from history
+            retrieval_k: Number of documents to retrieve from vector DB
         """
         self.domain = domain
         self.user_id = user_id
-        self.config = config
         self.llm = llm
         self.vector_adapter = vector_adapter
         self.reranker_adapter = reranker_adapter
         self.history_store = history_store
         self.id_manager = id_manager
-        self.prompt_template = prompt_template
+        self.prompt_template = prompt_template or self._get_default_prompt_template()
+        self.memory_window = memory_window
+        self.max_chat_history = max_chat_history
+        self.retrieval_k = retrieval_k
         self.last_active = datetime.now()
 
         # Load chat history from database
@@ -70,7 +74,7 @@ class UserSession:
             ai_prefix="### Response",
             output_key="answer",
             return_messages=True,
-            k=config.memory_window,
+            k=memory_window,
         )
 
         # Initialize memory with user's chat history
@@ -94,7 +98,7 @@ class UserSession:
                 .eq("user_id", self.user_id)
                 .eq("domain", self.domain)
                 .order("timestamp", desc=True)
-                .limit(self.config.max_chat_history)
+                .limit(self.max_chat_history)
                 .execute()
             )
 
@@ -138,6 +142,29 @@ class UserSession:
         except Exception as e:
             logger.error(f"Error saving message to Supabase: {str(e)}", exc_info=True)
 
+    def _get_default_prompt_template(self) -> str:
+        """Get default prompt template."""
+        return """You are a highly skilled AI assistant with access to relevant documentation and past conversations.
+
+Your task is to provide accurate, helpful, and contextually aware responses.
+
+### Context from Retrieved Documents:
+{context}
+
+### Conversation History:
+{chat_history}
+
+### User's Question:
+{query}
+
+### Instructions:
+1. Use information from both the context and conversation history
+2. If the answer isn't in the provided context, say so clearly
+3. Be concise but thorough
+4. Maintain conversation continuity
+
+### Response:"""
+
     def _create_conversation(self):
         """
         Create conversation chain with retrieval and memory.
@@ -147,7 +174,7 @@ class UserSession:
         """
         try:
             # Get retriever from vector adapter
-            base_retriever = self.vector_adapter.get_retriever(k=self.config.retrieval_k)
+            base_retriever = self.vector_adapter.get_retriever(k=self.retrieval_k)
 
             # Create compression retriever with reranker
             compression_retriever = self.reranker_adapter.create_compression_retriever(
@@ -160,7 +187,7 @@ class UserSession:
                 retriever=compression_retriever,
                 llm=self.llm.current_llm,
                 prompt_template=self.prompt_template,
-                verbose_chains=self.config.verbose_chains,
+                verbose_chains=False,
             )
 
             # Wrap in custom conversation chain

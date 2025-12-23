@@ -9,8 +9,6 @@ import asyncio
 from typing import Any, Callable
 
 from langchat.adapters.logger import logger
-from langchat.core.config import LangChatConfig
-from langchat.providers import create_llm_provider
 
 
 class Tool:
@@ -91,7 +89,6 @@ class Agent:
         llm: Any = None,
         tools: list[Tool] | None = None,
         system_prompt: str | None = None,
-        config: LangChatConfig | None = None,
         max_iterations: int = 5,
         verbose: bool = False,
     ):
@@ -99,15 +96,18 @@ class Agent:
         Initialize Agent.
 
         Args:
-            llm: LLM provider instance
+            llm: LLM provider instance (required)
             tools: List of Tool instances
             system_prompt: System prompt for the agent
-            config: LangChatConfig instance
             max_iterations: Maximum reasoning iterations
             verbose: Enable verbose logging
         """
-        self.config = config or LangChatConfig.from_env()
-        self.llm = llm or create_llm_provider("auto", self.config)
+        if llm is None:
+            raise ValueError(
+                "LLM provider is required. Please provide an LLM instance:\n"
+                "Example: Agent(llm=OpenAI(api_keys=['sk-...'], model='gpt-4o-mini'))"
+            )
+        self.llm = llm
         self.tools = tools or []
         self.tool_map = {tool.name: tool for tool in self.tools}
         self.system_prompt = system_prompt or self._default_system_prompt()

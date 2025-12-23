@@ -1,40 +1,53 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+"""Anthropic Claude LLM Provider."""
+
 from __future__ import annotations
 
 from itertools import cycle
 from typing import Any
 
-from langchat.adapters.base import LLMProvider
+import requests
+
 from langchat.adapters.logger import logger
-from langchat.adapters.services._http_chat_llm import HTTPChatLLM, _messages_to_text, post_json
+from langchat.llm._base_llm import BaseLLM, messages_to_text
 
 
-class AnthropicLLMService(LLMProvider):
+class Anthropic:
     """
-    Anthropic LLM service with optional API key rotation.
+    Anthropic Claude LLM provider with key rotation.
 
-    Env var compatibility:
-      - ANTHROPIC_API_KEY or ANTHROPIC_API_KEYS (comma-separated)
+    Supports Claude 3.5 Sonnet, Claude 3 Opus, Haiku, and other models.
     """
 
     def __init__(
         self,
-        model: str,
-        temperature: float,
-        api_keys: list[str],
+        model: str = "claude-3-5-sonnet-20241022",
+        temperature: float = 1.0,
+        api_keys: list[str] | None = None,
         max_retries_per_key: int = 2,
-        max_tokens: int = 1024,
+        max_tokens: int = 4096,
     ):
+        """
+        Initialize Anthropic provider.
+
+        Args:
+            model: Claude model name (e.g., "claude-3-5-sonnet-20241022")
+            temperature: Model temperature (0.0 to 1.0)
+            api_keys: List of Anthropic API keys for rotation
+            max_retries_per_key: Maximum retries per API key
+            max_tokens: Maximum tokens to generate
+        """
+        if not api_keys:
+            raise ValueError("At least one Anthropic API key is required")
+
         self._model = model
         self._temperature = temperature
         self._max_tokens = max_tokens
-
-        self.api_keys = cycle(api_keys) if api_keys else cycle([])
-        self._current_key = next(self.api_keys) if api_keys else None
-        self.max_retries = len(api_keys) * max_retries_per_key if api_keys else 0
-
+        self.api_keys = cycle(api_keys)
+        self._current_key = next(self.api_keys)
+        self.max_retries = len(api_keys) * max_retries_per_key
         self._current_llm = self._create_llm()
 
     @property
@@ -50,7 +63,7 @@ class AnthropicLLMService(LLMProvider):
         return self._current_llm
 
     @property
-    def current_key(self) -> str | None:
+    def current_key(self) -> str:
         return self._current_key
 
     def _rotate_key(self) -> None:
@@ -58,15 +71,12 @@ class AnthropicLLMService(LLMProvider):
         logger.info(f"Rotating to new Anthropic API key: {self._current_key[:8]}...")
         self._current_llm = self._create_llm()
 
-    def _create_llm(self) -> HTTPChatLLM:
-        if not self._current_key:
-            raise ValueError("No Anthropic API keys provided")
-
+    def _create_llm(self) -> BaseLLM:
         def _invoke(messages: list[Any]) -> str:
-            prompt = _messages_to_text(messages)
+            prompt = messages_to_text(messages)
             url = "https://api.anthropic.com/v1/messages"
             headers = {
-                "x-api-key": self._current_key or "",
+                "x-api-key": self._current_key,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             }
@@ -77,21 +87,19 @@ class AnthropicLLMService(LLMProvider):
                 "messages": [{"role": "user", "content": prompt}],
             }
 
-            data = post_json(url, headers=headers, payload=payload)
-            # Response: { content: [{type:"text", text:"..."}], ... }
+            res = requests.post(url, headers=headers, json=payload, timeout=60)
+            res.raise_for_status()
+            data = res.json()
+
             content = data.get("content", [])
-            if isinstance(content, list) and content:
-                first = content[0]
-                if isinstance(first, dict) and "text" in first:
-                    return str(first["text"])
+            if content and "text" in content[0]:
+                return str(content[0]["text"])
             return str(data)
 
-        return HTTPChatLLM(invoke_func=_invoke)
+        return BaseLLM(invoke_func=_invoke)
 
-    def invoke(self, messages: Any, **_kwargs: Any) -> Any:
+    def invoke(self, messages: Any) -> Any:
         attempts = 0
-
-        # Normalize to list for our HTTP wrapper
         msg_list = messages if isinstance(messages, list) else [messages]
 
         while attempts < max(1, self.max_retries):
@@ -102,9 +110,15 @@ class AnthropicLLMService(LLMProvider):
                 logger.warning(
                     f"Anthropic API call failed (attempt {attempts}/{max(1, self.max_retries)}): {str(e)}"
                 )
-                if attempts < max(1, self.max_retries) and self.max_retries > 0:
+                if attempts < max(1, self.max_retries):
                     self._rotate_key()
                     continue
                 raise
 
+
+__all__ = ["Anthropic"]
+
+
+# Backward compatibility
+AnthropicProvider = Anthropic
 

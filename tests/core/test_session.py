@@ -5,20 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from langchat import LangChatConfig
 from langchat.core.session import UserSession
-
-
-@pytest.fixture
-def mock_config():
-    """Create a mock config for testing."""
-    return LangChatConfig(
-        openai_api_keys=["test-key"],
-        pinecone_api_key="test-pinecone-key",
-        pinecone_index_name="test-index",
-        supabase_url="https://test.supabase.co",
-        supabase_key="test-supabase-key",
-    )
 
 
 @pytest.fixture
@@ -40,7 +27,7 @@ def mock_adapters():
 
 
 @pytest.fixture
-def session(mock_config, mock_adapters):
+def session(mock_adapters):
     """Create a session instance for testing."""
     prompt_template = "You are a helpful assistant. Question: {question} Answer: {answer}"
 
@@ -48,7 +35,6 @@ def session(mock_config, mock_adapters):
         session = UserSession(
             domain="test-domain",
             user_id="test-user",
-            config=mock_config,
             llm=mock_adapters["llm"],
             vector_adapter=mock_adapters["vector_adapter"],
             reranker_adapter=mock_adapters["reranker_adapter"],
@@ -66,7 +52,6 @@ class TestUserSession:
         """Test session initialization."""
         assert session.domain == "test-domain"
         assert session.user_id == "test-user"
-        assert session.config is not None
 
     def test_session_has_create_conversation_method(self, session):
         """Test that session has _create_conversation method."""

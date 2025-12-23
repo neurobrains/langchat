@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from langchat.adapters.nlpservice.openai_service import OpenAILLMService
+from langchat.llm.openai_provider import OpenAI
 
 
 class TestOpenAILLMService:
@@ -13,8 +13,8 @@ class TestOpenAILLMService:
 
     def test_service_initialization(self):
         """Test service initialization."""
-        with patch("langchat.adapters.nlpservice.openai_service.ChatOpenAI"):
-            service = OpenAILLMService(
+        with patch("langchat.llm.openai_provider.ChatOpenAI"):
+            service = OpenAI(
                 model="gpt-4o-mini",
                 temperature=1.0,
                 api_keys=["test-key-1", "test-key-2"],
@@ -27,8 +27,8 @@ class TestOpenAILLMService:
 
     def test_service_initialization_single_key(self):
         """Test service initialization with single key."""
-        with patch("langchat.adapters.nlpservice.openai_service.ChatOpenAI"):
-            service = OpenAILLMService(
+        with patch("langchat.llm.openai_provider.ChatOpenAI"):
+            service = OpenAI(
                 model="gpt-4",
                 temperature=0.7,
                 api_keys=["test-key"],
@@ -38,9 +38,9 @@ class TestOpenAILLMService:
 
     def test_service_initialization_no_keys(self):
         """Test service initialization with no keys raises error."""
-        with patch("langchat.adapters.nlpservice.openai_service.ChatOpenAI"):
-            with pytest.raises(ValueError, match="No API keys provided"):
-                OpenAILLMService(
+        with patch("langchat.llm.openai_provider.ChatOpenAI"):
+            with pytest.raises(ValueError, match="At least one OpenAI API key is required"):
+                OpenAI(
                     model="gpt-4",
                     temperature=0.7,
                     api_keys=[],
@@ -48,11 +48,11 @@ class TestOpenAILLMService:
 
     def test_service_has_current_llm(self):
         """Test that service has current_llm property."""
-        with patch("langchat.adapters.nlpservice.openai_service.ChatOpenAI") as mock_llm:
+        with patch("langchat.llm.openai_provider.ChatOpenAI") as mock_llm:
             mock_instance = MagicMock()
             mock_llm.return_value = mock_instance
 
-            service = OpenAILLMService(
+            service = OpenAI(
                 model="gpt-4o-mini",
                 temperature=1.0,
                 api_keys=["test-key"],
@@ -61,8 +61,8 @@ class TestOpenAILLMService:
 
     def test_service_rotate_key_method(self):
         """Test key rotation method exists."""
-        with patch("langchat.adapters.nlpservice.openai_service.ChatOpenAI"):
-            service = OpenAILLMService(
+        with patch("langchat.llm.openai_provider.ChatOpenAI"):
+            service = OpenAI(
                 model="gpt-4o-mini",
                 temperature=1.0,
                 api_keys=["key-1", "key-2"],
@@ -72,8 +72,8 @@ class TestOpenAILLMService:
 
     def test_service_create_llm_method(self):
         """Test _create_llm method exists."""
-        with patch("langchat.adapters.nlpservice.openai_service.ChatOpenAI"):
-            service = OpenAILLMService(
+        with patch("langchat.llm.openai_provider.ChatOpenAI"):
+            service = OpenAI(
                 model="gpt-4o-mini",
                 temperature=1.0,
                 api_keys=["test-key"],

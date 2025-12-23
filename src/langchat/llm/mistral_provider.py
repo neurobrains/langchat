@@ -1,7 +1,7 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
-"""Anthropic Claude LLM Provider."""
+"""Mistral AI LLM Provider."""
 
 from __future__ import annotations
 
@@ -11,36 +11,36 @@ from typing import Any
 import requests
 
 from langchat.adapters.logger import logger
-from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
+from langchat.llm._base_llm import BaseLLM, messages_to_text
 
 
-class Anthropic:
+class Mistral:
     """
-    Anthropic Claude LLM provider with key rotation.
+    Mistral AI LLM provider with key rotation.
 
-    Supports Claude 3.5 Sonnet, Claude 3 Opus, Haiku, and other models.
+    Supports Mistral 7B, Mixtral 8x7B, and other Mistral models.
     """
 
     def __init__(
         self,
-        model: str = "claude-3-5-sonnet-20241022",
-        temperature: float = 1.0,
+        model: str = "mistral-small-latest",
+        temperature: float = 0.7,
         api_keys: list[str] | None = None,
         max_retries_per_key: int = 2,
         max_tokens: int = 4096,
     ):
         """
-        Initialize Anthropic provider.
+        Initialize Mistral provider.
 
         Args:
-            model: Claude model name (e.g., "claude-3-5-sonnet-20241022")
+            model: Mistral model name (e.g., "mistral-small-latest", "mistral-medium")
             temperature: Model temperature (0.0 to 1.0)
-            api_keys: List of Anthropic API keys for rotation
+            api_keys: List of Mistral API keys for rotation
             max_retries_per_key: Maximum retries per API key
             max_tokens: Maximum tokens to generate
         """
         if not api_keys:
-            raise ValueError("At least one Anthropic API key is required")
+            raise ValueError("At least one Mistral API key is required")
 
         self._model = model
         self._temperature = temperature
@@ -68,32 +68,33 @@ class Anthropic:
 
     def _rotate_key(self) -> None:
         self._current_key = next(self.api_keys)
-        logger.info(f"Rotating to new Anthropic API key: {self._current_key[:8]}...")
+        logger.info(f"Rotating to new Mistral API key: {self._current_key[:8]}...")
         self._current_llm = self._create_llm()
 
     def _create_llm(self) -> BaseLLM:
         def _invoke(messages: list[Any]) -> str:
             prompt = messages_to_text(messages)
-            url = "https://api.anthropic.com/v1/messages"
+            url = "https://api.mistral.ai/v1/chat/completions"
             headers = {
-                "x-api-key": self._current_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
+                "Authorization": f"Bearer {self._current_key}",
+                "Content-Type": "application/json",
             }
             payload = {
                 "model": self._model,
+                "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": self._max_tokens,
                 "temperature": self._temperature,
-                "messages": [{"role": "user", "content": prompt}],
             }
 
             res = requests.post(url, headers=headers, json=payload, timeout=60)
             res.raise_for_status()
             data = res.json()
 
-            content = data.get("content", [])
-            if content and "text" in content[0]:
-                return str(content[0]["text"])
+            choices = data.get("choices", [])
+            if choices:
+                message = choices[0].get("message", {})
+                if "content" in message:
+                    return str(message["content"])
             return str(data)
 
         return BaseLLM(invoke_func=_invoke)
@@ -108,7 +109,7 @@ class Anthropic:
             except Exception as e:
                 attempts += 1
                 logger.warning(
-                    f"Anthropic API call failed (attempt {attempts}/{max(1, self.max_retries)}): {str(e)}"
+                    f"Mistral API call failed (attempt {attempts}/{max(1, self.max_retries)}): {str(e)}"
                 )
                 if attempts < max(1, self.max_retries):
                     self._rotate_key()
@@ -116,9 +117,9 @@ class Anthropic:
                 raise
 
 
-__all__ = ["Anthropic"]
+__all__ = ["Mistral"]
 
 
 # Backward compatibility
-AnthropicProvider = Anthropic
+MistralProvider = Mistral
 
