@@ -179,14 +179,13 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
                             keyword.value, ast.List
                         ):
                             for item in keyword.value.elts:
-                                # Skip comments (they appear as Constant or Str with #)
+                                # Skip comments (they appear as Constant with #)
                                 if isinstance(item, ast.Constant):
                                     value = item.value
                                     if isinstance(value, str) and not value.strip().startswith("#"):
                                         dependencies.append(value)
-                                elif isinstance(
-                                    item, ast.Str
-                                ):  # Python < 3.8 compatibility  # ty: ignore[deprecated]
+                                # Handle Python < 3.8 compatibility: ast.Str was replaced by ast.Constant
+                                elif hasattr(ast, "Str") and isinstance(item, ast.Str):
                                     value = item.s
                                     if isinstance(value, str) and not value.strip().startswith("#"):
                                         dependencies.append(value)

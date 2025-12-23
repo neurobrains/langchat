@@ -66,7 +66,7 @@ class OpenAILLMService(LLMProvider):
             raise ValueError("No API keys provided")
 
         return ChatOpenAI(
-            model=self._model,
+            model_name=self._model,
             temperature=self._temperature,
             openai_api_key=self._current_key,  # type: ignore[call-arg]
             max_retries=1,

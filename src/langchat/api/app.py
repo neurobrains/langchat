@@ -1,6 +1,7 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI
@@ -16,44 +17,35 @@ _config: Optional[LangChatConfig] = None
 _app: Optional[FastAPI] = None
 
 
-def create_app(
-    config: Optional[LangChatConfig] = None,
+def create_lifespan(
     auto_generate_interface: bool = True,
     auto_generate_docker: bool = True,
-) -> FastAPI:
+):
     """
-    Create and configure FastAPI application.
+    Create lifespan context manager for FastAPI application.
+    Handles startup and shutdown events.
 
     Args:
-        config: LangChat configuration. If None, uses default.
-
-    Returns:
-        FastAPI application instance
+        auto_generate_interface: Whether to auto-generate chat interface
+        auto_generate_docker: Whether to auto-generate Docker files
     """
-    global _engine, _config
 
-    _config = config or LangChatConfig.from_env()
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """
+        Lifespan context manager for FastAPI application.
+        Handles startup and shutdown events.
+        """
+        global _engine, _config
 
-    # Set API server mode to disable console panel output
-    set_api_server_mode(True)
+        _config = _config or LangChatConfig.from_env()
 
-    _engine = LangChatEngine(config=_config)
+        # Set API server mode to disable console panel output
+        set_api_server_mode(True)
 
-    app = FastAPI(title="LangChat API", version="0.0.2")
+        _engine = LangChatEngine(config=_config)
 
-    # Add CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Initialize engine on startup
-    @app.on_event("startup")
-    async def startup_event():
-        """Initialize services on startup"""
+        # Startup logic
         try:
             # Auto-generate chat interface
             if auto_generate_interface:
@@ -103,6 +95,52 @@ def create_app(
             logger.info(f"Frontend interface: http://localhost:{_config.server_port}/frontend")
         except Exception as e:
             logger.error(f"Error initializing API: {str(e)}")
+
+        yield
+
+        # Shutdown logic (if needed in the future)
+        logger.info("LangChat API shutting down")
+
+    return lifespan
+
+
+def create_app(
+    config: Optional[LangChatConfig] = None,
+    auto_generate_interface: bool = True,
+    auto_generate_docker: bool = True,
+) -> FastAPI:
+    """
+    Create and configure FastAPI application.
+
+    Args:
+        config: LangChat configuration. If None, uses default.
+        auto_generate_interface: Whether to auto-generate chat interface
+        auto_generate_docker: Whether to auto-generate Docker files
+
+    Returns:
+        FastAPI application instance
+    """
+    global _engine, _config
+
+    _config = config or LangChatConfig.from_env()
+
+    app = FastAPI(
+        title="LangChat API",
+        version="0.0.2",
+        lifespan=create_lifespan(
+            auto_generate_interface=auto_generate_interface,
+            auto_generate_docker=auto_generate_docker,
+        ),
+    )
+
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # Import routes
     from langchat.api import routes

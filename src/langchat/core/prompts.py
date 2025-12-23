@@ -89,7 +89,7 @@ async def generate_standalone_question(
     if llm.current_key:
         # OpenAI-specific: create a new ChatOpenAI instance
         standalone_llm = ChatOpenAI(
-            model=llm.model,
+            model_name=llm.model,
             temperature=llm.temperature,
             openai_api_key=llm.current_key,  # type: ignore[call-arg]
             max_retries=1,
