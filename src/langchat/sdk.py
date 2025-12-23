@@ -7,10 +7,10 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 
-from langchat.config import LangChatConfig
+from langchat.adapters.logger import logger
+from langchat.core.config import LangChatConfig
 from langchat.core.engine import LangChatEngine
-from langchat.logger import logger
-from langchat.utils.document_indexer import DocumentIndexer
+from langchat.core.utils.document_indexer import DocumentIndexer
 
 
 class LangChat:
@@ -22,16 +22,20 @@ class LangChat:
     def __init__(
         self,
         config: Optional[LangChatConfig] = None,
-        llm_provider: Optional[str] = None,
-        llm_api_key: Optional[str] = None,
+        *,
+        llm=None,
+        vector_db=None,
+        db=None,
+        reranker=None,
+        prompt_template: Optional[str] = None,
+        standalone_question_prompt: Optional[str] = None,
+        verbose: Optional[bool] = None,
     ):
         """
         Initialize LangChat instance.
 
         Args:
             config: LangChat configuration. If None, creates config from environment variables.
-            llm_provider: Optional override ("openai" | "gemini" | "anthropic" | "auto").
-            llm_api_key: Optional single API key for the chosen provider (convenience).
 
         Example:
             ```python
@@ -51,28 +55,16 @@ class LangChat:
         """
         self.config = config or LangChatConfig.from_env()
 
-        if llm_provider:
-            self.config.llm_provider = llm_provider
-
-        if llm_api_key:
-            provider = (self.config.llm_provider or "auto").strip().lower()
-            if provider == "auto":
-                # If user supplies a key, they should also pick a provider;
-                # default to OpenAI for backward compatibility.
-                provider = "openai"
-                self.config.llm_provider = provider
-
-            if provider == "openai":
-                self.config.openai_api_keys = [llm_api_key]
-            elif provider == "gemini":
-                self.config.gemini_api_keys = [llm_api_key]
-            elif provider == "anthropic":
-                self.config.anthropic_api_keys = [llm_api_key]
-            else:
-                raise ValueError(
-                    f"Unknown llm_provider: {self.config.llm_provider!r} (expected auto/openai/gemini/anthropic)"
-                )
-        self.engine = LangChatEngine(config=self.config)
+        self.engine = LangChatEngine(config=self.config) if config else LangChatEngine(
+            config=self.config,
+            llm=llm,
+            vector_db=vector_db,
+            db=db,
+            reranker=reranker,
+            prompt_template=prompt_template,
+            standalone_question_prompt=standalone_question_prompt,
+            verbose=verbose,
+        )
         logger.info("LangChat initialized successfully")
 
     async def chat(self, query: str, user_id: str, domain: str = "default") -> dict:

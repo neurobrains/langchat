@@ -3,7 +3,7 @@
 
 from unittest.mock import MagicMock
 
-from langchat.adapters.supabase.id_manager import IDManager
+from langchat.adapters.db.utils.id_manager import IDManager
 
 
 class TestIDManager:

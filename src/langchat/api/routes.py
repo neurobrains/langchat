@@ -7,8 +7,8 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 
+from langchat.adapters.logger import logger
 from langchat.api.app import get_engine
-from langchat.logger import logger
 
 router = APIRouter()
 

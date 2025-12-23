@@ -1,7 +1,7 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
-from langchat.config import LangChatConfig
+from langchat import LangChatConfig
 
 
 def test_import_config():

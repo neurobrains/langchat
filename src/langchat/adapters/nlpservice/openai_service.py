@@ -7,7 +7,7 @@ from typing import List, Optional
 from langchain_openai import ChatOpenAI
 
 from langchat.adapters.base import LLMProvider
-from langchat.logger import logger
+from langchat.adapters.logger import logger
 
 
 class OpenAILLMService(LLMProvider):

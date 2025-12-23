@@ -2,14 +2,13 @@ import type { ChatResponse } from "./types";
 
 export async function sendChat(params: {
   query: string;
-  userId: string;
-  domain: string;
+  sessionKey: string; // passed as userId to backend (keeps sessions separate)
   image?: File | null;
 }): Promise<ChatResponse> {
   const form = new FormData();
   form.append("query", params.query);
-  form.append("userId", params.userId);
-  form.append("domain", params.domain);
+  form.append("userId", params.sessionKey);
+  form.append("domain", "default");
   if (params.image) form.append("image", params.image);
 
   const res = await fetch("/chat", { method: "POST", body: form });

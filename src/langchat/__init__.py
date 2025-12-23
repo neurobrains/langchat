@@ -9,7 +9,7 @@ Keep imports here stable so users can do:
   - from langchat.api import create_app
 """
 
-from langchat.config import LangChatConfig
+from langchat.core.config import LangChatConfig
 from langchat.sdk import LangChat
 
 __all__ = [

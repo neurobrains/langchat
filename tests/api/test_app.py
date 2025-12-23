@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from langchat.api.app import create_app
-from langchat.config import LangChatConfig
+from langchat.core.config import LangChatConfig
 
 
 @pytest.fixture

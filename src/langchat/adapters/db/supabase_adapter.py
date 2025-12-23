@@ -4,12 +4,13 @@
 from typing import Optional
 
 import pyperclip
+import requests
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from supabase import Client, create_client
 
-from langchat.logger import logger
+from langchat.adapters.logger import logger
 
 # Class-level flag to prevent duplicate SQL printing
 _sql_printed = False
@@ -111,6 +112,79 @@ CREATE POLICY "request_metrics_policy" ON public.request_metrics FOR ALL
 -- Refresh schema cache
 NOTIFY pgrst, 'reload schema';
 """
+
+    def create_tables_if_not_exist(self) -> bool:
+        """
+        Check if tables exist and try to create them if they don't.
+
+        This method will:
+        1. Check if tables already exist by querying them
+        2. If tables exist, return True
+        3. If tables don't exist, try to create them using:
+           a. Supabase Management API (requires service role key)
+           b. RPC function call (if custom function is set up)
+        4. Return False if automatic creation fails
+
+        Returns:
+            bool: True if tables exist or were created successfully, False otherwise
+        """
+        try:
+            # First check if tables already exist
+            self.client.table("chat_history").select("id").limit(1).execute()
+            self.client.table("request_metrics").select("id").limit(1).execute()
+            # If we reach here, both tables exist
+            return True
+        except Exception as e:
+            error_msg = str(e)
+
+            # Check if it's a "table not found" error (PGRST205)
+            if "PGRST205" not in error_msg and "Could not find the table" not in error_msg:
+                # Different error (e.g., connection issue)
+                logger.error(f"Error checking tables: {error_msg}")
+                return False
+
+            # Tables don't exist, try to create them
+            logger.info("Tables not found, attempting to create them...")
+
+            # Method 1: Try using Management API
+            try:
+                # Extract project reference from URL
+                # URL format: https://xxxxx.supabase.co
+                project_ref = self.url.replace("https://", "").replace(".supabase.co", "")
+
+                # Management API endpoint
+                management_url = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
+
+                headers = {
+                    "Authorization": f"Bearer {self.key}",
+                    "Content-Type": "application/json"
+                }
+
+                response = requests.post(
+                    management_url,
+                    headers=headers,
+                    json={"query": self.get_create_tables_sql()}
+                )
+
+                if response.status_code == 200:
+                    logger.info("Tables created successfully via Management API")
+                    return True
+
+            except Exception as api_error:
+                logger.debug(f"Management API creation failed: {api_error}")
+
+            # Method 2: Try using RPC function (if set up)
+            try:
+                result = self.client.rpc("create_langchat_tables").execute()
+                if result.data:
+                    logger.info("Tables created successfully via RPC function")
+                    return True
+            except Exception as rpc_error:
+                logger.debug(f"RPC creation failed: {rpc_error}")
+
+            # All automatic methods failed
+            logger.warning("Automatic table creation failed. Manual setup required.")
+            return False
 
     def check_tables_exist(self):
         """

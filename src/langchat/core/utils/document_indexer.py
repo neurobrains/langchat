@@ -12,8 +12,8 @@ from langchain_openai import OpenAIEmbeddings  # type: ignore[import-untyped]
 from langchain_pinecone.vectorstores import PineconeVectorStore  # type: ignore[import-untyped]
 from pinecone import Pinecone  # type: ignore[import-untyped]
 
-from langchat.exceptions import UnsupportedFileTypeError
-from langchat.logger import logger
+from langchat.adapters.logger import logger
+from langchat.core.exceptions import UnsupportedFileTypeError
 
 
 class DocumentIndexer:
@@ -40,7 +40,7 @@ class DocumentIndexer:
 
         Example:
             ```python
-            from langchat.utils.document_indexer import DocumentIndexer
+            from langchat.core.utils.document_indexer import DocumentIndexer
 
             indexer = DocumentIndexer(
                 pinecone_api_key="your-pinecone-key",
@@ -158,7 +158,7 @@ class DocumentIndexer:
 
         Example:
             ```python
-            from langchat.utils.document_indexer import DocumentIndexer
+            from langchat.core.utils.document_indexer import DocumentIndexer
 
             indexer = DocumentIndexer(
                 pinecone_api_key="your-pinecone-key",

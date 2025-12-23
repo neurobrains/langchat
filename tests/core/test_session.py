@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from langchat.config import LangChatConfig
+from langchat import LangChatConfig
 from langchat.core.session import UserSession
 
 

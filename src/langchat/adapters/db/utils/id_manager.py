@@ -4,7 +4,7 @@
 import time
 from typing import Any, Dict, Optional
 
-from langchat.logger import logger
+from langchat.adapters.logger import logger
 
 
 class IDManager:

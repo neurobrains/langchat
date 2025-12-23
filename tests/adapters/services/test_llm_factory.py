@@ -5,7 +5,7 @@ from langchat.adapters.services.anthropic_service import AnthropicLLMService
 from langchat.adapters.services.factory import create_llm_service
 from langchat.adapters.services.gemini_service import GeminiLLMService
 from langchat.adapters.services.openai_service import OpenAILLMService
-from langchat.config import LangChatConfig
+from langchat.core.config import LangChatConfig
 
 
 def test_llm_factory_openai_explicit():

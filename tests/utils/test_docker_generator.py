@@ -1,7 +1,7 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
-from langchat.utils.docker_generator import (
+from langchat.core.utils.docker_generator import (
     extract_dependencies_from_setup,
     generate_dockerfile,
     generate_dockerignore,

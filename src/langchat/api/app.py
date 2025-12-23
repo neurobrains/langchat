@@ -10,9 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
-from langchat.config import LangChatConfig
+from langchat.adapters.logger import logger
+from langchat.core.config import LangChatConfig
 from langchat.core.engine import LangChatEngine, set_api_server_mode
-from langchat.logger import logger
 
 # Global engine instance
 _engine: Optional[LangChatEngine] = None
@@ -53,7 +53,7 @@ def create_lifespan(
             # Auto-generate Dockerfile, .dockerignore, and requirements.txt
             if auto_generate_docker:
                 try:
-                    from langchat.utils.docker_generator import (
+                    from langchat.core.utils.docker_generator import (
                         generate_dockerfile,
                         generate_dockerignore,
                         generate_requirements_txt,

@@ -7,8 +7,8 @@ from itertools import cycle
 from typing import Any
 
 from langchat.adapters.base import LLMProvider
+from langchat.adapters.logger import logger
 from langchat.adapters.services._http_chat_llm import HTTPChatLLM, _messages_to_text, post_json
-from langchat.logger import logger
 
 
 class AnthropicLLMService(LLMProvider):

@@ -14,6 +14,17 @@ export type ChatMessage = {
   role: "user" | "assistant";
   text: string;
   ts: number;
+  pending?: boolean;
+  isTyping?: boolean;
+  fullText?: string;
+};
+
+export type ChatSession = {
+  id: string; // frontend session id (used as part of backend userId)
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: ChatMessage[];
 };
 
 

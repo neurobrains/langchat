@@ -1,7 +1,7 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -47,18 +47,9 @@ class TestPromptsAsync:
         ]
         query = "Tell me more about it"
 
-        # New implementation calls llm.current_llm.ainvoke([HumanMessage(...)]), provider-agnostic.
+        # Mock the LLM with an async ainvoke method
         mock_llm = MagicMock()
-        mock_current_llm = MagicMock()
-
-        class _Resp:
-            content = "Tell me more about Python"
-
-        async def _ainvoke(*args, **kwargs):
-            return _Resp()
-
-        mock_current_llm.ainvoke = _ainvoke
-        mock_llm.current_llm = mock_current_llm
+        mock_llm.ainvoke = AsyncMock(return_value="Tell me more about Python")
 
         result = await generate_standalone_question(
             query=query,
@@ -74,17 +65,9 @@ class TestPromptsAsync:
         chat_history = []
         query = "What is Python?"
 
+        # Mock the LLM with an async ainvoke method
         mock_llm = MagicMock()
-        mock_current_llm = MagicMock()
-
-        class _Resp:
-            content = query
-
-        async def _ainvoke(*args, **kwargs):
-            return _Resp()
-
-        mock_current_llm.ainvoke = _ainvoke
-        mock_llm.current_llm = mock_current_llm
+        mock_llm.ainvoke = AsyncMock(return_value=query)
 
         result = await generate_standalone_question(
             query=query,

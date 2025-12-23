@@ -9,7 +9,7 @@ from langchain_pinecone.vectorstores import PineconeVectorStore
 from pinecone import Pinecone
 
 from langchat.adapters.base import VectorStoreProvider
-from langchat.logger import logger
+from langchat.adapters.logger import logger
 
 
 class PineconeVectorAdapter(VectorStoreProvider):

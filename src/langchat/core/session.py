@@ -10,8 +10,8 @@ from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 
 from langchat.adapters.base import HistoryStore, LLMProvider, RerankerProvider, VectorStoreProvider
-from langchat.config import LangChatConfig
-from langchat.logger import logger
+from langchat.adapters.logger import logger
+from langchat.core.config import LangChatConfig
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)

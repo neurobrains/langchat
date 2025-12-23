@@ -12,13 +12,13 @@ from rich.panel import Panel
 
 from langchat.adapters.db.supabase_adapter import SupabaseAdapter
 from langchat.adapters.db.utils.id_manager import IDManager
+from langchat.adapters.logger import logger
 from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
 from langchat.adapters.services.factory import create_llm_service
 from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
-from langchat.config import LangChatConfig
+from langchat.core.config import LangChatConfig
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
-from langchat.logger import logger
 
 # Global flag to track if running as API server
 _is_api_server_mode = False
