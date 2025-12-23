@@ -147,7 +147,7 @@ def test_multi_agent_get_nonexistent_agent():
 def test_multi_agent_clear_history():
     """Test clearing message history."""
     from langchat.agents.multi_agent import AgentMessage
-    
+
     system = MultiAgentSystem()
     system.message_history = [
         AgentMessage(from_agent="a1", to_agent="a2", content="msg1"),

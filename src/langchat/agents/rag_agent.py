@@ -267,7 +267,7 @@ class RAGAgent:
         # Validate required config values
         if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
             raise ValueError("Pinecone API key and index name must be configured")
-        
+
         if not self.config.openai_api_keys:
             raise ValueError("OpenAI API keys must be configured for embeddings")
 
@@ -309,7 +309,7 @@ class RAGAgent:
         # Validate required config values
         if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
             raise ValueError("Pinecone API key and index name must be configured")
-        
+
         if not self.config.openai_api_keys:
             raise ValueError("OpenAI API keys must be configured for embeddings")
 
