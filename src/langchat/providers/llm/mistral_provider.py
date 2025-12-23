@@ -14,7 +14,7 @@ from langchat.adapters.logger import logger
 from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
 
 
-class MistralProvider:
+class Mistral:
     """
     Mistral AI LLM provider with key rotation.
 
@@ -117,5 +117,9 @@ class MistralProvider:
                 raise
 
 
-__all__ = ["MistralProvider"]
+__all__ = ["Mistral"]
+
+
+# Backward compatibility
+MistralProvider = Mistral
 

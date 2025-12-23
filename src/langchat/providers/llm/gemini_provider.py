@@ -14,7 +14,7 @@ from langchat.adapters.logger import logger
 from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
 
 
-class GeminiProvider:
+class Gemini:
     """
     Google Gemini LLM provider with key rotation.
 
@@ -113,5 +113,9 @@ class GeminiProvider:
                 raise
 
 
-__all__ = ["GeminiProvider"]
+__all__ = ["Gemini"]
+
+
+# Backward compatibility
+GeminiProvider = Gemini
 

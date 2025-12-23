@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from langchat.core.config import LangChatConfig
 
 
-class SupabaseProvider(SupabaseAdapter):
+class Supabase(SupabaseAdapter):
     """
     Supabase database provider.
 
@@ -60,7 +60,7 @@ def create_database_provider(
         if not supabase_url or not supabase_key:
             raise ValueError("Supabase URL and key are required")
 
-        return SupabaseProvider.from_config(
+        return Supabase.from_config(
             supabase_url=supabase_url,
             supabase_key=supabase_key,
         )
@@ -69,5 +69,9 @@ def create_database_provider(
         raise ValueError(f"Unknown database provider: {provider}. Supported: supabase")
 
 
-__all__ = ["SupabaseProvider", "create_database_provider"]
+__all__ = ["Supabase", "create_database_provider"]
+
+
+# Backward compatibility
+SupabaseProvider = Supabase
 

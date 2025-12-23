@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from langchat.core.config import LangChatConfig
 
 
-class PineconeProvider(PineconeVectorAdapter):
+class Pinecone(PineconeVectorAdapter):
     """
     Pinecone vector database provider.
 
@@ -64,7 +64,7 @@ def create_vector_db_provider(
         if not api_key or not index_name:
             raise ValueError("Pinecone api_key and index_name are required")
 
-        return PineconeProvider(
+        return Pinecone(
             api_key=api_key,
             index_name=index_name,
             embedding_model=embedding_model,
@@ -75,5 +75,9 @@ def create_vector_db_provider(
         raise ValueError(f"Unknown vector DB provider: {provider}. Supported: pinecone")
 
 
-__all__ = ["PineconeProvider", "create_vector_db_provider"]
+__all__ = ["Pinecone", "create_vector_db_provider"]
+
+
+# Backward compatibility
+PineconeProvider = Pinecone
 

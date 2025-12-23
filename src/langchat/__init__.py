@@ -18,20 +18,31 @@ from langchat.core.config import LangChatConfig
 
 # Providers (for easy access)
 from langchat.providers import (
+    Anthropic,
     AnthropicProvider,
+    Cohere,
     CohereProvider,
     # Reranker Providers
+    Flashrank,
     FlashrankProvider,
+    Gemini,
     GeminiProvider,
+    Mistral,
     MistralProvider,
+    Ollama,
     OllamaProvider,
-    # LLM Providers
+    # LLM Providers (new names)
+    OpenAI,
+    # LLM Providers (old names - backward compatibility)
     OpenAIProvider,
     # Vector DB Providers
+    Pinecone,
     PineconeProvider,
     # Database Providers
+    Supabase,
     SupabaseProvider,
     create_database_provider,
+    # Factory functions
     create_llm_provider,
     create_reranker_provider,
     create_vector_db_provider,
@@ -53,21 +64,31 @@ __all__ = [
     "Tool",
     "MultiAgentSystem",
     "AgentMessage",
-    # LLM Providers
+    # LLM Providers (new names - recommended)
+    "OpenAI",
+    "Gemini",
+    "Anthropic",
+    "Ollama",
+    "Cohere",
+    "Mistral",
+    "create_llm_provider",
+    # LLM Providers (old names - backward compatibility)
     "OpenAIProvider",
     "GeminiProvider",
     "AnthropicProvider",
     "OllamaProvider",
     "CohereProvider",
     "MistralProvider",
-    "create_llm_provider",
     # Vector DB Providers
+    "Pinecone",
     "PineconeProvider",
     "create_vector_db_provider",
     # Database Providers
+    "Supabase",
     "SupabaseProvider",
     "create_database_provider",
     # Reranker Providers
+    "Flashrank",
     "FlashrankProvider",
     "create_reranker_provider",
 ]

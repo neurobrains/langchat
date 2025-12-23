@@ -14,7 +14,7 @@ from langchat.adapters.logger import logger
 from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
 
 
-class AnthropicProvider:
+class Anthropic:
     """
     Anthropic Claude LLM provider with key rotation.
 
@@ -116,5 +116,9 @@ class AnthropicProvider:
                 raise
 
 
-__all__ = ["AnthropicProvider"]
+__all__ = ["Anthropic"]
+
+
+# Backward compatibility
+AnthropicProvider = Anthropic
 

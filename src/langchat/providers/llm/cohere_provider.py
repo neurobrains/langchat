@@ -14,7 +14,7 @@ from langchat.adapters.logger import logger
 from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
 
 
-class CohereProvider:
+class Cohere:
     """
     Cohere LLM provider with key rotation.
 
@@ -115,5 +115,9 @@ class CohereProvider:
                 raise
 
 
-__all__ = ["CohereProvider"]
+__all__ = ["Cohere"]
+
+
+# Backward compatibility
+CohereProvider = Cohere
 

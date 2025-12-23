@@ -39,12 +39,12 @@ def create_llm_provider(
         llm = create_llm_provider("ollama", model="llama2", base_url="http://localhost:11434")
         ```
     """
-    from langchat.providers.llm.anthropic_provider import AnthropicProvider
-    from langchat.providers.llm.cohere_provider import CohereProvider
-    from langchat.providers.llm.gemini_provider import GeminiProvider
-    from langchat.providers.llm.mistral_provider import MistralProvider
-    from langchat.providers.llm.ollama_provider import OllamaProvider
-    from langchat.providers.llm.openai_provider import OpenAIProvider
+    from langchat.providers.llm.anthropic_provider import Anthropic
+    from langchat.providers.llm.cohere_provider import Cohere
+    from langchat.providers.llm.gemini_provider import Gemini
+    from langchat.providers.llm.mistral_provider import Mistral
+    from langchat.providers.llm.ollama_provider import Ollama
+    from langchat.providers.llm.openai_provider import OpenAI
 
     provider = provider.strip().lower()
 
@@ -73,7 +73,7 @@ def create_llm_provider(
         temperature = kwargs.get("temperature") or (config.openai_temperature if config else 1.0)
         max_retries = kwargs.get("max_retries_per_key") or (config.max_llm_retries if config else 2)
 
-        return OpenAIProvider(
+        return OpenAI(
             model=model,
             temperature=temperature,
             api_keys=api_keys,
@@ -86,7 +86,7 @@ def create_llm_provider(
         temperature = kwargs.get("temperature") or (config.gemini_temperature if config else 1.0)
         max_retries = kwargs.get("max_retries_per_key") or (config.max_llm_retries if config else 2)
 
-        return GeminiProvider(
+        return Gemini(
             model=model,
             temperature=temperature,
             api_keys=api_keys,
@@ -100,7 +100,7 @@ def create_llm_provider(
         max_retries = kwargs.get("max_retries_per_key") or (config.max_llm_retries if config else 2)
         max_tokens = kwargs.get("max_tokens", 4096)
 
-        return AnthropicProvider(
+        return Anthropic(
             model=model,
             temperature=temperature,
             api_keys=api_keys,
@@ -114,7 +114,7 @@ def create_llm_provider(
         base_url = kwargs.get("base_url", "http://localhost:11434")
         options = kwargs.get("options")
 
-        return OllamaProvider(
+        return Ollama(
             model=model,
             temperature=temperature,
             base_url=base_url,
@@ -131,7 +131,7 @@ def create_llm_provider(
         max_retries = kwargs.get("max_retries_per_key", 2)
         max_tokens = kwargs.get("max_tokens", 4096)
 
-        return CohereProvider(
+        return Cohere(
             model=model,
             temperature=temperature,
             api_keys=api_keys,
@@ -149,7 +149,7 @@ def create_llm_provider(
         max_retries = kwargs.get("max_retries_per_key", 2)
         max_tokens = kwargs.get("max_tokens", 4096)
 
-        return MistralProvider(
+        return Mistral(
             model=model,
             temperature=temperature,
             api_keys=api_keys,

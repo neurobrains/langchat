@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 from langchat.adapters.logger import logger
 
 
-class OpenAIProvider:
+class OpenAI:
     """
     OpenAI LLM provider with automatic API key rotation and retry logic.
 
@@ -113,5 +113,9 @@ class OpenAIProvider:
                 ) from last_error
 
 
-__all__ = ["OpenAIProvider"]
+__all__ = ["OpenAI"]
+
+
+# Backward compatibility
+OpenAIProvider = OpenAI
 

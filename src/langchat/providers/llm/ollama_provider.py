@@ -13,7 +13,7 @@ from langchat.adapters.logger import logger
 from langchat.providers.llm._base_llm import BaseLLM, messages_to_text
 
 
-class OllamaProvider:
+class Ollama:
     """
     Ollama LLM provider for running local open-source models.
 
@@ -92,5 +92,9 @@ class OllamaProvider:
             raise
 
 
-__all__ = ["OllamaProvider"]
+__all__ = ["Ollama"]
+
+
+# Backward compatibility
+OllamaProvider = Ollama
 

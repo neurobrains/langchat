@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from langchat.core.config import LangChatConfig
 
 
-class FlashrankProvider(FlashrankRerankAdapter):
+class Flashrank(FlashrankRerankAdapter):
     """
     Flashrank reranker provider.
 
@@ -59,7 +59,7 @@ def create_reranker_provider(
         cache_dir = kwargs.get("cache_dir") or (config.reranker_cache_dir if config else "rerank_models")
         top_n = kwargs.get("top_n") or (config.reranker_top_n if config else 3)
 
-        return FlashrankProvider(
+        return Flashrank(
             model_name=model_name,
             cache_dir=cache_dir,
             top_n=top_n,
@@ -69,5 +69,9 @@ def create_reranker_provider(
         raise ValueError(f"Unknown reranker provider: {provider}. Supported: flashrank")
 
 
-__all__ = ["FlashrankProvider", "create_reranker_provider"]
+__all__ = ["Flashrank", "create_reranker_provider"]
+
+
+# Backward compatibility
+FlashrankProvider = Flashrank
 
