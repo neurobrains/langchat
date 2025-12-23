@@ -2,7 +2,10 @@
 # Licensed under the MIT License.
 
 import asyncio
+from pathlib import Path
 from typing import List, Optional
+
+from dotenv import load_dotenv
 
 from langchat.config import LangChatConfig
 from langchat.core.engine import LangChatEngine
@@ -71,8 +74,7 @@ class LangChat:
         return await self.engine.chat(query=query, user_id=user_id, domain=domain)
 
     def chat_sync(self, query: str, user_id: str, domain: str = "default") -> dict:
-        """
-        Synchronous version of chat method.
+        """Synchronous version of chat method.
 
         Args:
             query: User query text
@@ -80,38 +82,39 @@ class LangChat:
             domain: User domain (optional, defaults to "default")
 
         Returns:
-            Dictionary with response and metadata
-
-        Example:
-            ```python
-            result = langchat.chat_sync(
-                query="What are the best universities in Europe?",
-                user_id="user123"
-            )
-            print(result["response"])
-            ```
+            dict: Dictionary with response and metadata
         """
+
         return asyncio.run(self.chat(query, user_id, domain))
 
     def get_session(self, user_id: str, domain: str = "default"):
-        """
-        Get or create a user session.
+        """Get or create a user session.
 
         Args:
             user_id: User ID
-            domain: User domain
+            domain: User domain (optional, defaults to "default")
 
         Returns:
             UserSession instance
-
-        Example:
-            ```python
-            session = langchat.get_session(user_id="user123", domain="education")
-            # Access session properties
-            print(session.chat_history)
-            ```
         """
+
         return self.engine.get_session(user_id, domain)
+
+    def load_env(self):
+        """Load environment variables from .env file
+
+        Raises:
+            FileNotFoundError: Environment variables file not found
+        """
+        # Check if environment variables file exists
+        if not Path(".env").exists():
+            # Raise error if environment variables file not found
+            raise FileNotFoundError("Environment variables file not found")
+        else:
+            # Load environment variables from .env file
+            load_dotenv()
+            # Log success message
+            logger.info("Environment variables loaded successfully")
 
     def load_and_index_documents(
         self,
