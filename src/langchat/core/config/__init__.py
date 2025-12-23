@@ -38,6 +38,21 @@ class LangChatConfig:
     anthropic_model: str = "claude-3-5-sonnet-20241022"
     anthropic_temperature: float = 1.0
 
+    # Ollama Configuration (local models)
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama2"
+    ollama_temperature: float = 0.7
+
+    # Cohere Configuration
+    cohere_api_keys: list[str] = field(default_factory=list)
+    cohere_model: str = "command"
+    cohere_temperature: float = 0.7
+
+    # Mistral Configuration
+    mistral_api_keys: list[str] = field(default_factory=list)
+    mistral_model: str = "mistral-small-latest"
+    mistral_temperature: float = 0.7
+
     # Pinecone Configuration
     pinecone_api_key: str | None = None
     pinecone_index_name: str | None = None  # Must be configured
@@ -102,6 +117,20 @@ class LangChatConfig:
             if single_key:
                 anthropic_keys = [single_key]
 
+        cohere_keys_str = os.getenv("COHERE_API_KEYS", "")
+        cohere_keys = [k.strip() for k in cohere_keys_str.split(",") if k.strip()]
+        if not cohere_keys:
+            single_key = os.getenv("COHERE_API_KEY")
+            if single_key:
+                cohere_keys = [single_key]
+
+        mistral_keys_str = os.getenv("MISTRAL_API_KEYS", "")
+        mistral_keys = [k.strip() for k in mistral_keys_str.split(",") if k.strip()]
+        if not mistral_keys:
+            single_key = os.getenv("MISTRAL_API_KEY")
+            if single_key:
+                mistral_keys = [single_key]
+
         return cls(
             llm_provider=llm_provider,
             openai_api_keys=openai_keys,
@@ -114,6 +143,15 @@ class LangChatConfig:
             anthropic_api_keys=anthropic_keys,
             anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
             anthropic_temperature=float(os.getenv("ANTHROPIC_TEMPERATURE", "1.0")),
+            ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            ollama_model=os.getenv("OLLAMA_MODEL", "llama2"),
+            ollama_temperature=float(os.getenv("OLLAMA_TEMPERATURE", "0.7")),
+            cohere_api_keys=cohere_keys,
+            cohere_model=os.getenv("COHERE_MODEL", "command"),
+            cohere_temperature=float(os.getenv("COHERE_TEMPERATURE", "0.7")),
+            mistral_api_keys=mistral_keys,
+            mistral_model=os.getenv("MISTRAL_MODEL", "mistral-small-latest"),
+            mistral_temperature=float(os.getenv("MISTRAL_TEMPERATURE", "0.7")),
             pinecone_api_key=os.getenv("PINECONE_API_KEY"),
             pinecone_index_name=os.getenv("PINECONE_INDEX_NAME", "abroad-inquiry-json-qa"),
             supabase_url=os.getenv("SUPABASE_URL"),

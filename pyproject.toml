@@ -4,22 +4,27 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "langchat"
-version = "1.0.0"
-description = "A conversational AI library with vector search capabilities"
+version = "2.0.0"
+description = "A powerful library for Ship production-grade AI chatbots in minutes"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
     {name = "Sifat Hasan, NeuroBrain"}
 ]
+keywords = ["rag", "agents", "multi-agent", "llm", "ai", "langchain", "chatbot", "vector-search"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
 ]
 dependencies = [
     "fastapi>=0.115.14",
