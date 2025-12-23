@@ -168,9 +168,9 @@ class LangChatEngine:
                     standalone_question = await generate_standalone_question(
                         query=query,
                         chat_history=session.chat_history,
-                        llm=self.llm,
                         custom_prompt=self.standalone_question_prompt,
                         verbose_chains=self.verbose,
+                        llm=self.llm,
                     )
                     logger.info(f"Generated standalone question: {standalone_question}")
                 except Exception as e:

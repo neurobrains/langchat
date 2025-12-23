@@ -6,8 +6,6 @@ from typing import List, Optional, Tuple
 
 from langchain.prompts import PromptTemplate
 
-from langchat.sdk import LangChat
-
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message=".*deprecated.*")
@@ -42,6 +40,7 @@ def create_standalone_question_prompt(
 async def generate_standalone_question(
     query: str,
     chat_history: List[Tuple[str, str]],
+    llm,
     custom_prompt: Optional[str] = None,
     verbose_chains: bool = False,
 ) -> str:
@@ -52,6 +51,8 @@ async def generate_standalone_question(
         query: User query
         chat_history: List of (query, response) tuples
         llm: LLM provider instance
+        custom_prompt: Custom prompt template (optional)
+        verbose_chains: Verbose mode
 
     Returns:
         Standalone question string
@@ -87,6 +88,6 @@ async def generate_standalone_question(
         from langchain.schema import HumanMessage  # type: ignore[no-redef]
 
     formatted_prompt = prompt.format(question=query, chat_history=formatted_chat_history)
-    result = await LangChat.ainvoke([HumanMessage(content=formatted_prompt)])
+    result = await llm.ainvoke([HumanMessage(content=formatted_prompt)])
 
     return result.strip() if isinstance(result, str) else query.strip()
