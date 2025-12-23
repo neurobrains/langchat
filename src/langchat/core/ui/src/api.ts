@@ -11,20 +11,42 @@ export async function sendChat(params: {
   form.append("domain", "default");
   if (params.image) form.append("image", params.image);
 
-  const res = await fetch("/chat", { method: "POST", body: form });
-  const json = (await res.json()) as ChatResponse;
+  try {
+    const res = await fetch("/chat", { method: "POST", body: form });
+    
+    if (!res.ok) {
+      let errorMessage = `HTTP ${res.status}`;
+      try {
+        const errorJson = await res.json();
+        errorMessage = errorJson?.error ?? errorJson?.response ?? errorMessage;
+      } catch {
+        // If JSON parsing fails, use status text
+        errorMessage = res.statusText || errorMessage;
+      }
+      
+      return {
+        status: "error",
+        response: "Sorry — the server returned an error. Please try again.",
+        error: errorMessage
+      };
+    }
 
-  if (!res.ok) {
+    const json = (await res.json()) as ChatResponse;
+    
+    // Ensure response field exists
+    if (!json.response) {
+      json.response = json.error ?? "No response received.";
+    }
+    
+    return json;
+  } catch (e) {
+    // Network error or JSON parsing error
     return {
       status: "error",
-      response:
-        json?.response ??
-        "Sorry — the server returned an error. Please try again.",
-      error: json?.error ?? `HTTP ${res.status}`
+      response: "Unable to reach the server. Please check your connection.",
+      error: e instanceof Error ? e.message : "Unknown error"
     };
   }
-
-  return json;
 }
 
 

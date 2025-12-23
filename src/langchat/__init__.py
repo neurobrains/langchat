@@ -42,6 +42,7 @@ Example:
 # Agent systems
 from langchat.agents import Agent, AgentMessage, MultiAgentSystem, RAGAgent
 from langchat.agents.agent import Tool
+from langchat.sdk import LangChat
 
 __version__ = "2.0.0"
 
@@ -52,4 +53,6 @@ __all__ = [
     "Tool",
     "MultiAgentSystem",
     "AgentMessage",
+    # SDK
+    "LangChat",
 ]

@@ -67,10 +67,22 @@ async def chat(
             standalone_question=standalone_question,
         )
 
+        # Ensure result has the expected format
+        if not isinstance(result, dict):
+            result = {"response": str(result) if result else "No response received."}
+
+        # Ensure response field exists
+        if "response" not in result or not result.get("response"):
+            result["response"] = "No response received."
+
+        # Ensure status field exists
+        if "status" not in result:
+            result["status"] = "success"
+
         return JSONResponse(content=result)
 
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
+        logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         return JSONResponse(
             content={
                 "response": "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment.",

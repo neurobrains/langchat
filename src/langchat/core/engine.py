@@ -87,20 +87,20 @@ class LangChatEngine:
 
     def _get_default_prompt_template(self) -> str:
         """Get default prompt template."""
-        return """You are a highly skilled AI assistant with access to relevant documentation and past conversations.
+        return """Hello LangChat! You are a helpful AI assistant. Answer the user question in same language as the question.
 
-Your task is to provide accurate, helpful, and contextually aware responses.
 
-Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
-Context: {context}
+Use only the chat history and the following information
 
-Chat History:
+{context}
+
+Current conversation:
 {chat_history}
 
-Question: {question}
+Human: {question}
 
-Answer:"""
+AI Assistant:"""
 
     def get_session(self, user_id: str, domain: str = "default") -> UserSession:
         """
@@ -180,6 +180,13 @@ Answer:"""
             response_text = result.get("output_text", "")
             if not response_text and "answer" in result:
                 response_text = result["answer"]
+
+            # Validate response
+            if not response_text or len(response_text.strip()) < 1:
+                logger.warning("Empty or invalid response received from LLM")
+                response_text = "I apologize, but I didn't receive a valid response. Please try again."
+            elif len(response_text.strip()) < 3:
+                logger.warning(f"Response too short: '{response_text}'. This might indicate an issue with the LLM.")
 
             # Print formatted response to console with better styling
             # Show panel unless running in API server mode

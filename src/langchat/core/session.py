@@ -349,13 +349,26 @@ class CustomConversationChain:
         messages = [HumanMessage(content=formatted_prompt)]
         result = await self.retrieval_qa.llm.ainvoke(messages)
 
-        # Extract response text
+        # Extract response text with better handling
+        response_text = ""
         if hasattr(result, "content"):
             response_text = result.content
+            if isinstance(response_text, list):
+                # Handle case where content is a list
+                response_text = " ".join(str(item) for item in response_text)
         elif isinstance(result, str):
             response_text = result
+        elif hasattr(result, "text"):
+            response_text = result.text
         else:
             response_text = str(result)
+
+        # Ensure response is not empty and is a string
+        if not response_text or not isinstance(response_text, str):
+            logger.warning(f"Invalid response from LLM: {type(result)} - {result}")
+            response_text = "I apologize, but I didn't receive a valid response. Please try again."
+        else:
+            response_text = response_text.strip()
 
         # Save the interaction to memory
         self.memory.save_context({"input": query}, {"answer": response_text})
