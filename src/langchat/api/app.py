@@ -2,10 +2,13 @@
 # Licensed under the MIT License.
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 
 from langchat.config import LangChatConfig
 from langchat.core.engine import LangChatEngine, set_api_server_mode
@@ -47,23 +50,6 @@ def create_lifespan(
 
         # Startup logic
         try:
-            # Auto-generate chat interface
-            if auto_generate_interface:
-                try:
-                    from langchat.utils.interface_generator import (
-                        generate_chat_interface,
-                    )
-
-                    api_url = (
-                        f"http://localhost:{_config.server_port}"
-                        if _config
-                        else "http://localhost:8000"
-                    )
-                    generate_chat_interface(output_path="chat_interface.html", api_url=api_url)
-                    logger.info("Chat interface auto-generated: chat_interface.html")
-                except Exception as e:
-                    logger.warning(f"Failed to auto-generate chat interface: {str(e)}")
-
             # Auto-generate Dockerfile, .dockerignore, and requirements.txt
             if auto_generate_docker:
                 try:
@@ -104,10 +90,71 @@ def create_lifespan(
     return lifespan
 
 
+def _get_ui_dist_dir() -> Path:
+    """
+    Resolve UI dist directory relative to the installed `langchat` package.
+    Layout: src/langchat/ui/dist
+    """
+    pkg_dir = Path(__file__).resolve().parents[1]  # .../langchat/api -> .../langchat
+    return pkg_dir / "ui" / "dist"
+
+
+def _mount_ui(app: FastAPI) -> None:
+    """
+    Serve the built Vite UI from ui/dist at /frontend.
+    - /frontend/ -> index.html
+    - /frontend/assets/* -> static assets
+    - /frontend/{path} -> SPA fallback to index.html if file doesn't exist
+    """
+    dist_dir = _get_ui_dist_dir()
+    index_file = dist_dir / "index.html"
+    assets_dir = dist_dir / "assets"
+
+    if not dist_dir.exists():
+        logger.warning(
+            "UI dist folder not found at src/langchat/ui/dist. "
+            "Run `cd src/langchat/ui && npm install && npm run build`."
+        )
+
+        @app.get("/frontend", include_in_schema=False)
+        @app.get("/frontend/", include_in_schema=False)
+        async def _frontend_missing():
+            return PlainTextResponse(
+                "UI not built. Run: cd src/langchat/ui && npm install && npm run build",
+                status_code=503,
+            )
+
+        return
+
+    if assets_dir.exists():
+        app.mount(
+            "/frontend/assets",
+            StaticFiles(directory=str(assets_dir)),
+            name="frontend-assets",
+        )
+
+    # Serve other static files at the dist root (favicon, manifest, etc)
+    @app.get("/frontend", include_in_schema=False)
+    @app.get("/frontend/", include_in_schema=False)
+    async def _frontend_index():
+        if index_file.exists():
+            return FileResponse(index_file)
+        return PlainTextResponse("UI build is missing index.html in ui/dist", status_code=500)
+
+    @app.get("/frontend/{path:path}", include_in_schema=False)
+    async def _frontend_spa(path: str):
+        candidate = dist_dir / path
+        if candidate.exists() and candidate.is_file():
+            return FileResponse(candidate)
+        if index_file.exists():
+            return FileResponse(index_file)
+        return PlainTextResponse("UI build is missing index.html in ui/dist", status_code=500)
+
+
 def create_app(
     config: Optional[LangChatConfig] = None,
-    auto_generate_interface: bool = True,
-    auto_generate_docker: bool = True,
+    auto_generate_interface: bool = False,
+    auto_generate_docker: bool = False,
 ) -> FastAPI:
     """
     Create and configure FastAPI application.
@@ -147,6 +194,9 @@ def create_app(
 
     # Include routers
     app.include_router(routes.router)
+
+    # Serve the Vite UI (ui/dist) at /frontend
+    _mount_ui(app)
 
     global _app
     _app = app
