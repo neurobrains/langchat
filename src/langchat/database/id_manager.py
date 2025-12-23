@@ -74,20 +74,37 @@ class IDManager:
         """
         try:
             # First get the total count of rows in the table
-            count_response = (
-                self.supabase_client.table(table_name).select("*", count="exact").execute()
-            )
-
-            row_count = count_response.count if hasattr(count_response, "count") else 0
+            try:
+                count_response = (
+                    self.supabase_client.table(table_name).select("*", count="exact").execute()
+                )
+                row_count = count_response.count if hasattr(count_response, "count") else 0
+            except Exception as db_error:
+                # If database connection fails, log warning and use default value
+                logger.warning(
+                    f"Error initializing counter for {table_name}: {str(db_error)}. "
+                    f"Using default initial value {self.initial_value}."
+                )
+                self.table_counters[table_name] = self.initial_value
+                return
 
             # Then get the maximum ID in the table
-            max_id_response = (
-                self.supabase_client.table(table_name)
-                .select("id")
-                .order("id", desc=True)
-                .limit(1)
-                .execute()
-            )
+            try:
+                max_id_response = (
+                    self.supabase_client.table(table_name)
+                    .select("id")
+                    .order("id", desc=True)
+                    .limit(1)
+                    .execute()
+                )
+            except Exception as db_error:
+                # If max_id query fails, just use row_count
+                logger.warning(
+                    f"Error getting max ID for {table_name}: {str(db_error)}. "
+                    f"Using row count based value."
+                )
+                self.table_counters[table_name] = max(self.initial_value, row_count + 1)
+                return
 
             # Set counter to max(row_count + 1, max_id + 1, initial_value)
             if max_id_response.data and len(max_id_response.data) > 0:

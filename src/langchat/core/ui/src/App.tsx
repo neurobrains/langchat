@@ -34,7 +34,20 @@ function loadSessions(): { sessions: ChatSession[]; activeId: string | null } {
 
     const sessions: ChatSession[] = parsed
       .filter((s) => s && typeof s === "object")
-      .map((s) => s as ChatSession)
+      .map((s) => {
+        const session = s as ChatSession;
+        // Restore full text for messages that have fullText but incomplete text
+        if (Array.isArray(session.messages)) {
+          session.messages = session.messages.map((m) => {
+            // If message has fullText but text is incomplete, restore full text
+            if (m.fullText && m.text !== m.fullText) {
+              return { ...m, text: m.fullText, isTyping: false };
+            }
+            return m;
+          });
+        }
+        return session;
+      })
       .filter((s) => typeof s.id === "string" && Array.isArray(s.messages));
 
     return { sessions, activeId: rawActive };
@@ -55,15 +68,17 @@ function buildSessionKey(baseUserId: string, sessionId: string) {
 }
 
 function summarizeTitle(messages: ChatMessage[]) {
+  // Find first user message (not AI response)
   const firstUser = messages.find((m) => m.role === "user" && m.text.trim().length > 0);
   const t = firstUser?.text.trim() ?? "New conversation";
   return t.length > 34 ? `${t.slice(0, 34)}…` : t;
 }
 
 function previewText(messages: ChatMessage[]) {
-  const last = [...messages].reverse().find((m) => m.text.trim().length > 0);
-  if (!last) return "";
-  const t = last.text.replace(/\s+/g, " ").trim();
+  // Show first user message as preview, not AI response
+  const firstUser = messages.find((m) => m.role === "user" && m.text.trim().length > 0);
+  if (!firstUser) return "";
+  const t = firstUser.text.replace(/\s+/g, " ").trim();
   return t.length > 44 ? `${t.slice(0, 44)}…` : t;
 }
 
@@ -130,6 +145,16 @@ function IconTrash(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function IconMore(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="18" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
 function ThinkingDots() {
   return (
     <span className="thinking" aria-label="Thinking">
@@ -145,6 +170,7 @@ export function App() {
   const [busy, setBusy] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+  const [sessionMenuOpen, setSessionMenuOpen] = useState<string | null>(null);
 
   const baseUserId = useMemo(() => {
     const existing = localStorage.getItem("langchat.baseUserId.v1");
@@ -191,14 +217,54 @@ export function App() {
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [sessions, activeId]);
+    // Always scroll to bottom when active session changes
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }, [activeId]);
+
+  // Auto-scroll when new message is added or typing updates
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const active = sessions.find((s) => s.id === activeId);
+    if (!active) return;
+    
+    // Scroll to bottom when messages change (new message or typing update)
+    const scrollToBottom = () => {
+      if (el) {
+        el.scrollTop = el.scrollHeight;
+      }
+    };
+    
+    // Use requestAnimationFrame for smooth scrolling
+    requestAnimationFrame(() => {
+      scrollToBottom();
+      // Also scroll after a short delay to catch typewriter updates
+      setTimeout(scrollToBottom, 50);
+    });
+  }, [sessions.find((s) => s.id === activeId)?.messages.length, sessions.find((s) => s.id === activeId)?.messages]);
 
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 1100);
     return () => window.clearTimeout(t);
   }, [toast]);
+
+  // Close session menu when clicking outside
+  useEffect(() => {
+    if (!sessionMenuOpen) return;
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.sessionMenu') && !target.closest('.sessionActions')) {
+        setSessionMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [sessionMenuOpen]);
 
   useEffect(() => {
     const active = sessions.find((s) => s.id === activeId);
@@ -228,11 +294,36 @@ export function App() {
     }
 
     const full = typingMsg.fullText ?? typingMsg.text;
-    let idx = 0;
-    const step = Math.max(1, Math.ceil(full.length / 140));
+    if (!full || full.length === 0) {
+      // If no fullText, mark as done immediately
+      setSessionState((st) => {
+        const nextSessions = st.sessions.map((s) => {
+          if (s.id !== active.id) return s;
+          const nextMessages = s.messages.map((m) => {
+            if (m.id !== typingMsg.id) return m;
+            return { ...m, text: m.text || "", isTyping: false, fullText: m.text || "" };
+          });
+          return { ...s, messages: nextMessages, updatedAt: Date.now() };
+        });
+        saveSessions(nextSessions, st.activeId);
+        return { ...st, sessions: nextSessions };
+      });
+      return;
+    }
+
+    // Start from current text length if already partially typed, otherwise start from 0
+    let idx = typingMsg.text?.length || 0;
+    // Ensure we don't start beyond the full text length
+    idx = Math.min(idx, full.length);
+    
+    // Calculate step size - type faster for shorter messages
+    const step = Math.max(1, Math.ceil(full.length / 100));
+    // Adaptive interval delay - faster for shorter messages (10-30ms range)
+    const intervalDelay = Math.max(10, Math.min(30, 500 / Math.max(1, full.length / 5)));
 
     const timer = window.setInterval(() => {
       idx = Math.min(full.length, idx + step);
+      
       setSessionState((st) => {
         const nextSessions = st.sessions.map((s) => {
           if (s.id !== active.id) return s;
@@ -240,9 +331,24 @@ export function App() {
             if (m.id !== typingMsg.id) return m;
             const nextText = full.slice(0, idx);
             const done = idx >= full.length;
-            return done
-              ? { ...m, text: full, isTyping: false, fullText: undefined }
-              : { ...m, text: nextText };
+            
+            if (done) {
+              // Complete - ensure full text is set
+              return { 
+                ...m, 
+                text: full, 
+                isTyping: false, 
+                fullText: full 
+              };
+            } else {
+              // Still typing - keep isTyping true
+              return { 
+                ...m, 
+                text: nextText, 
+                fullText: full,
+                isTyping: true 
+              };
+            }
           });
           return { ...s, messages: nextMessages, updatedAt: Date.now() };
         });
@@ -250,13 +356,26 @@ export function App() {
         return { ...st, sessions: nextSessions };
       });
 
-      if (idx >= full.length) {
-        if (typingControllerRef.current) {
-          window.clearInterval(typingControllerRef.current.timer);
-          typingControllerRef.current = null;
+      // Auto-scroll during typing
+      requestAnimationFrame(() => {
+        const el = scrollerRef.current;
+        if (el) {
+          el.scrollTop = el.scrollHeight;
         }
+      });
+
+      if (idx >= full.length) {
+        window.clearInterval(timer);
+        typingControllerRef.current = null;
+        // Final scroll to bottom when typing completes
+        requestAnimationFrame(() => {
+          const el = scrollerRef.current;
+          if (el) {
+            el.scrollTop = el.scrollHeight;
+          }
+        });
       }
-    }, 16);
+    }, intervalDelay);
 
     typingControllerRef.current = { sessionId: active.id, messageId: typingMsg.id, timer };
 
@@ -277,7 +396,8 @@ export function App() {
 
   async function onSend() {
     const query = text.trim();
-    if (!query || busy) return;
+    // Prevent sending if query is too short or busy
+    if (!query || query.length < 1 || busy) return;
 
     setError(null);
     setBusy(true);
@@ -304,35 +424,81 @@ export function App() {
       saveSessions(nextSessions, st.activeId);
       return { ...st, sessions: nextSessions };
     });
+    
+    // Immediately scroll to bottom when user sends message
+    requestAnimationFrame(() => {
+      const el = scrollerRef.current;
+      if (el) {
+        el.scrollTop = el.scrollHeight;
+      }
+    });
 
     try {
       const sessionKey = buildSessionKey(baseUserId, sessionId);
       const res = await sendChat({ query, sessionKey });
-      const fullResponse = res.response || "No response received.";
-
-      setSessionState((st) => {
-        const nextSessions = st.sessions.map((s) => {
-          if (s.id !== sessionId) return s;
-          const nextMessages = s.messages.map((m) => {
-            if (m.id !== pendingId) return m;
-            return {
-              ...m,
-              pending: false,
-              isTyping: true,
-              fullText: fullResponse,
-              text: "",
-              ts: Date.now(),
-            };
-          });
-          return { ...s, messages: nextMessages, updatedAt: Date.now() };
-        });
-        saveSessions(nextSessions, st.activeId);
-        return { ...st, sessions: nextSessions };
-      });
-
+      
+      // Ensure we have a valid response - don't trim here, preserve full response
+      const fullResponse = res?.response || res?.error || "No response received.";
+      
+      // Check if there was an error
       if (res.status === "error") {
         setError(res.error ?? "Server returned an error.");
+        // Still show the error message in the chat
+        setSessionState((st) => {
+          const nextSessions = st.sessions.map((s) => {
+            if (s.id !== sessionId) return s;
+            const nextMessages = s.messages.map((m) => {
+              if (m.id !== pendingId) return m;
+              return {
+                ...m,
+                pending: false,
+                isTyping: true,
+                fullText: fullResponse, // Store full response
+                text: "", // Start with empty text for typewriter effect
+                ts: Date.now(),
+              };
+            });
+            return { ...s, messages: nextMessages, updatedAt: Date.now() };
+          });
+          saveSessions(nextSessions, st.activeId);
+          return { ...st, sessions: nextSessions };
+        });
+      } else {
+        // Success - update message with response
+        setSessionState((st) => {
+          const nextSessions = st.sessions.map((s) => {
+            if (s.id !== sessionId) return s;
+            const nextMessages = s.messages.map((m) => {
+              if (m.id !== pendingId) return m;
+              return {
+                ...m,
+                pending: false,
+                isTyping: true,
+                fullText: fullResponse, // Store full response
+                text: "", // Start with empty text for typewriter effect
+                ts: Date.now(),
+              };
+            });
+            return { ...s, messages: nextMessages, updatedAt: Date.now() };
+          });
+          saveSessions(nextSessions, st.activeId);
+          return { ...st, sessions: nextSessions };
+        });
       }
+      
+      // Auto-scroll to bottom after response is received
+      requestAnimationFrame(() => {
+        const el = scrollerRef.current;
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
+        // Also scroll after a delay to ensure it happens
+        setTimeout(() => {
+          if (el) {
+            el.scrollTop = el.scrollHeight;
+          }
+        }, 100);
+      });
     } catch (e) {
       setSessionState((st) => {
         const nextSessions = st.sessions.map((s) => {
@@ -432,11 +598,15 @@ export function App() {
       <div className={`sidebar ${mobileSidebarOpen ? "open" : ""}`}>
         <div className="sidebarTop">
           <div className="brand">
-            <div className="brandMark" aria-hidden="true" />
-            <div className="brandText">
-              <div className="brandName">LangChat</div>
-              <div className="brandSub">Teal UI • Clean chat</div>
-            </div>
+            <img src="/frontend/logo-sidebar.png" alt="LangChat" className="brandLogo" onError={(e) => {
+              // Fallback if logo fails to load - try alternative path
+              const target = e.target as HTMLImageElement;
+              if (target.src.includes('/frontend/')) {
+                target.src = '/logo-sidebar.png';
+              } else {
+                target.style.display = 'none';
+              }
+            }} />
           </div>
 
           <button className="btnPrimary" onClick={onNewConversation}>
@@ -448,20 +618,55 @@ export function App() {
         <div className="sessionList" role="list" aria-label="Conversations">
           {sessions.map((s) => {
             const active = s.id === activeId;
+            const menuOpen = sessionMenuOpen === s.id;
             return (
               <div key={s.id} className={`sessionItem ${active ? "active" : ""}`} role="listitem">
                 <button className="sessionMain" onClick={() => onSelectSession(s.id)}>
                   <div className="sessionTitle">{s.title || "Conversation"}</div>
                   <div className="sessionPreview">{previewText(s.messages)}</div>
                 </button>
-                <button
-                  className="iconBtn"
-                  onClick={() => onDeleteSession(s.id)}
-                  aria-label="Delete conversation"
-                  title="Delete"
-                >
-                  <IconTrash />
-                </button>
+                <div className="sessionActions">
+                  <button
+                    className="iconBtn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSessionMenuOpen(menuOpen ? null : s.id);
+                    }}
+                    aria-label="Session options"
+                    title="Options"
+                  >
+                    <IconMore />
+                  </button>
+                  {menuOpen && (
+                    <>
+                      <div 
+                        className="sessionMenuBackdrop"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSessionMenuOpen(null);
+                        }}
+                      />
+                      <div className="sessionMenu">
+                        <div className="sessionMenuHeader">Session Details</div>
+                        <div className="sessionMenuInfo">
+                          <div className="sessionMenuLabel">Session ID:</div>
+                          <div className="sessionMenuValue">{s.id}</div>
+                        </div>
+                        <button
+                          className="sessionMenuDelete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSessionMenuOpen(null);
+                            onDeleteSession(s.id);
+                          }}
+                        >
+                          <IconTrash />
+                          Delete Conversation
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -469,18 +674,10 @@ export function App() {
       </div>
 
       <div className="main">
-        <div className="topbar">
-          <button className="iconBtn mobileOnly" onClick={() => setMobileSidebarOpen((v) => !v)}>
-            <span className="hamburger" aria-hidden="true" />
-            <span className="srOnly">Toggle conversations</span>
-          </button>
-          <div className="topbarTitle">
-            <div className="topbarTitleMain">{activeSession?.title ?? "Conversation"}</div>
-            <div className="topbarTitleSub">
-              Session: {activeSession?.id ?? "—"} • {busy ? "Thinking…" : "Ready"}
-            </div>
-          </div>
-        </div>
+        <button className="iconBtn mobileOnly mobileMenuBtn" onClick={() => setMobileSidebarOpen((v) => !v)}>
+          <span className="hamburger" aria-hidden="true" />
+          <span className="srOnly">Toggle conversations</span>
+        </button>
 
         <div className="content">
           <div className="messages" ref={scrollerRef} aria-label="Messages">
@@ -516,38 +713,60 @@ export function App() {
           </div>
 
           {error ? <div className="notice">{error}</div> : null}
+        </div>
 
-          <div className="composerWrap">
-            <div className="composer">
-              <textarea
-                value={text}
-                placeholder="Write a message… (Enter to send, Shift+Enter for newline)"
-                onChange={(e) => {
-                  setText(e.target.value);
-                  autoGrow(e.target);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
+        <div className="composerWrap">
+          <form
+            className="composer"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (canSend) {
+                void onSend();
+              }
+            }}
+          >
+            <textarea
+              value={text}
+              placeholder="Write a message… (Enter to send, Shift+Enter for newline)"
+              onChange={(e) => {
+                setText(e.target.value);
+                autoGrow(e.target);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (canSend) {
                     void onSend();
                   }
-                }}
-                disabled={busy}
-              />
-              <button className="btnPrimary" onClick={() => void onSend()} disabled={!canSend}>
-                {busy ? "Sending…" : "Send"}
-              </button>
-            </div>
-
-            <div className="composerHint">No user_id/domain fields — sessions are handled automatically.</div>
-          </div>
+                }
+              }}
+              disabled={busy}
+              rows={1}
+            />
+            <button type="submit" className="btnPrimary" disabled={!canSend}>
+              {busy ? "Sending…" : "Send"}
+            </button>
+          </form>
         </div>
       </div>
 
-      <div className={`backdrop ${mobileSidebarOpen ? "show" : ""}`} onClick={() => setMobileSidebarOpen(false)} />
+      <div 
+        className={`backdrop ${mobileSidebarOpen || sessionMenuOpen ? "show" : ""}`} 
+        onClick={() => {
+          setMobileSidebarOpen(false);
+          setSessionMenuOpen(null);
+        }}
+        onMouseDown={(e) => {
+          // Close menu when clicking outside
+          if (sessionMenuOpen) {
+            setSessionMenuOpen(null);
+          }
+        }}
+      />
       {toast ? <div className="toast">{toast}</div> : null}
     </div>
   );
 }
+
 
 
