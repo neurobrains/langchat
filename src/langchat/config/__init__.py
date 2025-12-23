@@ -1,10 +1,11 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
 
 import pytz
 
@@ -22,28 +23,28 @@ class LangChatConfig:
     llm_provider: str = "auto"
 
     # OpenAI Configuration
-    openai_api_keys: List[str] = field(default_factory=list)
+    openai_api_keys: list[str] = field(default_factory=list)
     openai_model: str = "gpt-4o-mini"
     openai_temperature: float = 1.0
     openai_embedding_model: str = "text-embedding-3-large"
 
     # Gemini Configuration
-    gemini_api_keys: List[str] = field(default_factory=list)
+    gemini_api_keys: list[str] = field(default_factory=list)
     gemini_model: str = "gemini-1.5-flash"
     gemini_temperature: float = 1.0
 
     # Anthropic Configuration
-    anthropic_api_keys: List[str] = field(default_factory=list)
+    anthropic_api_keys: list[str] = field(default_factory=list)
     anthropic_model: str = "claude-3-5-sonnet-20241022"
     anthropic_temperature: float = 1.0
 
     # Pinecone Configuration
-    pinecone_api_key: Optional[str] = None
-    pinecone_index_name: Optional[str] = None  # Must be configured
+    pinecone_api_key: str | None = None
+    pinecone_index_name: str | None = None  # Must be configured
 
     # Supabase Configuration
-    supabase_url: Optional[str] = None
-    supabase_key: Optional[str] = None
+    supabase_url: str | None = None
+    supabase_key: str | None = None
 
     # Vector Search Configuration
     retrieval_k: int = 5  # Number of documents to retrieve
@@ -59,8 +60,8 @@ class LangChatConfig:
     timezone: str = "Asia/Dhaka"
 
     # Prompt Configuration
-    system_prompt_template: Optional[str] = None
-    standalone_question_prompt: Optional[str] = None  # Custom standalone question prompt
+    system_prompt_template: str | None = None
+    standalone_question_prompt: str | None = None  # Custom standalone question prompt
 
     # LLM Retry Configuration
     max_llm_retries: int = 2  # Retry count per API key
@@ -72,7 +73,7 @@ class LangChatConfig:
     verbose_chains: bool = False  # Show LangChain verbose output for debugging chains
 
     @classmethod
-    def from_env(cls) -> "LangChatConfig":
+    def from_env(cls) -> LangChatConfig:
         """
         Create configuration from environment variables.
         """
@@ -140,7 +141,6 @@ class LangChatConfig:
         """
         Get default system prompt template.
         """
-        # Simple template - use {{context}}, {{chat_history}}, {{question}} as placeholders for PromptTemplate
         template = """You are a helpful assistant. Answer correctly the user question.
 
         Use the following context and chat history to answer:
@@ -155,3 +155,8 @@ class LangChatConfig:
         AI Assistant:"""
 
         return template
+
+
+__all__ = ["LangChatConfig"]
+
+

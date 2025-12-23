@@ -3,13 +3,18 @@
 
 from typing import Optional
 
-import requests
+import pyperclip
+from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
 from supabase import Client, create_client
 
-from langchat.adapters.base import HistoryStore
+from langchat.logger import logger
 
+# Class-level flag to prevent duplicate SQL printing
+_sql_printed = False
 
-class SupabaseAdapter(HistoryStore):
+class SupabaseAdapter:
     """
     Adapter for Supabase database operations.
     """
@@ -48,31 +53,6 @@ class SupabaseAdapter(HistoryStore):
             SupabaseAdapter instance
         """
         return cls(url=supabase_url, key=supabase_key)
-
-    def check_tables_exist(self) -> bool:
-        """
-        Check if the tables exist by attempting to query them.
-        Returns True if both tables exist and are accessible, False otherwise.
-        """
-        try:
-            # Try to query both tables - if they exist, this won't throw an error
-            # Even if tables are empty, the query should succeed
-            self.client.table("chat_history").select("id").limit(1).execute()
-            self.client.table("request_metrics").select("id").limit(1).execute()
-            # If we get here, both tables exist
-            return True
-        except Exception as e:
-            # Check if it's a "table not found" error
-            error_str = str(e).lower()
-            if (
-                "pgrst205" in error_str
-                or "could not find the table" in error_str
-                or "does not exist" in error_str
-            ):
-                return False
-            # For other errors (permissions, etc.), assume tables might exist
-            # but we can't access them - return False to be safe
-            return False
 
     def get_create_tables_sql(self) -> str:
         """
@@ -132,49 +112,64 @@ CREATE POLICY "request_metrics_policy" ON public.request_metrics FOR ALL
 NOTIFY pgrst, 'reload schema';
 """
 
-    def create_tables_if_not_exist(self) -> bool:
+    def check_tables_exist(self):
         """
-        Best-effort table creation helper.
-
-        Strategy:
-        - If tables exist, return True.
-        - If tables don't exist, try:
-          1) Supabase Management API (best-effort; requires appropriate key)
-          2) A PostgREST RPC (best-effort; requires you to have a helper function)
-        - If all fail, return False (caller can show SQL for manual setup).
+        Check if the tables exist by attempting to query them.
+        Returns True if both tables exist and are accessible, False otherwise.
         """
         try:
-            if self.check_tables_exist():
-                return True
+            # Try to query both tables - if they exist, this won't throw an error
+            # Even if tables are empty, the query should succeed
+            self.client.table("chat_history").select("id").limit(1).execute()
+            self.client.table("request_metrics").select("id").limit(1).execute()
+
         except Exception:
-            # Continue to creation attempts
-            pass
+            # Create formatted SQL code block
+            # Note: lexer is the second positional argument, not a keyword
+            if not _sql_printed:
+                sql_code = Syntax(
+                    self.get_create_tables_sql(),
+                    "sql",  # lexer as second positional argument
+                    theme="monokai",
+                    line_numbers=True,
+                )
 
-        sql = self.get_create_tables_sql()
+                # Create info panel
+                info_text = (
+                    "[bold yellow]⚠ Could not create tables automatically[/bold yellow]\n\n"
+                    "[bold]Please run the following SQL in your Supabase SQL Editor:[/bold]\n"
+                    "[dim]Go to: Supabase Dashboard > SQL Editor > New Query[/dim]\n\n"
+                    "[dim]After running the SQL, the tables will be created automatically.[/dim]\n"
+                    "[dim]Alternatively, use a service role key for automatic table creation.[/dim]\n\n"
+                    "[bold green]✓ RLS (Row Level Security) is included in the SQL[/bold green]"
+                )
 
-        # 1) Best-effort HTTP attempt (tests patch requests.post)
-        try:
-            # This is intentionally "best effort" — deployments vary.
-            # If you want a robust path, provide a service role key and run SQL in Supabase SQL editor.
-            res = requests.post(
-                f"{self.url.rstrip('/')}/rest/v1/",
-                headers={"apikey": self.key, "authorization": f"Bearer {self.key}"},
-                json={"sql": sql},
-                timeout=15,
-            )
-            if getattr(res, "status_code", 0) == 200:
-                return True
-        except Exception:
-            pass
+                # Print warning message
+                logger.warning("Table was not created automatically")
 
-        # 2) RPC attempt (tests patch client.rpc)
-        try:
-            rpc = self.client.rpc("execute_sql", {"sql": sql})
-            out = rpc.execute()
-            # Only treat explicit True as success (avoid MagicMock truthiness in tests)
-            if getattr(out, "data", None) is True:
-                return True
-        except Exception:
-            pass
+                # Print formatted SQL in a beautiful panel
+                console = Console()
+                console.print()
+                console.print(
+                    Panel(
+                        info_text,
+                        title="[bold yellow]Database Setup Required[/bold yellow]",
+                        border_style="yellow",
+                    )
+                )
+                console.print()
+                console.print(
+                    Panel(
+                        sql_code,
+                        title="[bold cyan]SQL Schema with RLS[/bold cyan]",
+                        border_style="cyan",
+                    )
+                )
+                console.print()
 
-        return False
+                # Copy SQL to clipboard (with error handling)
+                try:
+                    pyperclip.copy(self.get_create_tables_sql())
+                    logger.info("SQL has been copied to clipboard")
+                except Exception:
+                    logger.debug("Could not copy to clipboard")

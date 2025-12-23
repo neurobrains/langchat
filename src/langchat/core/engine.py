@@ -5,41 +5,23 @@ import asyncio
 import threading
 import time
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import Optional
 
-import pyperclip
 from rich.console import Console
 from rich.panel import Panel
-from rich.syntax import Syntax
 
-from langchat.adapters.local.in_memory import (
-    InMemoryHistoryStore,
-    InMemoryIDManager,
-    NoopRerankerAdapter,
-    NoopVectorAdapter,
-)
+from langchat.adapters.db.supabase_adapter import SupabaseAdapter
+from langchat.adapters.db.utils.id_manager import IDManager
 from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
 from langchat.adapters.services.factory import create_llm_service
-from langchat.adapters.supabase.id_manager import IDManager
-from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
 from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
 from langchat.config import LangChatConfig
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
 from langchat.logger import logger
 
-if TYPE_CHECKING:
-    from langchat.adapters.base import (
-        HistoryStore,
-        LLMProvider,
-    )
-
 # Global flag to track if running as API server
 _is_api_server_mode = False
-
-# Class-level flag to prevent duplicate SQL printing
-_sql_printed = False
 
 
 def set_api_server_mode(enabled: bool = True):
@@ -54,164 +36,75 @@ class LangChatEngine:
     Developers use this to create conversational AI applications.
     """
 
-    def __init__(self, config: Optional[LangChatConfig] = None):
+    def __init__(
+        self,
+        config: Optional[LangChatConfig] = None,
+        *,
+        llm=None,
+        vector_db=None,
+        db=None,
+        reranker=None,
+        prompt_template: Optional[str] = None,
+        standalone_question_prompt: Optional[str] = None,
+        verbose: Optional[bool] = None,
+    ):
         """
         Initialize LangChat engine.
 
-        Args:
-            config: LangChat configuration. If None, uses default config.
+        You can either:
+        - pass `config` (recommended), or
+        - pass concrete adapters/services via the keyword args (advanced use).
         """
-        if config is None:
-            self.config = LangChatConfig.from_env()
+
+        self.config = config or LangChatConfig.from_env()
+
+        # Core dependencies (allow injection for advanced usage/testing)
+        self.llm = llm or create_llm_service(self.config)
+
+        if vector_db is not None:
+            self.vector_adapter = vector_db
         else:
-            self.config = config
-
-        # Initialize adapters
-        self._initialize_adapters()
-
-        # Initialize database
-        self._initialize_database()
-
-        # Sessions storage
-        self.sessions: Dict[str, UserSession] = {}
-
-        logger.info("LangChat Engine initialized successfully")
-
-    def _initialize_adapters(self):
-        """Initialize all adapters."""
-        # Initialize HistoryStore
-        if self.config.supabase_url and self.config.supabase_key:
-            self.history_store: HistoryStore = SupabaseAdapter.from_config(
-                self.config.supabase_url, self.config.supabase_key
-            )
-            self.id_manager = IDManager(self.history_store.client, initial_value=0, retry_attempts=5)
-        else:
-            # Local fallback (no persistence)
-            self.history_store = InMemoryHistoryStore()
-            self.id_manager = InMemoryIDManager(self.history_store.client)
-
-        # Initialize LLM service (OpenAI/Gemini/Anthropic)
-        self.llm: LLMProvider = create_llm_service(self.config)
-
-        # Initialize Pinecone vector adapter (optional)
-        if self.config.pinecone_api_key and self.config.pinecone_index_name:
-            # Get embedding API key (OpenAI embeddings are currently used for Pinecone retrieval)
-            embedding_api_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
-            if embedding_api_key is None:
-                raise ValueError(
-                    "OpenAI API key is required for embeddings when Pinecone is enabled. "
-                    "Set OPENAI_API_KEY (or disable Pinecone by not setting PINECONE_API_KEY)."
-                )
-
+            if not self.config.pinecone_api_key or not self.config.pinecone_index_name:
+                raise ValueError("Pinecone API key and index name must be configured")
+            embedding_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
             self.vector_adapter = PineconeVectorAdapter(
                 api_key=self.config.pinecone_api_key,
                 index_name=self.config.pinecone_index_name,
                 embedding_model=self.config.openai_embedding_model,
-                embedding_api_key=embedding_api_key,
+                embedding_api_key=embedding_key,
             )
-            logger.info(f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}")
 
-            # Initialize Flashrank reranker (optional; enabled when Pinecone is enabled)
-            reranker_cache_dir = Path(self.config.reranker_cache_dir)
-            reranker_cache_dir.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
-
-            self.reranker_adapter = FlashrankRerankAdapter(
-                model_name=self.config.reranker_model,
-                cache_dir=str(reranker_cache_dir),
-                top_n=self.config.reranker_top_n,
-            )
-            logger.info(f"Reranker model '{self.config.reranker_model}' initialized")
+        if db is not None:
+            self.history_store = db
         else:
-            # Local fallback (no retrieval)
-            self.vector_adapter = NoopVectorAdapter()
-            self.reranker_adapter = NoopRerankerAdapter()
-            logger.info("Pinecone not configured; running without retrieval (RAG disabled).")
+            if not self.config.supabase_url or not self.config.supabase_key:
+                raise ValueError("Supabase URL and key must be configured")
+            self.history_store = SupabaseAdapter.from_config(
+                supabase_url=self.config.supabase_url,
+                supabase_key=self.config.supabase_key,
+            )
 
-    def _initialize_database(self):
-        """Initialize database tables."""
+        self.reranker_adapter = reranker or FlashrankRerankAdapter(
+            model_name=self.config.reranker_model,
+            cache_dir=self.config.reranker_cache_dir,
+            top_n=self.config.reranker_top_n,
+        )
 
-        global _sql_printed
+        # Internal state
+        self.sessions: dict[str, UserSession] = {}
+        self.id_manager = IDManager(self.history_store.client)
 
-        try:
-            # First, try to create tables if they don't exist
-            logger.info("Checking database tables...")
-            tables_exist = self.history_store.check_tables_exist()
+        # Prompts / behavior
+        self.prompt_template = (
+            prompt_template
+            or self.config.system_prompt_template
+            or self.config.get_default_prompt_template()
+        )
+        self.standalone_question_prompt = standalone_question_prompt or self.config.standalone_question_prompt
+        self.verbose = self.config.verbose_chains if verbose is None else verbose
 
-            if not tables_exist and not _sql_printed:
-                _sql_printed = True
-
-                # Provide SQL for manual execution (only print once)
-                console = Console()
-
-                sql_text = self.history_store.get_create_tables_sql().strip()
-
-                # Create formatted SQL code block
-                # Note: lexer is the second positional argument, not a keyword
-                sql_code = Syntax(
-                    sql_text,
-                    "sql",  # lexer as second positional argument
-                    theme="monokai",
-                    line_numbers=True,
-                )
-
-                # Create info panel
-                info_text = (
-                    "[bold yellow]⚠ Could not create tables automatically[/bold yellow]\n\n"
-                    "[bold]Please run the following SQL in your Supabase SQL Editor:[/bold]\n"
-                    "[dim]Go to: Supabase Dashboard > SQL Editor > New Query[/dim]\n\n"
-                    "[dim]After running the SQL, the tables will be created automatically.[/dim]\n"
-                    "[dim]Alternatively, use a service role key for automatic table creation.[/dim]\n\n"
-                    "[bold green]✓ RLS (Row Level Security) is included in the SQL[/bold green]"
-                )
-
-                # Print warning message
-                logger.warning("Table was not created automatically")
-
-                # Print formatted SQL in a beautiful panel
-                console.print()
-                console.print(
-                    Panel(
-                        info_text,
-                        title="[bold yellow]Database Setup Required[/bold yellow]",
-                        border_style="yellow",
-                    )
-                )
-                console.print()
-                console.print(
-                    Panel(
-                        sql_code,
-                        title="[bold cyan]SQL Schema with RLS[/bold cyan]",
-                        border_style="cyan",
-                    )
-                )
-                console.print()
-
-                # Copy SQL to clipboard (with error handling)
-                try:
-                    pyperclip.copy(sql_text)
-                    logger.info("SQL has been copied to clipboard")
-                except Exception as e:
-                    logger.debug(f"Could not copy to clipboard: {str(e)}")
-
-            elif tables_exist:
-                logger.info("Database tables already exist and are accessible")
-
-            # Always initialize ID Manager early to prevent initialization during save
-            # This ensures counters are set up before any inserts happen
-            if not self.id_manager.initialized:
-                self.id_manager.initialize()
-
-            logger.info("Database connection successful")
-
-        except Exception as e:
-            logger.error(f"Error initializing database: {str(e)}")
-            # Try to initialize ID manager anyway (with default values)
-            if not self.id_manager.initialized:
-                try:
-                    self.id_manager.initialize()
-                except Exception as init_error:
-                    logger.error(f"Error initializing ID Manager: {str(init_error)}")
+        # Session tuning
+        self.max_chat_history = self.config.max_chat_history
 
     def get_session(self, user_id: str, domain: str = "default") -> UserSession:
         """
@@ -228,9 +121,7 @@ class LangChatEngine:
 
         if session_key not in self.sessions:
             # Get prompt template
-            prompt_template = (
-                self.config.system_prompt_template or self.config.get_default_prompt_template()
-            )
+            prompt_template = self.prompt_template or self.config.get_default_prompt_template()
 
             self.sessions[session_key] = UserSession(
                 domain=domain,
@@ -278,8 +169,8 @@ class LangChatEngine:
                         query=query,
                         chat_history=session.chat_history,
                         llm=self.llm,
-                        custom_prompt=self.config.standalone_question_prompt,
-                        verbose_chains=self.config.verbose_chains,
+                        custom_prompt=self.standalone_question_prompt,
+                        verbose_chains=self.verbose,
                     )
                     logger.info(f"Generated standalone question: {standalone_question}")
                 except Exception as e:
@@ -360,10 +251,10 @@ class LangChatEngine:
 
             # Update in-memory chat history
             session.chat_history.append((query, response_text))
-            if len(session.chat_history) > self.config.max_chat_history:
+            if len(session.chat_history) > self.max_chat_history:
                 # Modify list in place to preserve reference (don't reassign)
                 # This ensures CustomConversationChain still has a valid reference
-                excess = len(session.chat_history) - self.config.max_chat_history
+                excess = len(session.chat_history) - self.max_chat_history
                 del session.chat_history[:excess]
 
             # Calculate response time

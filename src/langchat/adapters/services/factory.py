@@ -10,33 +10,33 @@ from langchat.adapters.services.gemini_service import GeminiLLMService
 from langchat.adapters.services.openai_service import OpenAILLMService
 
 if TYPE_CHECKING:
-    from langchat.adapters.base import LLMProvider
     from langchat.config import LangChatConfig
 
 
-def _auto_provider(config: LangChatConfig) -> str:
-    if config.openai_api_keys:
-        return "openai"
-    if config.gemini_api_keys:
-        return "gemini"
-    if config.anthropic_api_keys:
-        return "anthropic"
-    return "openai"
-
-
-def create_llm_service(config: LangChatConfig) -> LLMProvider:
+def create_llm_service(config: LangChatConfig):
     """
-    Create an LLMProvider based on config.llm_provider.
+    Create an LLM provider based on config.
 
-    If llm_provider is "auto", choose based on which keys are present.
+    Provider resolution:
+    - If `llm_provider` is explicit: use it.
+    - If `auto`: prefer OpenAI, then Gemini, then Anthropic (based on keys present).
     """
+
     provider = (config.llm_provider or "auto").strip().lower()
+
     if provider == "auto":
-        provider = _auto_provider(config)
+        if config.openai_api_keys:
+            provider = "openai"
+        elif config.gemini_api_keys:
+            provider = "gemini"
+        elif config.anthropic_api_keys:
+            provider = "anthropic"
+        else:
+            raise ValueError(
+                "No API keys found for any provider. Set OPENAI_API_KEY(S), GEMINI_API_KEY(S)/GOOGLE_API_KEY, or ANTHROPIC_API_KEY(S)."
+            )
 
     if provider == "openai":
-        if not config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be provided (OPENAI_API_KEY / OPENAI_API_KEYS)")
         return OpenAILLMService(
             model=config.openai_model,
             temperature=config.openai_temperature,
@@ -45,8 +45,6 @@ def create_llm_service(config: LangChatConfig) -> LLMProvider:
         )
 
     if provider == "gemini":
-        if not config.gemini_api_keys:
-            raise ValueError("Gemini API key must be provided (GEMINI_API_KEY / GOOGLE_API_KEY)")
         return GeminiLLMService(
             model=config.gemini_model,
             temperature=config.gemini_temperature,
@@ -55,8 +53,6 @@ def create_llm_service(config: LangChatConfig) -> LLMProvider:
         )
 
     if provider == "anthropic":
-        if not config.anthropic_api_keys:
-            raise ValueError("Anthropic API key must be provided (ANTHROPIC_API_KEY / ANTHROPIC_API_KEYS)")
         return AnthropicLLMService(
             model=config.anthropic_model,
             temperature=config.anthropic_temperature,
@@ -65,5 +61,8 @@ def create_llm_service(config: LangChatConfig) -> LLMProvider:
         )
 
     raise ValueError(f"Unknown llm_provider: {config.llm_provider!r} (expected auto/openai/gemini/anthropic)")
+
+
+__all__ = ["create_llm_service"]
 
 
