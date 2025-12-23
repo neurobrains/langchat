@@ -184,11 +184,7 @@ def extract_dependencies_from_setup(setup_path: str = "setup.py") -> list:
                                     value = item.value
                                     if isinstance(value, str) and not value.strip().startswith("#"):
                                         dependencies.append(value)
-                                # Handle Python < 3.8 compatibility: ast.Str was replaced by ast.Constant
-                                elif hasattr(ast, "Str") and isinstance(item, ast.Str):
-                                    value = item.s
-                                    if isinstance(value, str) and not value.strip().startswith("#"):
-                                        dependencies.append(value)
+                                # Python >= 3.8: strings are represented as ast.Constant
         else:
             # If setup.py doesn't exist, use default dependencies
             dependencies = [

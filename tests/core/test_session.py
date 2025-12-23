@@ -27,14 +27,14 @@ def mock_adapters():
     llm = MagicMock()
     vector_adapter = MagicMock()
     reranker_adapter = MagicMock()
-    supabase_adapter = MagicMock()
+    history_store = MagicMock()
     id_manager = MagicMock()
 
     return {
         "llm": llm,
         "vector_adapter": vector_adapter,
         "reranker_adapter": reranker_adapter,
-        "supabase_adapter": supabase_adapter,
+        "history_store": history_store,
         "id_manager": id_manager,
     }
 
@@ -52,7 +52,7 @@ def session(mock_config, mock_adapters):
             llm=mock_adapters["llm"],
             vector_adapter=mock_adapters["vector_adapter"],
             reranker_adapter=mock_adapters["reranker_adapter"],
-            supabase_adapter=mock_adapters["supabase_adapter"],
+            history_store=mock_adapters["history_store"],
             id_manager=mock_adapters["id_manager"],
             prompt_template=prompt_template,
         )

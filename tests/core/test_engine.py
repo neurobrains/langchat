@@ -26,7 +26,7 @@ def engine(mock_config):
     """Create an engine instance with mocked dependencies."""
     with patch("langchat.core.engine.PineconeVectorAdapter"), patch(
         "langchat.core.engine.SupabaseAdapter"
-    ), patch("langchat.core.engine.OpenAILLMService"), patch(
+    ), patch("langchat.core.engine.create_llm_service"), patch(
         "langchat.core.engine.FlashrankRerankAdapter"
     ), patch("langchat.core.engine.IDManager"):
         engine = LangChatEngine(config=mock_config)
@@ -40,7 +40,7 @@ class TestLangChatEngine:
         """Test engine initialization with provided config."""
         with patch("langchat.core.engine.PineconeVectorAdapter"), patch(
             "langchat.core.engine.SupabaseAdapter"
-        ), patch("langchat.core.engine.OpenAILLMService"), patch(
+        ), patch("langchat.core.engine.create_llm_service"), patch(
             "langchat.core.engine.FlashrankRerankAdapter"
         ), patch("langchat.core.engine.IDManager"):
             engine = LangChatEngine(config=mock_config)
@@ -56,7 +56,7 @@ class TestLangChatEngine:
 
         with patch("langchat.core.engine.PineconeVectorAdapter"), patch(
             "langchat.core.engine.SupabaseAdapter"
-        ), patch("langchat.core.engine.OpenAILLMService"), patch(
+        ), patch("langchat.core.engine.create_llm_service"), patch(
             "langchat.core.engine.FlashrankRerankAdapter"
         ), patch("langchat.core.engine.IDManager"):
             engine = LangChatEngine()

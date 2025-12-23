@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional
 
@@ -16,11 +16,26 @@ class LangChatConfig:
     Developers can customize all settings here.
     """
 
+    # LLM Provider Selection
+    # - "auto" (default): detect based on env keys
+    # - "openai" | "gemini" | "anthropic"
+    llm_provider: str = "auto"
+
     # OpenAI Configuration
-    openai_api_keys: List[str]
+    openai_api_keys: List[str] = field(default_factory=list)
     openai_model: str = "gpt-4o-mini"
     openai_temperature: float = 1.0
     openai_embedding_model: str = "text-embedding-3-large"
+
+    # Gemini Configuration
+    gemini_api_keys: List[str] = field(default_factory=list)
+    gemini_model: str = "gemini-1.5-flash"
+    gemini_temperature: float = 1.0
+
+    # Anthropic Configuration
+    anthropic_api_keys: List[str] = field(default_factory=list)
+    anthropic_model: str = "claude-3-5-sonnet-20241022"
+    anthropic_temperature: float = 1.0
 
     # Pinecone Configuration
     pinecone_api_key: Optional[str] = None
@@ -61,6 +76,8 @@ class LangChatConfig:
         """
         Create configuration from environment variables.
         """
+        llm_provider = os.getenv("LANGCHAT_LLM_PROVIDER", "auto").strip().lower() or "auto"
+
         openai_keys_str = os.getenv("OPENAI_API_KEYS", "")
         openai_keys = [k.strip() for k in openai_keys_str.split(",") if k.strip()]
 
@@ -70,11 +87,32 @@ class LangChatConfig:
             if single_key:
                 openai_keys = [single_key]
 
+        gemini_keys_str = os.getenv("GEMINI_API_KEYS", "")
+        gemini_keys = [k.strip() for k in gemini_keys_str.split(",") if k.strip()]
+        if not gemini_keys:
+            single_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            if single_key:
+                gemini_keys = [single_key]
+
+        anthropic_keys_str = os.getenv("ANTHROPIC_API_KEYS", "")
+        anthropic_keys = [k.strip() for k in anthropic_keys_str.split(",") if k.strip()]
+        if not anthropic_keys:
+            single_key = os.getenv("ANTHROPIC_API_KEY")
+            if single_key:
+                anthropic_keys = [single_key]
+
         return cls(
+            llm_provider=llm_provider,
             openai_api_keys=openai_keys,
             openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             openai_temperature=float(os.getenv("OPENAI_TEMPERATURE", "1.0")),
             openai_embedding_model=os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large"),
+            gemini_api_keys=gemini_keys,
+            gemini_model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+            gemini_temperature=float(os.getenv("GEMINI_TEMPERATURE", "1.0")),
+            anthropic_api_keys=anthropic_keys,
+            anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
+            anthropic_temperature=float(os.getenv("ANTHROPIC_TEMPERATURE", "1.0")),
             pinecone_api_key=os.getenv("PINECONE_API_KEY"),
             pinecone_index_name=os.getenv("PINECONE_INDEX_NAME", "abroad-inquiry-json-qa"),
             supabase_url=os.getenv("SUPABASE_URL"),

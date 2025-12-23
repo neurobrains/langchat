@@ -155,6 +155,8 @@ def create_app(
     config: Optional[LangChatConfig] = None,
     auto_generate_interface: bool = False,
     auto_generate_docker: bool = False,
+    llm_provider: Optional[str] = None,
+    llm_api_key: Optional[str] = None,
 ) -> FastAPI:
     """
     Create and configure FastAPI application.
@@ -170,6 +172,25 @@ def create_app(
     global _engine, _config
 
     _config = config or LangChatConfig.from_env()
+
+    # Convenience overrides (avoid requiring callers to build LangChatConfig manually)
+    if llm_provider:
+        _config.llm_provider = llm_provider
+    if llm_api_key:
+        provider = (_config.llm_provider or "auto").strip().lower()
+        if provider == "auto":
+            provider = "openai"
+            _config.llm_provider = provider
+        if provider == "openai":
+            _config.openai_api_keys = [llm_api_key]
+        elif provider == "gemini":
+            _config.gemini_api_keys = [llm_api_key]
+        elif provider == "anthropic":
+            _config.anthropic_api_keys = [llm_api_key]
+        else:
+            raise ValueError(
+                f"Unknown llm_provider: {_config.llm_provider!r} (expected auto/openai/gemini/anthropic)"
+            )
 
     app = FastAPI(
         title="LangChat API",

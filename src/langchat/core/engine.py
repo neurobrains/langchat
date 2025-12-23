@@ -13,8 +13,14 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 
+from langchat.adapters.local.in_memory import (
+    InMemoryHistoryStore,
+    InMemoryIDManager,
+    NoopRerankerAdapter,
+    NoopVectorAdapter,
+)
 from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
-from langchat.adapters.services.openai_service import OpenAILLMService
+from langchat.adapters.services.factory import create_llm_service
 from langchat.adapters.supabase.id_manager import IDManager
 from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
 from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
@@ -27,8 +33,6 @@ if TYPE_CHECKING:
     from langchat.adapters.base import (
         HistoryStore,
         LLMProvider,
-        RerankerProvider,
-        VectorStoreProvider,
     )
 
 # Global flag to track if running as API server
@@ -75,57 +79,54 @@ class LangChatEngine:
 
     def _initialize_adapters(self):
         """Initialize all adapters."""
-        # Initialize Supabase adapter (default HistoryStore implementation)
+        # Initialize HistoryStore
         if self.config.supabase_url and self.config.supabase_key:
             self.history_store: HistoryStore = SupabaseAdapter.from_config(
                 self.config.supabase_url, self.config.supabase_key
             )
+            self.id_manager = IDManager(self.history_store.client, initial_value=0, retry_attempts=5)
         else:
-            raise ValueError("Supabase URL and key must be provided")
+            # Local fallback (no persistence)
+            self.history_store = InMemoryHistoryStore()
+            self.id_manager = InMemoryIDManager(self.history_store.client)
 
-        # Initialize ID manager
-        self.id_manager = IDManager(self.history_store.client, initial_value=0, retry_attempts=5)
+        # Initialize LLM service (OpenAI/Gemini/Anthropic)
+        self.llm: LLMProvider = create_llm_service(self.config)
 
-        # Initialize LLM service (default OpenAI implementation)
-        if not self.config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be provided")
-        self.llm: LLMProvider = OpenAILLMService(
-            model=self.config.openai_model,
-            temperature=self.config.openai_temperature,
-            api_keys=self.config.openai_api_keys,
-            max_retries_per_key=self.config.max_llm_retries,
-        )
+        # Initialize Pinecone vector adapter (optional)
+        if self.config.pinecone_api_key and self.config.pinecone_index_name:
+            # Get embedding API key (OpenAI embeddings are currently used for Pinecone retrieval)
+            embedding_api_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
+            if embedding_api_key is None:
+                raise ValueError(
+                    "OpenAI API key is required for embeddings when Pinecone is enabled. "
+                    "Set OPENAI_API_KEY (or disable Pinecone by not setting PINECONE_API_KEY)."
+                )
 
-        # Initialize Pinecone vector adapter (default VectorStoreProvider implementation)
-        if not self.config.pinecone_api_key:
-            raise ValueError("Pinecone API key must be provided")
-        if not self.config.pinecone_index_name:
-            raise ValueError("Pinecone index name must be provided")
+            self.vector_adapter = PineconeVectorAdapter(
+                api_key=self.config.pinecone_api_key,
+                index_name=self.config.pinecone_index_name,
+                embedding_model=self.config.openai_embedding_model,
+                embedding_api_key=embedding_api_key,
+            )
+            logger.info(f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}")
 
-        # Get embedding API key (OpenAI)
-        embedding_api_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
+            # Initialize Flashrank reranker (optional; enabled when Pinecone is enabled)
+            reranker_cache_dir = Path(self.config.reranker_cache_dir)
+            reranker_cache_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
 
-        self.vector_adapter: VectorStoreProvider = PineconeVectorAdapter(
-            api_key=self.config.pinecone_api_key,
-            index_name=self.config.pinecone_index_name,
-            embedding_model=self.config.openai_embedding_model,
-            embedding_api_key=embedding_api_key,
-        )
-        logger.info(f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}")
-
-        # Initialize Flashrank reranker (default RerankerProvider implementation)
-        # Use config's reranker_cache_dir (relative to current working directory)
-        reranker_cache_dir = Path(self.config.reranker_cache_dir)
-        reranker_cache_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
-
-        # Initialize ranker (this will download the model if not already present)
-        self.reranker_adapter: RerankerProvider = FlashrankRerankAdapter(
-            model_name=self.config.reranker_model,
-            cache_dir=str(reranker_cache_dir),
-            top_n=self.config.reranker_top_n,
-        )
-        logger.info(f"Reranker model '{self.config.reranker_model}' initialized")
+            self.reranker_adapter = FlashrankRerankAdapter(
+                model_name=self.config.reranker_model,
+                cache_dir=str(reranker_cache_dir),
+                top_n=self.config.reranker_top_n,
+            )
+            logger.info(f"Reranker model '{self.config.reranker_model}' initialized")
+        else:
+            # Local fallback (no retrieval)
+            self.vector_adapter = NoopVectorAdapter()
+            self.reranker_adapter = NoopRerankerAdapter()
+            logger.info("Pinecone not configured; running without retrieval (RAG disabled).")
 
     def _initialize_database(self):
         """Initialize database tables."""

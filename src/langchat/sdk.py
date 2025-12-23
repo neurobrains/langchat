@@ -19,12 +19,19 @@ class LangChat:
     Easy to use and highly customizable.
     """
 
-    def __init__(self, config: Optional[LangChatConfig] = None):
+    def __init__(
+        self,
+        config: Optional[LangChatConfig] = None,
+        llm_provider: Optional[str] = None,
+        llm_api_key: Optional[str] = None,
+    ):
         """
         Initialize LangChat instance.
 
         Args:
             config: LangChat configuration. If None, creates config from environment variables.
+            llm_provider: Optional override ("openai" | "gemini" | "anthropic" | "auto").
+            llm_api_key: Optional single API key for the chosen provider (convenience).
 
         Example:
             ```python
@@ -42,10 +49,29 @@ class LangChat:
             langchat = LangChat(config=config)
             ```
         """
-        if config is None:
-            self.config = LangChatConfig.from_env()
-        else:
-            self.config = config
+        self.config = config or LangChatConfig.from_env()
+
+        if llm_provider:
+            self.config.llm_provider = llm_provider
+
+        if llm_api_key:
+            provider = (self.config.llm_provider or "auto").strip().lower()
+            if provider == "auto":
+                # If user supplies a key, they should also pick a provider;
+                # default to OpenAI for backward compatibility.
+                provider = "openai"
+                self.config.llm_provider = provider
+
+            if provider == "openai":
+                self.config.openai_api_keys = [llm_api_key]
+            elif provider == "gemini":
+                self.config.gemini_api_keys = [llm_api_key]
+            elif provider == "anthropic":
+                self.config.anthropic_api_keys = [llm_api_key]
+            else:
+                raise ValueError(
+                    f"Unknown llm_provider: {self.config.llm_provider!r} (expected auto/openai/gemini/anthropic)"
+                )
         self.engine = LangChatEngine(config=self.config)
         logger.info("LangChat initialized successfully")
 

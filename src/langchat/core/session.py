@@ -3,14 +3,13 @@
 
 import warnings
 from datetime import datetime, timezone
-from typing import List, Tuple, cast
+from typing import Any, List, Tuple, cast
 
 # Fix langchain imports - handle different versions
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 
 from langchat.adapters.base import HistoryStore, LLMProvider, RerankerProvider, VectorStoreProvider
-from langchat.adapters.supabase.id_manager import IDManager
 from langchat.config import LangChatConfig
 from langchat.logger import logger
 
@@ -33,7 +32,7 @@ class UserSession:
         vector_adapter: VectorStoreProvider,
         reranker_adapter: RerankerProvider,
         history_store: HistoryStore,
-        id_manager: IDManager,
+        id_manager: Any,
         prompt_template: str,
     ):
         """

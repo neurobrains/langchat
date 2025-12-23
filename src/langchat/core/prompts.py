@@ -2,11 +2,9 @@
 # Licensed under the MIT License.
 
 import warnings
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple
 
-from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 
 from langchat.adapters.base import LLMProvider
 
@@ -83,35 +81,20 @@ async def generate_standalone_question(
     # Create prompt
     prompt = create_standalone_question_prompt(custom_prompt=custom_prompt)
 
-    # Use standalone LLM for question generation (can use a simpler/cheaper model)
-    # For OpenAI provider, create a ChatOpenAI instance
-    # For other providers, use their current_llm directly
-    if llm.current_key:
-        # OpenAI-specific: create a new ChatOpenAI instance
-        standalone_llm = ChatOpenAI(
-            model_name=llm.model,
-            temperature=llm.temperature,
-            openai_api_key=llm.current_key,  # type: ignore[call-arg]
-            max_retries=1,
-        )
+    # Provider-agnostic invocation: call the configured LLM directly.
+    try:
+        from langchain_core.messages import HumanMessage
+    except ImportError:
+        from langchain.schema import HumanMessage  # type: ignore[no-redef]
+
+    formatted_prompt = prompt.format(question=query, chat_history=formatted_chat_history)
+    result = await llm.current_llm.ainvoke([HumanMessage(content=formatted_prompt)])
+
+    if hasattr(result, "content"):
+        standalone_question = result.content
+    elif isinstance(result, str):
+        standalone_question = result
     else:
-        # For other providers, use the current_llm directly
-        standalone_llm = llm.current_llm
+        standalone_question = str(result)
 
-    # Create chain with verbose based on config
-    chain = LLMChain(
-        llm=standalone_llm,
-        prompt=prompt,
-        output_key="standalone_question",
-        verbose=verbose_chains,
-    )
-
-    # Generate standalone question
-    result = await chain.ainvoke({"question": query, "chat_history": formatted_chat_history})
-
-    standalone_question = result.get("standalone_question", query)
-    return (
-        cast("str", standalone_question).strip()
-        if isinstance(standalone_question, str)
-        else query.strip()
-    )
+    return standalone_question.strip() if isinstance(standalone_question, str) else query.strip()
