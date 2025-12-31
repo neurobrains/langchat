@@ -2,7 +2,9 @@
 
 All notable changes to LangChat will be documented in this file.
 
-## [Unreleased]
+## [1.0.1]
+
+### Fixed bugs and issues
 
 ### Removed
   - Agent system (removed in favor of simpler SDK approach)
