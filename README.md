@@ -75,36 +75,31 @@
 
 ## 🚀 Quick Start
 
-### Step 1: Set Environment Variables
-
-```bash
-export OPENAI_API_KEYS="sk-...,sk-..."
-export PINECONE_API_KEY="your-key"
-export PINECONE_INDEX_NAME="your-index"
-export SUPABASE_URL="https://xxxxx.supabase.co"
-export SUPABASE_KEY="your-key"
-```
-
-### Step 2: Build and run a production-ready agent in just a few lines of code
+### Step 1: Build and run a production-ready agent in just a few lines of code
 
 ```python
 import asyncio
-from langchat.sdk import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
 async def main():
-    # Load configuration from environment variables
-    config = LangChatConfig.from_env()
+    # Initialize providers
+    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+    vector_db = Pinecone(api_key="your-key", index_name="your-index")
+    db = Supabase(url="https://xxxxx.supabase.co", key="your-key")
     
     # Initialize LangChat
-    ai = LangChat(config=config)
+    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
     
     # Chat with the AI
-    # Note: Response is automatically displayed in a Rich panel
     result = await ai.chat(
         query="Hello! What can you help me with?",
         user_id="guest",
-        domain="www.neurobrains.co"
+        domain="default"
     )
+    print(result["response"])
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -114,19 +109,24 @@ if __name__ == "__main__":
 
 ```python
 from langchat.api.app import create_app
-from langchat.config import LangChatConfig
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 import uvicorn
 
-config = LangChatConfig.from_env()
+# Initialize providers
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+vector_db = Pinecone(api_key="your-key", index_name="your-index")
+db = Supabase(url="https://xxxxx.supabase.co", key="your-key")
 
 app = create_app(
-    config=config,
-    auto_generate_interface=True,
-    auto_generate_docker=True
+    llm=llm,
+    vector_db=vector_db,
+    db=db
 )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=config.server_port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
 ---
