@@ -304,6 +304,3 @@ def get_engine() -> LangChatEngine:
     if _engine is None:
         raise RuntimeError("Engine not initialized. Call create_app() first.")
     return _engine
-
-
-

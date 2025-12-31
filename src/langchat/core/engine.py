@@ -10,11 +10,11 @@ from typing import Optional
 from rich.console import Console
 from rich.panel import Panel
 
+from langchat.adapters.database.id_manager import IDManager
 from langchat.adapters.logger import logger
+from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
-from langchat.database.id_manager import IDManager
-from langchat.reranker.flashrank_adapter import FlashrankRerankAdapter
 
 # Global flag to track if running as API server
 _is_api_server_mode = False
@@ -87,20 +87,17 @@ class LangChatEngine:
 
     def _get_default_prompt_template(self) -> str:
         """Get default prompt template."""
-        return """Hello LangChat! You are a helpful AI assistant. Answer the user question in same language as the question.
+        return """You are a helpful AI assistant. Answer questions clearly and accurately.
 
-
-
-Use only the chat history and the following information
-
+Use the following context to answer:
 {context}
 
-Current conversation:
+Previous conversation:
 {chat_history}
 
-Human: {question}
+User question: {question}
 
-AI Assistant:"""
+Your response:"""
 
     def get_session(self, user_id: str, domain: str = "default") -> UserSession:
         """
@@ -184,9 +181,13 @@ AI Assistant:"""
             # Validate response
             if not response_text or len(response_text.strip()) < 1:
                 logger.warning("Empty or invalid response received from LLM")
-                response_text = "I apologize, but I didn't receive a valid response. Please try again."
+                response_text = (
+                    "I apologize, but I didn't receive a valid response. Please try again."
+                )
             elif len(response_text.strip()) < 3:
-                logger.warning(f"Response too short: '{response_text}'. This might indicate an issue with the LLM.")
+                logger.warning(
+                    f"Response too short: '{response_text}'. This might indicate an issue with the LLM."
+                )
 
             # Print formatted response to console with better styling
             # Show panel unless running in API server mode

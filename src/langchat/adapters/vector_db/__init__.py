@@ -5,12 +5,8 @@
 Vector Database Providers - Support for multiple vector databases.
 """
 
-from langchat.vector_db.pinecone_provider import Pinecone, PineconeProvider
+from langchat.adapters.vector_db.pinecone_provider import Pinecone
 
 __all__ = [
-    # New names (recommended)
     "Pinecone",
-    # Old names (backward compatibility)
-    "PineconeProvider",
 ]
-

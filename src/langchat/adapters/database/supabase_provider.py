@@ -3,7 +3,7 @@
 
 """Supabase database provider."""
 
-from langchat.database.supabase_adapter import SupabaseAdapter
+from langchat.adapters.database.supabase_adapter import SupabaseAdapter
 
 
 class Supabase(SupabaseAdapter):
@@ -12,12 +12,8 @@ class Supabase(SupabaseAdapter):
 
     PostgreSQL-based database with real-time capabilities.
     """
+
     pass
 
 
 __all__ = ["Supabase"]
-
-
-# Backward compatibility
-SupabaseProvider = Supabase
-

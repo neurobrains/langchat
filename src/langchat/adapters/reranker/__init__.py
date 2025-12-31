@@ -5,12 +5,8 @@
 Reranker Providers - Support for multiple reranking services.
 """
 
-from langchat.reranker.flashrank_provider import Flashrank, FlashrankProvider
+from langchat.adapters.reranker.flashrank_provider import Flashrank
 
 __all__ = [
-    # New names (recommended)
     "Flashrank",
-    # Old names (backward compatibility)
-    "FlashrankProvider",
 ]
-

@@ -3,13 +3,13 @@
 
 from unittest.mock import MagicMock, patch
 
-from langchat.database import Supabase
+from langchat.adapters.database import Supabase
 
 
 class TestSupabase:
     """Test cases for Supabase."""
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_adapter_initialization(self, mock_create_client):
         """Test adapter initialization."""
         mock_client = MagicMock()
@@ -23,7 +23,7 @@ class TestSupabase:
         assert adapter.url == "https://test.supabase.co"
         assert adapter.key == "test-key"
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_adapter_client_property(self, mock_create_client):
         """Test client property."""
         mock_client = MagicMock()
@@ -46,7 +46,7 @@ class TestSupabase:
         # Verify create_client was only called once
         assert mock_create_client.call_count == 1
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_adapter_from_config_classmethod(self, mock_create_client):
         """Test from_config classmethod."""
         mock_client = MagicMock()
@@ -61,7 +61,7 @@ class TestSupabase:
         assert adapter.url == "https://test.supabase.co"
         assert adapter.key == "test-key"
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_get_create_tables_sql(self, mock_create_client):
         """Test get_create_tables_sql method."""
         mock_client = MagicMock()
@@ -79,7 +79,7 @@ class TestSupabase:
         assert "CREATE TABLE IF NOT EXISTS public.request_metrics" in sql
         assert "NOTIFY pgrst, 'reload schema'" in sql
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_create_tables_if_not_exist_tables_exist(self, mock_create_client):
         """Test create_tables_if_not_exist when tables already exist."""
         mock_client = MagicMock()
@@ -100,8 +100,8 @@ class TestSupabase:
         assert result is True
         assert mock_client.table.call_count == 2
 
-    @patch("langchat.database.supabase_adapter.create_client")
-    @patch("langchat.database.supabase_adapter.requests.post")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.requests.post")
     def test_create_tables_if_not_exist_via_management_api(self, mock_post, mock_create_client):
         """Test create_tables_if_not_exist using Management API."""
         mock_client = MagicMock()
@@ -133,7 +133,7 @@ class TestSupabase:
         assert result is True
         assert mock_post.called
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_create_tables_if_not_exist_via_rpc(self, mock_create_client):
         """Test create_tables_if_not_exist using RPC function."""
         mock_client = MagicMock()
@@ -164,8 +164,8 @@ class TestSupabase:
         assert result is True
         assert mock_client.rpc.called
 
-    @patch("langchat.database.supabase_adapter.create_client")
-    @patch("langchat.database.supabase_adapter.requests.post")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.requests.post")
     def test_create_tables_if_not_exist_fallback_to_sql(self, mock_post, mock_create_client):
         """Test create_tables_if_not_exist falls back to providing SQL."""
         mock_client = MagicMock()
@@ -201,7 +201,7 @@ class TestSupabase:
 
         assert result is False
 
-    @patch("langchat.database.supabase_adapter.create_client")
+    @patch("langchat.adapters.database.supabase_adapter.create_client")
     def test_create_tables_if_not_exist_other_error(self, mock_create_client):
         """Test create_tables_if_not_exist with non-table error."""
         mock_client = MagicMock()

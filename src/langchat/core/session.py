@@ -7,7 +7,11 @@ from typing import Any, List, Tuple, cast
 
 # Fix langchain imports - handle different versions
 from langchain.memory import ConversationBufferWindowMemory
-from langchain.prompts import PromptTemplate
+
+try:
+    from langchain_core.prompts import PromptTemplate
+except ImportError:
+    from langchain.prompts import PromptTemplate  # type: ignore
 
 from langchat.adapters.logger import logger
 

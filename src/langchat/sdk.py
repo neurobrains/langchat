@@ -46,9 +46,9 @@ class LangChat:
         Example:
             ```python
             from langchat import LangChat
-            from langchat.llm import OpenAI
-            from langchat.vector_db import Pinecone
-            from langchat.database import Supabase
+            from langchat.adapters.llm import OpenAI
+            from langchat.adapters.vector_db import Pinecone
+            from langchat.adapters.database import Supabase
 
             # Initialize providers
             llm = OpenAI(api_keys=["sk-..."], model="gpt-4o-mini")
@@ -167,9 +167,9 @@ class LangChat:
         Example:
             ```python
             from langchat import LangChat
-            from langchat.llm import OpenAI
-            from langchat.vector_db import Pinecone
-            from langchat.database import Supabase
+            from langchat.adapters.llm import OpenAI
+            from langchat.adapters.vector_db import Pinecone
+            from langchat.adapters.database import Supabase
 
             llm = OpenAI(api_keys=["sk-..."], model="gpt-4o-mini")
             vector_db = Pinecone(api_key="...", index_name="my-index", ...)
@@ -204,7 +204,9 @@ class LangChat:
         embedding_api_key = None
         if hasattr(self.engine.llm, "api_keys") and self.engine.llm.api_keys:
             embedding_api_key = self.engine.llm.api_keys[0]
-        elif hasattr(self.engine.llm, "current_llm") and hasattr(self.engine.llm.current_llm, "api_key"):
+        elif hasattr(self.engine.llm, "current_llm") and hasattr(
+            self.engine.llm.current_llm, "api_key"
+        ):
             embedding_api_key = self.engine.llm.current_llm.api_key
 
         # Check if embedding API key is available
@@ -281,7 +283,9 @@ class LangChat:
         embedding_api_key = None
         if hasattr(self.engine.llm, "api_keys") and self.engine.llm.api_keys:
             embedding_api_key = self.engine.llm.api_keys[0]
-        elif hasattr(self.engine.llm, "current_llm") and hasattr(self.engine.llm.current_llm, "api_key"):
+        elif hasattr(self.engine.llm, "current_llm") and hasattr(
+            self.engine.llm.current_llm, "api_key"
+        ):
             embedding_api_key = self.engine.llm.current_llm.api_key
 
         # Check if embedding API key is available
