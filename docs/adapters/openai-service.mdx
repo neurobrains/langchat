@@ -1,217 +1,131 @@
 ---
-title: OpenAI Service
-description: OpenAI API integration with automatic key rotation and fault-tolerant retry logic
+title: OpenAI Provider
+description: OpenAI LLM integration with automatic key rotation
 ---
 
-import { ParamField } from 'mintlify';
+import { Callout } from 'mintlify';
 
 ## Overview
 
-The `OpenAILLMService` is a production-ready wrapper around OpenAI's Chat API that provides:
-
-- **Automatic API Key Rotation**: Seamlessly rotate between multiple API keys
-- **Fault Tolerance**: Automatic retry with key rotation on failures
-- **Error Recovery**: Handles rate limits and API errors gracefully
+The OpenAI provider gives you access to OpenAI's language models with automatic key rotation and fault tolerance.
 
 ## Features
 
-### Automatic API Key Rotation
+- ✅ **Multiple API Keys** - Automatic rotation
+- ✅ **Fault Tolerance** - Automatic retry on failures
+- ✅ **Error Recovery** - Handles rate limits gracefully
+- ✅ **Easy Setup** - Simple initialization
 
-When configured with multiple API keys, the service automatically rotates between them:
-- On API failures
-- On rate limit errors
-- When a key is exhausted
-
-### Fault Tolerance
-
-Built-in retry mechanism:
-- Automatic retry on failures
-- Key rotation on errors
-- Configurable retry attempts per key
-
-### Performance
-
-- Efficient key cycling using Python's `itertools.cycle`
-- Lazy initialization of ChatOpenAI instances
-- Minimal overhead
-
-## Configuration
-
-The service is configured through `LangChatConfig`:
+## Basic Usage
 
 ```python
-from langchat.config import LangChatConfig
+from langchat.llm import OpenAI
 
-config = LangChatConfig(
-    openai_api_keys=["sk-...", "sk-...", "sk-..."],  # Multiple keys for rotation
-    openai_model="gpt-4o-mini",
-    openai_temperature=1.0,
-    max_llm_retries=2  # Retries per key
+# Single key
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+
+# Multiple keys (automatic rotation)
+llm = OpenAI(api_keys=["sk-1", "sk-2", "sk-3"], model="gpt-4o-mini")
+```
+
+## Configuration Options
+
+```python
+llm = OpenAI(
+    api_key="sk-...",  # Single key
+    # OR
+    api_keys=["sk-1", "sk-2"],  # Multiple keys
+    
+    model="gpt-4o-mini",  # Model name
+    temperature=0.7,  # 0.0-2.0
+    max_tokens=1000  # Optional
 )
 ```
 
-### Configuration Options
+## Available Models
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `openai_api_keys` | `List[str]` | Required | List of OpenAI API keys for rotation |
-| `openai_model` | `str` | `"gpt-4o-mini"` | OpenAI model to use |
-| `openai_temperature` | `float` | `1.0` | Model temperature (0.0-2.0) |
-| `max_llm_retries` | `int` | `2` | Number of retries per API key |
+- `gpt-4o-mini` (recommended)
+- `gpt-4o`
+- `gpt-4-turbo`
+- `gpt-3.5-turbo`
 
-## Usage
+## Multiple API Keys
 
-### Basic Usage
-
-The service is automatically initialized by `LangChatEngine`:
+Use multiple keys for better reliability:
 
 ```python
-from langchat import LangChat, LangChatConfig
-
-config = LangChatConfig(
-    openai_api_keys=["your-api-key"],
-    # ... other config
-)
-
-langchat = LangChat(config=config)
-# Service is automatically initialized
-```
-
-### Direct Usage (Advanced)
-
-```python
-from langchat.adapters.services.openai_service import OpenAILLMService
-
-service = OpenAILLMService(
-    model="gpt-4o-mini",
-    temperature=1.0,
-    api_keys=["sk-...", "sk-..."],
-    max_retries_per_key=2
-)
-
-# Use the service
-messages = [{"role": "user", "content": "Hello!"}]
-response = service.invoke(messages)
-```
-
-## API Reference
-
-### Class: `OpenAILLMService`
-
-#### Constructor
-
-```python
-OpenAILLMService(
-    model: str,
-    temperature: float,
-    api_keys: List[str],
-    max_retries_per_key: int = 2
+llm = OpenAI(
+    api_keys=[
+        "sk-org1-key1",
+        "sk-org1-key2",
+        "sk-org2-key1"
+    ],
+    model="gpt-4o-mini"
 )
 ```
 
-**Parameters:**
-
-<ParamField path="model" type="str" required>
-  OpenAI model name (e.g., "gpt-4o-mini", "gpt-4", "gpt-3.5-turbo")
-</ParamField>
-
-<ParamField path="temperature" type="float" required>
-  Model temperature (0.0-2.0)
-</ParamField>
-
-<ParamField path="api_keys" type="List[str]" required>
-  List of OpenAI API keys for rotation
-</ParamField>
-
-<ParamField path="max_retries_per_key" type="int" default="2">
-  Maximum retries per API key (default: 2)
-</ParamField>
-
-#### Methods
-
-##### `invoke(messages, **kwargs)`
-
-Invoke the OpenAI Chat API with automatic retry and key rotation.
-
-**Parameters:**
-- `messages`: List of message dictionaries (LangChain format)
-- `**kwargs`: Additional arguments passed to ChatOpenAI
-
-**Returns:**
-- AI model response
-
-**Raises:**
-- `Exception`: If all API keys are exhausted
-
-**Example:**
-
-```python
-messages = [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "What is Python?"}
-]
-
-response = service.invoke(messages)
-print(response.content)
-```
-
-## How It Works
-
-### Key Rotation Flow
-
-```
-1. Initialize with list of API keys
-2. Use first key for API calls
-3. On failure:
-   a. Rotate to next key
-   b. Retry the request
-   c. If all keys exhausted, raise exception
-4. On success, continue with current key
-```
-
-### Retry Logic
-
-The service implements intelligent retry:
-- **Per Key Retries**: Each key gets `max_retries_per_key` attempts
-- **Total Retries**: Total attempts = `len(api_keys) × max_retries_per_key`
-- **Error Handling**: Distinguishes between retryable and non-retryable errors
-
-## Best Practices
-
-### Multiple API Keys
-
-Use multiple API keys to:
-- Handle rate limits
+**Benefits:**
+- Handle rate limits automatically
 - Distribute load
 - Improve fault tolerance
 
+<Callout type="info">
+The provider automatically rotates between keys on failures or rate limits.
+</Callout>
+
+## Using with LangChat
+
 ```python
-config = LangChatConfig(
-    openai_api_keys=[
-        "sk-org1-key1",
-        "sk-org1-key2",
-        "sk-org2-key1"  # Different organization
-    ],
-    max_llm_retries=2
-)
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
+
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
+
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
 ```
 
-### Error Handling
+## Error Handling
 
-The service handles common errors:
-- **Rate Limits**: Automatically rotates keys
-- **API Errors**: Retries with different key
-- **Network Errors**: Retries with exponential backoff (via LangChain)
+The provider handles errors automatically:
 
-### Monitoring
+- **Rate Limits** - Rotates to next key
+- **API Errors** - Retries with different key
+- **Network Errors** - Automatic retry
 
-Monitor API usage:
-- Track which keys are being used
-- Monitor error rates
-- Watch for exhausted keys
+## Best Practices
 
-## Related Documentation
+### 1. Use Multiple Keys
 
-- **[Configuration Guide](/guides/configuration)** - Configuration options
-- **[Adapters Overview](/adapters/overview)** - All adapters
+```python
+# ✅ Good: Multiple keys
+llm = OpenAI(api_keys=["key1", "key2", "key3"])
 
+# ⚠️ OK: Single key
+llm = OpenAI(api_key="key1")
+```
+
+### 2. Store Keys Securely
+
+```python
+import os
+
+# ✅ Good: From environment
+llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# ❌ Bad: Hardcoded
+llm = OpenAI(api_key="sk-abc123...")
+```
+
+## Next Steps
+
+- **[Configuration](/guides/configuration)** - Learn configuration
+- **[Basic Usage](/examples/basic-usage)** - See examples
+- **[Other LLMs](/adapters/overview)** - Other providers
+
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

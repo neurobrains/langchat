@@ -1,86 +1,146 @@
 ---
-title: Pinecone Adapter
-description: Pinecone vector database integration for semantic search and document retrieval
+title: Pinecone Provider
+description: Pinecone vector database integration
 ---
 
-import { ParamField } from 'mintlify';
+import { Callout } from 'mintlify';
 
 ## Overview
 
-The `PineconeVectorAdapter` wraps Pinecone's vector database functionality, providing:
+The Pinecone provider connects LangChat to Pinecone for vector search and document storage.
 
-- **Vector Storage**: Store and retrieve document embeddings
-- **Semantic Search**: Find similar documents using cosine similarity
-- **Embedding Generation**: Automatic embedding generation with OpenAI
-- **LangChain Integration**: Full compatibility with LangChain's retrieval chains
+## Features
+
+- ✅ **Vector Search** - Find similar documents
+- ✅ **Automatic Embeddings** - OpenAI embeddings included
+- ✅ **Fast Search** - Millisecond query times
+- ✅ **Scalable** - Handles millions of documents
+
+## Basic Usage
+
+```python
+from langchat.vector_db import Pinecone
+
+vector_db = Pinecone(
+    api_key="pcsk-...",
+    index_name="your-index"
+)
+```
 
 ## Configuration
 
-Configure through `LangChatConfig`:
-
 ```python
-from langchat.config import LangChatConfig
-
-config = LangChatConfig(
-    pinecone_api_key="pcsk-...",
-    pinecone_index_path="my-index",
-    openai_embedding_model="text-embedding-3-large",
-    retrieval_k=5  # Number of documents to retrieve
+vector_db = Pinecone(
+    api_key="pcsk-...",  # Required
+    index_name="your-index",  # Required
+    embedding_model="text-embedding-3-large"  # Optional
 )
 ```
 
-## Usage
+<Callout type="warning">
+Make sure your Pinecone index exists before using it.
+</Callout>
 
-### Basic Usage
+## Embedding Models
 
-The adapter is automatically initialized by `LangChatEngine`:
-
-```python
-from langchat import LangChat, LangChatConfig
-
-config = LangChatConfig(
-    pinecone_api_key="pcsk-...",
-    pinecone_index_path="my-index",
-    openai_api_keys=["sk-..."],
-    # ... other config
-)
-
-langchat = LangChat(config=config)
-# Adapter is automatically initialized
-```
-
-## API Reference
-
-### Class: `PineconeVectorAdapter`
-
-#### Constructor
+### text-embedding-3-large (Recommended)
 
 ```python
-PineconeVectorAdapter(
-    api_key: str,
-    index_name: str,
-    embedding_model: str = "text-embedding-3-large",
-    embedding_api_key: Optional[str] = None
+vector_db = Pinecone(
+    api_key="...",
+    index_name="...",
+    embedding_model="text-embedding-3-large"
 )
 ```
 
-#### Methods
+**Best for:**
+- High quality search
+- Complex queries
+- Production use
 
-##### `get_retriever(k: int = 5)`
+### text-embedding-3-small
 
-Get a LangChain retriever from the vector store.
+```python
+vector_db = Pinecone(
+    api_key="...",
+    index_name="...",
+    embedding_model="text-embedding-3-small"
+)
+```
 
-**Parameters:**
+**Best for:**
+- Faster queries
+- Lower cost
+- Simple use cases
 
-<ParamField path="k" type="int" default="5">
-  Number of documents to retrieve
-</ParamField>
+## Using with LangChat
 
-**Returns:**
-- `Retriever`: LangChain retriever instance
+```python
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-## Related Documentation
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-- **[Vector Search Guide](/guides/vector-search)** - Vector search guide
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+```
+
+## Getting a Retriever
+
+Get a retriever for custom search:
+
+```python
+# Get retriever
+retriever = vector_db.get_retriever(k=10)  # Retrieve 10 documents
+
+# Use in custom code
+docs = retriever.invoke("your query")
+```
+
+## Best Practices
+
+### 1. Create Index First
+
+Create your Pinecone index before using:
+
+```python
+# In Pinecone console or API
+# Create index with correct dimensions:
+# - text-embedding-3-large: 3072 dimensions
+# - text-embedding-3-small: 1536 dimensions
+```
+
+### 2. Use Appropriate Embedding Model
+
+```python
+# ✅ Good: Match model to needs
+embedding_model="text-embedding-3-large"  # High quality
+
+# ✅ Also good: Faster option
+embedding_model="text-embedding-3-small"  # Faster
+```
+
+## Troubleshooting
+
+### Index Not Found
+
+**Solution:** Create index in Pinecone console first.
+
+### Dimension Mismatch
+
+**Solution:** Ensure index dimensions match embedding model:
+- `text-embedding-3-large`: 3072 dimensions
+- `text-embedding-3-small`: 1536 dimensions
+
+## Next Steps
+
+- **[Vector Search Guide](/guides/vector-search)** - Learn about search
+- **[Document Indexing](/guides/document-indexing)** - Index documents
 - **[Configuration](/guides/configuration)** - Configuration options
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

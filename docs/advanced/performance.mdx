@@ -1,154 +1,104 @@
 ---
-title: Performance
-description: Performance optimization guide for LangChat. Optimize LangChat for better performance and lower costs.
+title: Performance Optimization
+description: Optimize LangChat for better performance
 ---
 
-## Optimization Strategies
+import { Callout } from 'mintlify';
 
-### Reduce Retrieval Count
-
-Retrieve fewer documents for faster responses:
-
-```python
-config = LangChatConfig(
-    retrieval_k=5,  # Reduce from 10
-    reranker_top_n=3  # Keep top 3
-)
-```
+## Quick Optimizations
 
 ### Use Faster Models
 
-Use faster (and cheaper) models:
-
 ```python
-config = LangChatConfig(
-    openai_model="gpt-4o-mini",  # Fastest model
-    openai_embedding_model="text-embedding-3-small"  # Faster embeddings
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+
+# Faster LLM
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")  # Fastest
+
+# Faster embeddings
+vector_db = Pinecone(
+    api_key="...",
+    index_name="...",
+    embedding_model="text-embedding-3-small"  # Faster than large
 )
 ```
 
-### Optimize Reranking
-
-Use smaller reranker models:
+### Reduce Retrieval Count
 
 ```python
-config = LangChatConfig(
-    reranker_model="ms-marco-MiniLM-L-6-v2",  # Faster model
-    reranker_top_n=3  # Fewer documents
+# Get retriever with fewer documents
+retriever = vector_db.get_retriever(k=5)  # Instead of k=10
+```
+
+### Limit Chat History
+
+```python
+from langchat import LangChat
+
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    max_chat_history=10  # Less history = faster
 )
 ```
 
-### Reduce Chat History
+## Best Practices
 
-Limit chat history in memory:
+### 1. Balance Speed and Quality
 
 ```python
-config = LangChatConfig(
-    max_chat_history=10,  # Reduce from 20
-    memory_window=10
+# Fast but less accurate
+llm = OpenAI(model="gpt-4o-mini")
+vector_db = Pinecone(embedding_model="text-embedding-3-small")
+retriever = vector_db.get_retriever(k=3)
+
+# Slower but more accurate
+llm = OpenAI(model="gpt-4o")
+vector_db = Pinecone(embedding_model="text-embedding-3-large")
+retriever = vector_db.get_retriever(k=10)
+```
+
+### 2. Use Multiple API Keys
+
+```python
+# Distribute load
+llm = OpenAI(api_keys=["key1", "key2", "key3"])
+```
+
+### 3. Optimize Reranking
+
+```python
+from langchat.reranker import Flashrank
+
+# Smaller model = faster
+reranker = Flashrank(
+    model_name="ms-marco-MiniLM-L-6-v2",  # Faster model
+    top_n=3  # Fewer documents
 )
-```
-
-## Caching
-
-### Cache Embeddings
-
-Cache frequently used embeddings:
-
-```python
-from functools import lru_cache
-
-@lru_cache(maxsize=100)
-def cached_embedding(query: str):
-    return generate_embedding(query)
-```
-
-### Cache Reranked Results
-
-Cache reranked results:
-
-```python
-@lru_cache(maxsize=50)
-def cached_rerank(query: str, docs: list):
-    return reranker.rerank(query, docs)
-```
-
-## Database Optimization
-
-### Use Indexes
-
-Create indexes for faster queries:
-
-```sql
-CREATE INDEX idx_user_domain ON chat_history(user_id, domain);
-CREATE INDEX idx_timestamp_desc ON chat_history(timestamp DESC);
-```
-
-### Batch Operations
-
-Process in batches:
-
-```python
-# Batch insert chat history
-batch = [msg1, msg2, msg3, ...]
-for batch_chunk in chunks(batch, 100):
-    supabase.table("chat_history").insert(batch_chunk).execute()
 ```
 
 ## Monitoring
 
-### Track Response Times
-
-Monitor response times:
+Track performance in production:
 
 ```python
 import time
 
 start = time.time()
-result = await langchat.chat(query, user_id, domain)
+result = await ai.chat(query="...", user_id="...")
 elapsed = time.time() - start
+
 print(f"Response time: {elapsed:.2f}s")
 ```
 
-### Monitor API Usage
+## Next Steps
 
-Track API key usage:
-
-```python
-# Check which keys are being used
-engine = langchat.engine
-# Monitor key rotation
-# Track error rates
-```
-
-## Cost Optimization
-
-### Use Efficient Models
-
-Choose models based on needs:
-
-```python
-# For simple queries
-openai_model="gpt-4o-mini"  # Cheaper
-
-# For complex queries
-openai_model="gpt-4o"  # More expensive but better
-```
-
-### Reduce Token Usage
-
-Limit context length:
-
-```python
-config = LangChatConfig(
-    max_chat_history=5,  # Less context = fewer tokens
-    retrieval_k=3,  # Fewer documents = fewer tokens
-    reranker_top_n=2  # Less context = fewer tokens
-)
-```
-
-## Related Documentation
-
-- **[Configuration](/guides/configuration)** - Configuration options
+- **[Configuration](/guides/configuration)** - All settings
+- **[Production](/advanced/production)** - Production deployment
 - **[Troubleshooting](/advanced/troubleshooting)** - Common issues
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

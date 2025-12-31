@@ -1,25 +1,28 @@
 ---
 title: LangChatEngine
-description: LangChatEngine API reference - core orchestrator for all LangChat components
+description: Core engine API reference
 ---
 
 import { Param } from 'mintlify';
 
 ## Class: LangChatEngine
 
-Main engine for LangChat library. Handles initialization of adapters and chat processing.
+Core orchestrator for LangChat components.
 
 ### Constructor
 
 ```python
-LangChatEngine(config: Optional[LangChatConfig] = None)
+LangChatEngine(
+    llm,
+    vector_db,
+    db,
+    reranker=None,
+    prompt_template=None,
+    standalone_question_prompt=None,
+    verbose=False,
+    max_chat_history=20
+)
 ```
-
-**Parameters:**
-
-<Param name="config" type="LangChatConfig | None" default="None">
-  LangChat configuration. If None, uses default config.
-</Param>
 
 ### Methods
 
@@ -37,28 +40,6 @@ async def chat(
 ) -> dict
 ```
 
-**Parameters:**
-
-<Param name="query" type="str" required>
-  User query text
-</Param>
-
-<Param name="user_id" type="str" required>
-  User identifier
-</Param>
-
-<Param name="domain" type="str" default="default">
-  User domain
-</Param>
-
-<Param name="standalone_question" type="str | None" default="None">
-  Optional standalone question (if already generated)
-</Param>
-
-**Returns:**
-
-`dict` - Response dictionary with `response`, `user_id`, `timestamp`, `status`, `response_time`
-
 #### `get_session()`
 
 Get or create a user session.
@@ -71,32 +52,19 @@ def get_session(
 ) -> UserSession
 ```
 
-**Parameters:**
-
-<Param name="user_id" type="str" required>
-  User identifier
-</Param>
-
-<Param name="domain" type="str" default="default">
-  User domain
-</Param>
-
-**Returns:**
-
-`UserSession` - User session instance
-
 ### Properties
 
-- `config`: LangChatConfig instance
-- `llm`: OpenAILLMService instance
-- `vector_adapter`: PineconeVectorAdapter instance
-- `reranker_adapter`: FlashrankRerankAdapter instance
-- `supabase_adapter`: SupabaseAdapter instance
-- `id_manager`: IDManager instance
-- `sessions`: Dict[str, UserSession] - Active sessions
+- `llm` - LLM provider instance
+- `vector_adapter` - Vector database adapter
+- `reranker_adapter` - Reranker adapter
+- `history_store` - Database adapter
+- `sessions` - Active user sessions
 
-## Related Documentation
+## Next Steps
 
-- **[LangChat](/api-reference/langchat)** - Main API
-- **[Adapters](/adapters/overview)** - Adapter documentation
+- **[LangChat API](/api-reference/langchat)** - Main API
+- **[Adapters](/adapters/overview)** - Adapter docs
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

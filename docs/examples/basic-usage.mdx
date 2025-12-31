@@ -1,195 +1,177 @@
 ---
 title: Basic Usage
-description: Learn how to use LangChat with these practical examples
+description: Simple examples to get you started
 ---
 
 import { CodeGroup } from 'mintlify';
+import { Callout } from 'mintlify';
 
 ## Simple Chat
 
-Basic example of chatting with LangChat:
+Basic example:
 
 <CodeGroup>
-```python Basic Example
+```python Basic
 import asyncio
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
 async def main():
-    # Create configuration
-    config = LangChatConfig.from_env()
+    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+    vector_db = Pinecone(api_key="...", index_name="...")
+    db = Supabase(url="https://...", key="...")
     
-    # Initialize LangChat
-    langchat = LangChat(config=config)
+    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
     
-    # Chat with the AI
-    # Note: The response is automatically displayed in a Rich panel box in the console
-    # You don't need to print it manually
-    result = await langchat.chat(
+    result = await ai.chat(
         query="Hello! What can you help me with?",
-        user_id="user123",
-        domain="general"
+        user_id="user123"
     )
-    
-    # The response is already shown in a panel above
-    # Access response data programmatically if needed:
-    print(f"Status: {result['status']}")
-    print(f"Time: {result['response_time']:.2f}s")
-
-asyncio.run(main())
-```
-
-```python With Custom Config
-import asyncio
-from langchat import LangChat, LangChatConfig
-
-async def main():
-    # Custom configuration
-    config = LangChatConfig(
-        openai_api_keys=["sk-..."],
-        openai_model="gpt-4o-mini",
-        pinecone_api_key="pcsk-...",
-        pinecone_index_name="my-index",
-        supabase_url="https://xxxxx.supabase.co",
-        supabase_key="eyJ..."
-    )
-    
-    langchat = LangChat(config=config)
-    
-    # Response is automatically displayed in a Rich panel
-    result = await langchat.chat(
-        query="What are the best universities?",
-        user_id="user123",
-        domain="education"
-    )
-    
-    # Response already shown in panel - access programmatically if needed
-    response_text = result["response"]
+    print(result["response"])
 
 asyncio.run(main())
 ```
 
 ```python Synchronous
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-config = LangChatConfig.from_env()
-langchat = LangChat(config=config)
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
+
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
 
 # Synchronous version
-# Response is automatically displayed in a Rich panel
-result = langchat.chat_sync(
+result = ai.chat_sync(
     query="Hello!",
-    user_id="user123",
-    domain="general"
+    user_id="user123"
 )
-
-# Response already shown in panel - access programmatically if needed
-response_text = result["response"]
+print(result["response"])
 ```
 </CodeGroup>
 
-## Multi-Turn Conversation
+## Conversation
 
-Handle conversation context automatically:
-
-<CodeGroup>
-```python Multi-Turn
-import asyncio
-from langchat import LangChat, LangChatConfig
-
-async def conversation():
-    config = LangChatConfig.from_env()
-    langchat = LangChat(config=config)
-    
-    user_id = "user123"
-    domain = "education"
-    
-    # First message
-    # Responses are automatically displayed in Rich panels
-    result1 = await langchat.chat(
-        query="What universities offer computer science?",
-        user_id=user_id,
-        domain=domain
-    )
-    # Response shown in panel above
-    
-    # Second message (has context from first)
-    result2 = await langchat.chat(
-        query="What about in Europe?",
-        user_id=user_id,
-        domain=domain
-    )
-    # Response shown in panel above
-    
-    # Third message (continues conversation)
-    result3 = await langchat.chat(
-        query="Which ones accept IELTS 6.5?",
-        user_id=user_id,
-        domain=domain
-    )
-    # Response shown in panel above
-
-asyncio.run(conversation())
-```
-
-```python Access Session
-from langchat import LangChat, LangChatConfig
-
-config = LangChatConfig.from_env()
-langchat = LangChat(config=config)
-
-# Get or create session
-session = langchat.get_session(
-    user_id="user123",
-    domain="education"
-)
-
-# Access chat history
-print(f"History length: {len(session.chat_history)}")
-for query, response in session.chat_history:
-    print(f"Q: {query}")
-    print(f"A: {response}\n")
-```
-</CodeGroup>
-
-## Error Handling
-
-Proper error handling:
+LangChat remembers previous messages:
 
 ```python
 import asyncio
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-async def chat_with_error_handling():
+async def main():
+    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+    vector_db = Pinecone(api_key="...", index_name="...")
+    db = Supabase(url="https://...", key="...")
+    
+    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+    user_id = "user123"
+    
+    # First message
+    result1 = await ai.chat(
+        query="What universities offer computer science?",
+        user_id=user_id
+    )
+    
+    # Second message (remembers context)
+    result2 = await ai.chat(
+        query="What about in Europe?",
+        user_id=user_id
+    )
+    
+    # Third message (continues conversation)
+    result3 = await ai.chat(
+        query="Which accept IELTS 6.5?",
+        user_id=user_id
+    )
+
+asyncio.run(main())
+```
+
+<Callout type="info">
+LangChat automatically maintains conversation history for each user. No manual memory management needed!
+</Callout>
+
+## Custom Prompts
+
+Control how your chatbot responds:
+
+```python
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
+
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
+
+# Custom system prompt
+custom_prompt = """You are a helpful assistant. 
+Answer questions clearly and concisely.
+Always be friendly and professional."""
+
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    prompt_template=custom_prompt
+)
+
+result = await ai.chat(
+    query="What is Python?",
+    user_id="user123"
+)
+```
+
+## Error Handling
+
+Handle errors gracefully:
+
+```python
+import asyncio
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
+
+async def main():
     try:
-        config = LangChatConfig.from_env()
-        langchat = LangChat(config=config)
+        llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+        vector_db = Pinecone(api_key="...", index_name="...")
+        db = Supabase(url="https://...", key="...")
         
-        result = await langchat.chat(
+        ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+        
+        result = await ai.chat(
             query="Hello!",
-            user_id="user123",
-            domain="general"
+            user_id="user123"
         )
         
         if result["status"] == "success":
-            print(f"Response: {result['response']}")
+            print(result["response"])
         else:
-            print(f"Error: {result.get('error', 'Unknown error')}")
+            print(f"Error: {result.get('error')}")
             
-    except ValueError as e:
-        print(f"Configuration error: {e}")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(f"Error: {e}")
 
-asyncio.run(chat_with_error_handling())
+asyncio.run(main())
 ```
 
 ## Next Steps
 
-- **[Custom Prompts](/examples/custom-prompts)** - Customize chatbot behavior
-- **[API Server](/examples/api-server)** - Run as API server
-- **[Travel AI](/examples/travel-ai)** - Complete travel assistant example
+- **[Custom Prompts](/examples/custom-prompts)** - Advanced prompt customization
+- **[API Server](/examples/api-server)** - Run as web API
+- **[Document Indexing](/guides/document-indexing)** - Add your own knowledge base
 
-<Callout type="info">
-**Need help? Reach out!** Join our [Discord community](https://discord.gg/v9rqMDR2) for support and discussions.
-</Callout>
+---
 
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

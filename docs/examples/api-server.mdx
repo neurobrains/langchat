@@ -1,67 +1,51 @@
 ---
 title: API Server
-description: Run LangChat as a FastAPI server with auto-generated frontend interface. Run LangChat as a FastAPI server with an auto-generated frontend interface and Dockerfile.
+description: Run LangChat as a web API server
 ---
 
 import { CodeGroup } from 'mintlify';
+import { Callout } from 'mintlify';
 
-## Basic API Server
+## Basic Server
+
+Run LangChat as a FastAPI server:
 
 <CodeGroup>
-```python Basic Server
+```python Basic
 from langchat.api.app import create_app
-from langchat.config import LangChatConfig
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 import uvicorn
 
-# Create configuration
-config = LangChatConfig.from_env()
+# Setup providers
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-# Create FastAPI app (auto-generates interface and Dockerfile)
-app = create_app(
-    config=config,
-    auto_generate_interface=True,
-    auto_generate_docker=True
-)
+# Create server
+app = create_app(llm=llm, vector_db=vector_db, db=db)
 
+# Run
 if __name__ == "__main__":
-    print(f"🚀 Starting LangChat API server on port {config.server_port}")
-    print(f"📱 Chat interface: http://localhost:{config.server_port}/frontend")
-    print(f"📡 API endpoint: http://localhost:{config.server_port}/chat")
-    uvicorn.run(app, host="0.0.0.0", port=config.server_port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-```python With Custom Config
+```python With Options
 from langchat.api.app import create_app
-from langchat.config import LangChatConfig
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 import uvicorn
 
-config = LangChatConfig(
-    openai_api_keys=["sk-..."],
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    supabase_url="https://...",
-    supabase_key="eyJ...",
-    server_port=8000
-)
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-app = create_app(
-    config=config,
-    auto_generate_interface=True,
-    auto_generate_docker=True
-)
+app = create_app(llm=llm, vector_db=vector_db, db=db)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
-```
-
-```bash Run Server
-python server.py
-```
-
-```bash Docker
-# Auto-generated Dockerfile is created
-docker build -t langchat-server .
-docker run -p 8000:8000 langchat-server
 ```
 </CodeGroup>
 
@@ -69,42 +53,45 @@ docker run -p 8000:8000 langchat-server
 
 ### POST /chat
 
-Send a chat message.
+Send a message:
 
-**Request:**
-```
-Content-Type: application/x-www-form-urlencoded
-
-query=Hello!
-userId=user123
-domain=general
+```bash
+curl -X POST http://localhost:8000/chat \
+  -d "query=Hello!" \
+  -d "userId=user123" \
+  -d "domain=default"
 ```
 
 **Response:**
 ```json
 {
   "response": "Hello! How can I help you?",
-  "user_id": "user123",
-  "timestamp": "2024-01-01T12:00:00Z",
   "status": "success",
   "response_time": 1.23
 }
 ```
 
-### GET /frontend
-
-Access the chat interface.
-
 ### GET /health
 
-Health check endpoint.
+Check server status:
 
-### POST /feedback
+```bash
+curl http://localhost:8000/health
+```
 
-Submit feedback on responses.
+### GET /frontend
+
+Access the web interface at `http://localhost:8000/frontend`
+
+<Callout type="info">
+The frontend interface is automatically available when you run the server.
+</Callout>
 
 ## Next Steps
 
-- **[Travel AI](/examples/travel-ai)** - Complete example
-- **[Customization](/advanced/customization)** - Customize API
+- **[Basic Usage](/examples/basic-usage)** - More examples
+- **[Production](/advanced/production)** - Deploy to production
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

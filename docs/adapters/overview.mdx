@@ -1,6 +1,6 @@
 ---
 title: Adapters Overview
-description: Overview of LangChat adapters and their functionality. LangChat uses a modular adapter architecture. Each adapter handles integration with external services.
+description: Overview of LangChat adapters and providers
 ---
 
 import { Card, CardGroup } from 'mintlify';
@@ -8,211 +8,156 @@ import { Callout } from 'mintlify';
 
 ## What are Adapters?
 
-Adapters are modular components that handle integration with external services. They provide:
+Adapters are modular components that connect LangChat to external services. They provide:
 
-- **Unified Interface**: Consistent API across different services
-- **Error Handling**: Robust error handling and retry logic
-- **Automatic Initialization**: All adapters initialize automatically
-- **Easy Extension**: Easy to extend or replace with custom adapters
+- **Unified Interface** - Consistent API across services
+- **Error Handling** - Robust retry logic
+- **Easy Setup** - Simple initialization
+- **Flexible** - Easy to extend or replace
 
-## Available Adapters
+## Available Providers
 
 <CardGroup cols={2}>
   <Card
-    title="OpenAI Service"
+    title="LLM Providers"
     icon="brain"
     href="/adapters/openai-service"
   >
-    OpenAI API integration with automatic key rotation
+    OpenAI, Anthropic, Gemini, and more
   </Card>
   <Card
-    title="Pinecone Adapter"
+    title="Vector Database"
     icon="database"
     href="/adapters/pinecone-adapter"
   >
-    Vector database integration for semantic search
+    Pinecone integration for search
   </Card>
   <Card
-    title="Flashrank Reranker"
+    title="Reranker"
     icon="ranking-star"
     href="/adapters/flashrank-reranker"
   >
-    Document reranking for improved search results
+    Flashrank for better results
   </Card>
   <Card
-    title="Supabase Adapter"
+    title="Database"
     icon="database"
     href="/adapters/supabase-adapter"
   >
-    Database operations for chat history and metrics
-  </Card>
-  <Card
-    title="ID Manager"
-    icon="hashtag"
-    href="/adapters/id-manager"
-  >
-    Sequential ID generation with conflict resolution
+    Supabase for chat history
   </Card>
 </CardGroup>
 
-## Adapter Architecture
+## Quick Setup
 
-```
-LangChatEngine
-    │
-    ├─── OpenAILLMService (OpenAI API)
-    │    └─── Automatic key rotation
-    │
-    ├─── PineconeVectorAdapter (Vector Search)
-    │    └─── Semantic search & embeddings
-    │
-    ├─── FlashrankRerankAdapter (Reranking)
-    │    └─── Result relevance improvement
-    │
-    ├─── SupabaseAdapter (Database)
-    │    └─── Chat history & metrics
-    │
-    └─── IDManager (ID Generation)
-         └─── Sequential IDs with retry
-```
-
-## Automatic Initialization
-
-All adapters are automatically initialized when you create a `LangChat` instance:
+Initialize providers directly:
 
 ```python
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-config = LangChatConfig(
-    openai_api_keys=["sk-..."],
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    supabase_url="https://...",
-    supabase_key="eyJ..."
-)
+# Setup providers
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-langchat = LangChat(config=config)
-# All adapters are automatically initialized and ready to use!
+# Create chatbot
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
 ```
 
 <Callout type="info">
-You don't need to initialize adapters manually - LangChat handles everything automatically!
+All providers are initialized automatically when you create LangChat. No manual setup needed!
 </Callout>
 
-## Adapter Features
+## LLM Providers
 
-### OpenAI Service
-
-- ✅ Multiple API key rotation
-- ✅ Automatic retry logic
-- ✅ Fault tolerance
-- ✅ Rate limit handling
-
-### Pinecone Adapter
-
-- ✅ Semantic search
-- ✅ Automatic embedding generation
-- ✅ LangChain integration
-- ✅ Metadata filtering
-
-### Flashrank Reranker
-
-- ✅ Improved relevance
-- ✅ Fast ONNX models
-- ✅ Automatic model download
-- ✅ Local inference
-
-### Supabase Adapter
-
-- ✅ Chat history storage
-- ✅ Metrics tracking
-- ✅ Feedback collection
-- ✅ Efficient queries
-
-### ID Manager
-
-- ✅ Sequential ID generation
-- ✅ Conflict resolution
-- ✅ Database sync
-- ✅ Retry logic
-
-## Direct Adapter Access
-
-You can access adapters directly from the engine:
+### OpenAI
 
 ```python
-langchat = LangChat(config=config)
+from langchat.llm import OpenAI
 
-# Access adapters
-engine = langchat.engine
-print(engine.llm)  # OpenAILLMService
-print(engine.vector_adapter)  # PineconeVectorAdapter
-print(engine.reranker_adapter)  # FlashrankRerankAdapter
-print(engine.supabase_adapter)  # SupabaseAdapter
-print(engine.id_manager)  # IDManager
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
 ```
 
-## Custom Adapters
-
-You can create custom adapters following the same patterns:
-
-1. Create adapter class
-2. Implement required methods
-3. Add to `LangChatEngine` initialization
-4. Use in your application
-
-## Best Practices
-
-### 1. Use Configuration
-
-Always configure adapters through `LangChatConfig`:
+### Other LLMs
 
 ```python
-config = LangChatConfig(
-    # Adapter configurations
-    openai_api_keys=["sk-..."],
-    pinecone_api_key="pcsk-...",
-    # ...
+from langchat.llm import Anthropic, Gemini, Ollama, Cohere, Mistral
+
+# Anthropic
+llm = Anthropic(api_key="...", model="claude-3-5-sonnet-20241022")
+
+# Gemini
+llm = Gemini(api_key="...", model="gemini-1.5-flash")
+
+# Ollama (local)
+llm = Ollama(model="llama2", base_url="http://localhost:11434")
+```
+
+## Vector Database
+
+### Pinecone
+
+```python
+from langchat.vector_db import Pinecone
+
+vector_db = Pinecone(
+    api_key="pcsk-...",
+    index_name="your-index",
+    embedding_model="text-embedding-3-large"
 )
 ```
 
-### 2. Handle Errors
+## Database
 
-Adapters include robust error handling, but you can add custom handling:
-
-```python
-try:
-    result = await langchat.chat(
-        query="Hello!",
-        user_id="user123",
-        domain="general"
-    )
-except Exception as e:
-    # Handle adapter errors
-    print(f"Error: {e}")
-```
-
-### 3. Monitor Performance
-
-Access adapter-specific metrics:
+### Supabase
 
 ```python
-# Access adapter directly for monitoring
-engine = langchat.engine
-# Check OpenAI service status
-# Check Pinecone connection
-# Monitor Supabase queries
+from langchat.database import Supabase
+
+db = Supabase(
+    url="https://xxxxx.supabase.co",
+    key="eyJhbGc..."
+)
 ```
 
-## Related Documentation
+## Reranker
 
-- **[OpenAI Service](/adapters/openai-service)** - OpenAI adapter details
-- **[Pinecone Adapter](/adapters/pinecone-adapter)** - Vector database adapter
-- **[Flashrank Reranker](/adapters/flashrank-reranker)** - Reranking adapter
-- **[Supabase Adapter](/adapters/supabase-adapter)** - Database adapter
-- **[ID Manager](/adapters/id-manager)** - ID generation adapter
+### Flashrank
+
+```python
+from langchat.reranker import Flashrank
+
+reranker = Flashrank(
+    model_name="ms-marco-MiniLM-L-12-v2",
+    top_n=3
+)
+```
+
+## Accessing Providers
+
+Access providers from the engine:
+
+```python
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+
+# Access providers
+engine = ai.engine
+print(engine.llm)  # LLM provider
+print(engine.vector_adapter)  # Vector database
+print(engine.reranker_adapter)  # Reranker
+print(engine.history_store)  # Database
+```
+
+## Next Steps
+
+- **[OpenAI Service](/adapters/openai-service)** - LLM provider details
+- **[Pinecone Adapter](/adapters/pinecone-adapter)** - Vector database
+- **[Supabase Adapter](/adapters/supabase-adapter)** - Database
+- **[Configuration](/guides/configuration)** - Learn configuration
 
 ---
 
-Questions? Check individual adapter documentation for details!
-
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

@@ -1,38 +1,75 @@
 ---
 title: ID Manager
-description: Sequential ID generation with conflict resolution. The ID Manager provides automatic sequential ID generation with conflict resolution for Supabase tables.
+description: Automatic ID generation for database tables
 ---
+
+import { Callout } from 'mintlify';
 
 ## Overview
 
-The `IDManager` handles ID generation for database tables, ensuring:
+The ID Manager automatically generates sequential IDs for database records with conflict resolution.
 
-- **Sequential IDs**: Generate sequential integer IDs
-- **Conflict Resolution**: Automatic retry on ID conflicts
-- **Database Sync**: Synchronizes with database state
-- **Error Recovery**: Robust error handling and recovery
+## Features
 
-## Usage
+- ✅ **Sequential IDs** - Automatic integer ID generation
+- ✅ **Conflict Resolution** - Handles ID conflicts automatically
+- ✅ **Database Sync** - Stays in sync with database
+- ✅ **Error Recovery** - Robust retry logic
 
-### Basic Usage
+## Automatic Usage
 
-The ID Manager is automatically initialized by `LangChatEngine`:
+The ID Manager is used automatically by LangChat:
 
 ```python
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-config = LangChatConfig(
-    supabase_url="https://xxxxx.supabase.co",
-    supabase_key="eyJhbGc...",
-    # ... other config
-)
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-langchat = LangChat(config=config)
-# ID Manager is automatically initialized
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+
+# ID Manager is automatically used when saving chat history
 ```
 
-## Related Documentation
+<Callout type="info">
+You don't need to use ID Manager directly - it works automatically behind the scenes.
+</Callout>
 
-- **[Supabase Adapter](/adapters/supabase-adapter)** - Database adapter
+## How It Works
+
+1. **Check Database** - Finds highest existing ID
+2. **Generate Next ID** - Creates next sequential ID
+3. **Insert with Retry** - Inserts with conflict resolution
+4. **Handle Conflicts** - Automatically retries on conflicts
+
+## Advanced Usage
+
+Access ID Manager directly:
+
+```python
+from langchat.adapters.database.id_manager import IDManager
+
+# Initialize
+id_manager = IDManager(supabase_client)
+
+# Generate ID for table
+next_id = id_manager.get_next_id("chat_history")
+```
+
+## Best Practices
+
+The ID Manager handles everything automatically. No manual configuration needed.
+
+## Next Steps
+
+- **[Supabase Adapter](/adapters/supabase-adapter)** - Database provider
+- **[Session Management](/guides/sessions)** - Learn about sessions
 - **[Configuration](/guides/configuration)** - Configuration options
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

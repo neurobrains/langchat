@@ -1,222 +1,79 @@
 ---
-title: LangChain Integration
-description: Learn how LangChat integrates with LangChain and leverages its powerful ecosystem
+title: Getting Started
+description: Build your first chatbot in minutes
 ---
 
 import { Callout } from 'mintlify';
-import { Card, CardGroup } from 'mintlify';
+import { CodeGroup } from 'mintlify';
 
-## About LangChain
+## Quick Start
 
-**LangChain** is a powerful framework for building applications with Large Language Models (LLMs). It provides a comprehensive set of tools, components, and integrations that make it easier to develop AI applications.
+Get your chatbot running in 5 minutes:
 
-LangChat is built on top of LangChain, leveraging its robust ecosystem to provide you with a production-ready chatbot framework.
+<CodeGroup>
+```python Complete Example
+import asyncio
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-### Why LangChain?
+async def main():
+    # Setup providers
+    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+    vector_db = Pinecone(api_key="...", index_name="...")
+    db = Supabase(url="https://...", key="...")
+    
+    # Create chatbot
+    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+    
+    # Chat!
+    result = await ai.chat(
+        query="Hello! What can you help me with?",
+        user_id="user123"
+    )
+    print(result["response"])
 
-LangChain offers:
-
-- **🔧 Modular Components**: Reusable building blocks for AI applications
-- **🔌 Extensive Integrations**: Support for 100+ integrations (OpenAI, Pinecone, Supabase, etc.)
-- **📚 Document Loaders**: Easy document loading from various sources
-- **🔍 Vector Stores**: Built-in support for vector databases
-- **🔄 Chains**: Composable workflows for complex AI applications
-- **💾 Memory Management**: Built-in conversation memory handling
-
-<Callout type="info">
-LangChat uses LangChain's document loaders, text splitters, vector stores, and chains to provide a complete chatbot solution.
-</Callout>
-
-## LangChain Components in LangChat
-
-### Document Loaders
-
-LangChat uses LangChain's document loaders through `docsuite`:
-
-```python
-from docsuite import UnifiedDocumentLoader
-
-# LangChain-powered document loading
-loader = UnifiedDocumentLoader("document.pdf")
-documents = loader.load()
+asyncio.run(main())
 ```
 
-**Supported formats:**
-- PDF files
-- Text files
-- CSV files
-- And more (via LangChain loaders)
+```python API Server
+from langchat.api.app import create_app
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
+import uvicorn
 
-### Text Splitters
+# Setup
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-LangChat uses LangChain's `RecursiveCharacterTextSplitter`:
+# Create server
+app = create_app(llm=llm, vector_db=vector_db, db=db)
 
-```python
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-# LangChain text splitter
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200
-)
-chunks = text_splitter.split_documents(documents)
+# Run
+uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
+</CodeGroup>
 
-### Vector Stores
+## What You Need
 
-LangChat integrates with LangChain's Pinecone vector store:
+Before starting, get these accounts:
 
-```python
-from langchain_pinecone.vectorstores import PineconeVectorStore
-
-# LangChain Pinecone integration
-vector_store = PineconeVectorStore(
-    index=pinecone_index,
-    embedding=embeddings
-)
-```
-
-### Embeddings
-
-LangChat uses LangChain's OpenAI embeddings:
-
-```python
-from langchain_openai import OpenAIEmbeddings
-
-# LangChain OpenAI embeddings
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-large"
-)
-```
-
-## LangChain Chains in LangChat
-
-LangChat uses LangChain's chain architecture for:
-
-1. **Standalone Question Generation**: Converts conversational queries to standalone questions
-2. **Retrieval-Augmented Generation (RAG)**: Combines retrieval and generation
-3. **Conversation Chains**: Manages multi-turn conversations
-
-### Example Chain Flow
-
-```
-User Query
-    ↓
-Standalone Question Chain (LangChain)
-    ↓
-Vector Retrieval (LangChain)
-    ↓
-Reranking (Flashrank)
-    ↓
-LLM Chain (LangChain)
-    ↓
-Response
-```
-
-## Using LangChain Directly
-
-While LangChat provides a high-level interface, you can also access LangChain components directly:
-
-```python
-from langchat import LangChat, LangChatConfig
-
-config = LangChatConfig.from_env()
-langchat = LangChat(config=config)
-
-# Access LangChain components
-engine = langchat.engine
-vector_adapter = engine.vector_adapter
-
-# Use LangChain vector store directly
-vector_store = vector_adapter.vector_store
-retriever = vector_store.as_retriever(search_kwargs={"k": 5})
-
-# Use LangChain embeddings
-embeddings = vector_adapter.embeddings
-query_embedding = embeddings.embed_query("your query")
-```
-
-## LangChain Version Compatibility
-
-LangChat is compatible with:
-
-- **LangChain**: `0.3.27`
-- **LangChain Core**: `>=0.3.72,<1.0.0`
-- **LangChain Community**: `>=0.3.0,<0.4.0`
-- **LangChain OpenAI**: `>=0.2.0,<0.3.0`
-- **LangChain Pinecone**: `>=0.1.0,<0.3.0`
+1. **OpenAI** - [platform.openai.com](https://platform.openai.com) - For AI models
+2. **Pinecone** - [pinecone.io](https://pinecone.io) - For search (create an index)
+3. **Supabase** - [supabase.com](https://supabase.com) - For chat history
 
 <Callout type="warning">
-Make sure your LangChain versions are compatible. LangChat handles version management automatically.
+Make sure your Pinecone index exists before running. Supabase tables are created automatically.
 </Callout>
-
-## Extending with LangChain
-
-You can extend LangChat using LangChain components:
-
-### Custom Document Loaders
-
-```python
-from langchain_community.document_loaders import PyPDFLoader
-
-# Use custom LangChain loader
-loader = PyPDFLoader("document.pdf")
-documents = loader.load()
-```
-
-### Custom Text Splitters
-
-```python
-from langchain.text_splitter import CharacterTextSplitter
-
-# Use custom LangChain splitter
-splitter = CharacterTextSplitter(
-    separator="\n\n",
-    chunk_size=1000,
-    chunk_overlap=200
-)
-```
-
-### Custom Chains
-
-```python
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-
-# Create custom LangChain chain
-prompt = PromptTemplate(
-    input_variables=["question"],
-    template="Answer: {question}"
-)
-chain = LLMChain(llm=llm, prompt=prompt)
-```
-
-## Benefits of LangChain Integration
-
-1. **🔌 Ecosystem**: Access to 100+ LangChain integrations
-2. **📚 Documentation**: Extensive LangChain documentation and examples
-3. **🔄 Compatibility**: Works with existing LangChain code
-4. **🚀 Performance**: Optimized LangChain components
-5. **🛠️ Flexibility**: Easy to extend and customize
-
-## Learning Resources
-
-- **[LangChain Documentation](https://python.langchain.com/)** - Official LangChain docs
-- **[LangChain Integrations](https://python.langchain.com/docs/integrations/)** - Available integrations
-- **[LangChain Examples](https://github.com/langchain-ai/langchain/tree/master/templates)** - Example projects
 
 ## Next Steps
 
-Now that you understand LangChain integration:
-
-1. **[Quick Start](/quick-start)** - Get started with LangChat
-2. **[Document Indexing](/guides/document-indexing)** - Index documents using LangChain loaders
-3. **[Vector Search](/guides/vector-search)** - Understand vector search with LangChain
-4. **[Customization](/advanced/customization)** - Extend LangChat with LangChain
-
-<Callout type="info">
-**Need help? Reach out!** Join our [Discord community](https://discord.gg/v9rqMDR2) for support and discussions.
-</Callout>
+- **[Quick Start](/quick-start)** - Detailed quick start
+- **[Examples](/examples/basic-usage)** - More examples
+- **[Configuration](/guides/configuration)** - Learn configuration
 
 ---
 

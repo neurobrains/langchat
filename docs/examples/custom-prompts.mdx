@@ -1,131 +1,122 @@
 ---
 title: Custom Prompts
-description: Learn how to customize prompts for your specific use case. Customize prompts to match your chatbot's domain and behavior. Here are examples for different use cases.
+description: Customize your chatbot's behavior with custom prompts
 ---
 
-## Education Chatbot
+import { Callout } from 'mintlify';
+
+## Basic Custom Prompt
+
+Control how your chatbot responds:
 
 ```python
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-EDUCATION_PROMPT = """You are an expert education consultant specializing in study abroad programs.
+# Custom system prompt
+custom_prompt = """You are a helpful assistant.
+Answer questions clearly and concisely.
+Always be friendly and professional.
 
-Your expertise includes:
-- University and program recommendations
-- Admission requirements and procedures
-- Application deadlines and timelines
-- Scholarship and funding opportunities
-- Student visa requirements
-
-Communication Style:
-- Friendly and professional
-- Concise and actionable
-- Use emojis appropriately (👋 👍 ✨)
-- Break down complex information
-
-Use the following context to answer questions:
-{context}
-
-Previous conversation:
-{chat_history}
-
-Student's question: {question}
-
-Provide a helpful response:"""
-
-config = LangChatConfig(
-    openai_api_keys=["sk-..."],
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="education-index",
-    supabase_url="https://...",
-    supabase_key="eyJ...",
-    system_prompt_template=EDUCATION_PROMPT
-)
-
-langchat = LangChat(config=config)
-```
-
-## Travel Assistant
-
-```python
-from langchat import LangChat, LangChatConfig
-
-TRAVEL_PROMPT = """You are a helpful travel assistant specializing in trip planning.
-
-Your expertise includes:
-- Destination recommendations
-- Flight and hotel booking
-- Local attractions
-- Travel tips and safety
-- Cultural insights
-
-Be friendly, concise, and helpful.
-
-Use the following context:
-{context}
-
-Chat history: {chat_history}
+Context: {context}
+History: {chat_history}
 Question: {question}
+
 Answer:"""
 
-TRAVEL_STANDALONE = """Convert this travel question to a standalone search query.
+# Setup
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-Chat History: {chat_history}
-Question: {question}
-Standalone query:"""
-
-config = LangChatConfig(
-    openai_api_keys=["sk-..."],
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="travel-index",
-    supabase_url="https://...",
-    supabase_key="eyJ...",
-    system_prompt_template=TRAVEL_PROMPT,
-    standalone_question_prompt=TRAVEL_STANDALONE
+# Create with custom prompt
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    prompt_template=custom_prompt
 )
 
-langchat = LangChat(config=config)
+result = await ai.chat(
+    query="What is Python?",
+    user_id="user123"
+)
 ```
 
-## Customer Support
+## Education Example
+
+Specialized education assistant:
 
 ```python
-from langchat import LangChat, LangChatConfig
+EDUCATION_PROMPT = """You are an expert education consultant.
 
-SUPPORT_PROMPT = """You are a customer support agent for TechCorp products.
+Your expertise:
+- University recommendations
+- Admission requirements
+- Scholarships and funding
+- Visa requirements
 
-Your responsibilities:
-- Answer product questions accurately
-- Help troubleshoot technical issues
-- Guide users through features
-- Escalate complex issues when needed
+Be friendly, professional, and concise.
 
-Communication Guidelines:
+Context: {context}
+History: {chat_history}
+Question: {question}
+
+Answer:"""
+
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    prompt_template=EDUCATION_PROMPT
+)
+```
+
+## Customer Support Example
+
+Professional support agent:
+
+```python
+SUPPORT_PROMPT = """You are a customer support agent.
+
+Guidelines:
 - Be professional and empathetic
-- Acknowledge user concerns
 - Provide step-by-step solutions
 - Ask clarifying questions when needed
 
-Product Context:
-{context}
+Product Info: {context}
+Previous Chat: {chat_history}
+Customer Question: {question}
 
-Previous conversation:
-{chat_history}
+Response:"""
 
-Customer inquiry: {question}
-
-Provide a helpful response:"""
-
-config = LangChatConfig(
-    # ... other config ...
-    system_prompt_template=SUPPORT_PROMPT
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    prompt_template=SUPPORT_PROMPT
 )
-
-langchat = LangChat(config=config)
 ```
+
+<Callout type="info">
+Custom prompts let you control your chatbot's personality, tone, and expertise. Use variables like `{context}`, `{chat_history}`, and `{question}` to include dynamic content.
+</Callout>
+
+## Prompt Variables
+
+Available variables in your prompt:
+
+- `{context}` - Retrieved documents from your knowledge base
+- `{chat_history}` - Previous conversation messages
+- `{question}` - Current user question
 
 ## Next Steps
 
-- **[API Server](/examples/api-server)** - Deploy as API server
-- **[Prompts Guide](/guides/prompts)** - Learn more about prompts
+- **[Prompts Guide](/guides/prompts)** - Advanced prompt techniques
+- **[Basic Usage](/examples/basic-usage)** - More examples
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
