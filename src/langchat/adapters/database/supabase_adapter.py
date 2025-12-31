@@ -15,6 +15,7 @@ from langchat.adapters.logger import logger
 # Class-level flag to prevent duplicate SQL printing
 _sql_printed = False
 
+
 class SupabaseAdapter:
     """
     Adapter for Supabase database operations.
@@ -153,17 +154,17 @@ NOTIFY pgrst, 'reload schema';
                 project_ref = self.url.replace("https://", "").replace(".supabase.co", "")
 
                 # Management API endpoint
-                management_url = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
+                management_url = (
+                    f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
+                )
 
                 headers = {
                     "Authorization": f"Bearer {self.key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 }
 
                 response = requests.post(
-                    management_url,
-                    headers=headers,
-                    json={"query": self.get_create_tables_sql()}
+                    management_url, headers=headers, json={"query": self.get_create_tables_sql()}
                 )
 
                 if response.status_code == 200:

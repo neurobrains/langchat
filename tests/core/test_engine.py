@@ -33,11 +33,7 @@ def engine(mock_llm, mock_vector_db, mock_db):
     with patch("langchat.core.engine.FlashrankRerankAdapter"), patch(
         "langchat.core.engine.IDManager"
     ):
-        engine = LangChatEngine(
-            llm=mock_llm,
-            vector_db=mock_vector_db,
-            db=mock_db
-        )
+        engine = LangChatEngine(llm=mock_llm, vector_db=mock_vector_db, db=mock_db)
         return engine
 
 
@@ -49,11 +45,7 @@ class TestLangChatEngine:
         with patch("langchat.core.engine.FlashrankRerankAdapter"), patch(
             "langchat.core.engine.IDManager"
         ):
-            engine = LangChatEngine(
-                llm=mock_llm,
-                vector_db=mock_vector_db,
-                db=mock_db
-            )
+            engine = LangChatEngine(llm=mock_llm, vector_db=mock_vector_db, db=mock_db)
             assert engine.llm == mock_llm
             assert engine.vector_adapter == mock_vector_db
             assert engine.history_store == mock_db

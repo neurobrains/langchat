@@ -6,10 +6,11 @@
 
 class VectorStoreProvider:
     """Base class for vector store providers."""
+
     pass
 
 
 class RerankerProvider:
     """Base class for reranker providers."""
-    pass
 
+    pass

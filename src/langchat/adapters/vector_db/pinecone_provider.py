@@ -3,7 +3,7 @@
 
 """Pinecone vector database provider."""
 
-from langchat.vector_db.pinecone_adapter import PineconeVectorAdapter
+from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
 
 
 class Pinecone(PineconeVectorAdapter):
@@ -12,12 +12,8 @@ class Pinecone(PineconeVectorAdapter):
 
     High-performance vector database optimized for similarity search.
     """
+
     pass
 
 
 __all__ = ["Pinecone"]
-
-
-# Backward compatibility
-PineconeProvider = Pinecone
-

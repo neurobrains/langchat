@@ -5,12 +5,8 @@
 Database Providers - Support for multiple databases for chat history storage.
 """
 
-from langchat.database.supabase_provider import Supabase, SupabaseProvider
+from langchat.adapters.database.supabase_provider import Supabase
 
 __all__ = [
-    # New names (recommended)
     "Supabase",
-    # Old names (backward compatibility)
-    "SupabaseProvider",
 ]
-

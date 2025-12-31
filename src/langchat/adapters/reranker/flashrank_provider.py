@@ -3,7 +3,7 @@
 
 """Flashrank reranker provider."""
 
-from langchat.reranker.flashrank_adapter import FlashrankRerankAdapter
+from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
 
 
 class Flashrank(FlashrankRerankAdapter):
@@ -12,12 +12,8 @@ class Flashrank(FlashrankRerankAdapter):
 
     Fast, local reranking using ONNX models.
     """
+
     pass
 
 
 __all__ = ["Flashrank"]
-
-
-# Backward compatibility
-FlashrankProvider = Flashrank
-

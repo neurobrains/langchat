@@ -20,22 +20,26 @@ class OpenAI:
 
     def __init__(
         self,
+        api_key: Optional[str] = None,
+        api_keys: Optional[List[str]] = None,
         model: str = "gpt-4o-mini",
         temperature: float = 1.0,
-        api_keys: Optional[List[str]] = None,
         max_retries_per_key: int = 2,
     ):
         """
         Initialize OpenAI provider.
 
         Args:
+            api_key: Single OpenAI API key (or use api_keys for multiple)
+            api_keys: List of OpenAI API keys for rotation
             model: OpenAI model name (e.g., "gpt-4o-mini", "gpt-4", "gpt-3.5-turbo")
             temperature: Model temperature (0.0 to 2.0)
-            api_keys: List of OpenAI API keys for rotation
             max_retries_per_key: Maximum retries per API key
         """
+        if api_key:
+            api_keys = [api_key]
         if not api_keys:
-            raise ValueError("At least one OpenAI API key is required")
+            raise ValueError("At least one OpenAI API key is required (use api_key or api_keys)")
 
         self._model = model
         self._temperature = temperature
@@ -102,7 +106,9 @@ class OpenAI:
             except Exception as e:
                 attempts += 1
                 last_error = e
-                logger.warning(f"OpenAI API call failed (attempt {attempts}/{self.max_retries}): {str(e)}")
+                logger.warning(
+                    f"OpenAI API call failed (attempt {attempts}/{self.max_retries}): {str(e)}"
+                )
 
                 if attempts < self.max_retries:
                     self._rotate_key()
@@ -114,8 +120,3 @@ class OpenAI:
 
 
 __all__ = ["OpenAI"]
-
-
-# Backward compatibility
-OpenAIProvider = OpenAI
-
