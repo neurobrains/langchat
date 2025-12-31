@@ -9,8 +9,8 @@ from typing import Any
 
 import requests
 
+from langchat.adapters.llm._base_llm import BaseLLM, messages_to_text
 from langchat.adapters.logger import logger
-from langchat.llm._base_llm import BaseLLM, messages_to_text
 
 
 class Ollama:
@@ -63,10 +63,7 @@ class Ollama:
                 "model": self._model,
                 "prompt": prompt,
                 "stream": False,
-                "options": {
-                    "temperature": self._temperature,
-                    **self._options
-                }
+                "options": {"temperature": self._temperature, **self._options},
             }
 
             try:
@@ -93,8 +90,3 @@ class Ollama:
 
 
 __all__ = ["Ollama"]
-
-
-# Backward compatibility
-OllamaProvider = Ollama
-

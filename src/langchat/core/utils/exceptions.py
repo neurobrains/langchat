@@ -11,5 +11,3 @@ class UnsupportedFileTypeError(Exception):
     """
 
     pass
-
-

@@ -12,5 +12,3 @@ This namespace stays to avoid breaking existing imports:
 from langchat.core.utils.exceptions import UnsupportedFileTypeError
 
 __all__ = ["UnsupportedFileTypeError"]
-
-

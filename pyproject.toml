@@ -12,7 +12,7 @@ license = {text = "MIT"}
 authors = [
     {name = "Sifat Hasan, NeuroBrain"}
 ]
-keywords = ["rag", "agents", "multi-agent", "llm", "ai", "langchain", "chatbot", "vector-search"]
+keywords = ["rag", "llm", "ai", "langchain", "chatbot", "vector-search", "retrieval-augmented-generation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

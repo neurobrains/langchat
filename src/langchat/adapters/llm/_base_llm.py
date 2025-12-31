@@ -49,4 +49,3 @@ def messages_to_text(messages: list[Any]) -> str:
 
 
 __all__ = ["AIMessage", "BaseLLM", "messages_to_text"]
-
