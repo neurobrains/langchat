@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
 Setup git hooks for code quality checks.
 Copies hooks from scripts/hooks/ to .git/hooks/
@@ -127,8 +130,8 @@ if __name__ == "__main__":
         print("=" * 60)
         print("\n✅ Git hooks setup complete!")
         print("\nHooks installed:")
-        print("  - pre-commit: Runs Ruff linting and formatting (auto-fixes issues)")
-        print("  - pre-push: Runs MyPy type checking on entire project")
+        print("  - pre-commit: Runs Ruff linting checks")
+        print("  - pre-push: Runs ty type checking on entire project")
         print("  - prepare-commit-msg: Automatically adds DCO sign-off (bash script)")
         print("\nHooks source: scripts/hooks/")
         print("Hooks target: .git/hooks/")

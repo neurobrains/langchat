@@ -1,191 +1,105 @@
 ---
 title: "Introduction"
-description: "Learn about LangChat - A production-ready conversational AI library with vector search capabilities"
+description: "Build production-ready AI chatbots in minutes with LangChat"
 ---
 
 import { Card, CardGroup } from 'mintlify';
 import { Callout } from 'mintlify';
 
+## What is LangChat?
+
+**LangChat** is a Python library that lets you build production-ready AI chatbots in minutes. No complex setup, no juggling multiple tools—just one simple library that handles everything.
+
+<Callout type="info">
+Think of LangChat as your all-in-one toolkit for building intelligent chatbots. It combines AI models, search capabilities, and conversation memory into one easy package.
+</Callout>
+
+## Why Choose LangChat?
+
+Building chatbots is hard. You need AI models, databases, search engines, and memory management. LangChat does all of this for you.
+
 <CardGroup cols={2}>
-  <Card title="⚡ Fast Development" icon="bolt" href="/getting-started">
-    Get a production-ready chatbot running in minutes, not months
+  <Card title="⚡ Fast Setup" icon="bolt" href="/quick-start">
+    Get running in minutes, not weeks
   </Card>
-  <Card title="🔧 Modular Architecture" icon="gear" href="/guides/configuration">
-    Mix and match components as needed - highly customizable
+  <Card title="🔧 Easy to Use" icon="gear" href="/quick-start">
+    Simple code, powerful results
   </Card>
-  <Card title="🔄 Automatic API Key Rotation" icon="arrows-rotate" href="/adapters/openai-service">
-    Built-in fault tolerance with multiple OpenAI API keys
+  <Card title="🔄 Smart Features" icon="arrows-rotate" href="/guides/configuration">
+    Built-in memory, search, and more
   </Card>
-  <Card title="📊 Production Ready" icon="chart-line" href="/api-reference/langchat">
-    Includes chat history, metrics, and feedback tracking
+  <Card title="📊 Production Ready" icon="chart-line" href="/advanced/production">
+    Deploy with confidence
   </Card>
 </CardGroup>
 
-## What is LangChat?
+## What You Get
 
-**LangChat** is a powerful, production-ready conversational AI library designed to simplify building intelligent chatbots with vector search capabilities. Instead of juggling multiple libraries, API integrations, vector databases, and chat history management, LangChat provides a unified, modular architecture that handles all these concerns out of the box.
+### 🤖 AI Models
+- Support for OpenAI, Anthropic, Gemini, and more
+- Automatic API key rotation
+- Smart error handling
 
-<info>
-  LangChat combines the power of LLMs (Large Language Models), vector search, and conversation management into one easy-to-use library.
-</info>
+### 🔍 Smart Search
+- Vector search for finding relevant information
+- Automatic reranking for better results
+- Works with Pinecone and other databases
 
-## Why LangChat?
+### 💾 Memory & History
+- Automatic conversation history
+- User-specific sessions
+- Context-aware responses
 
-Building production-ready conversational AI systems is complex. You need to:
-
-- **Integrate LLM APIs** (OpenAI, Anthropic, etc.)
-- **Manage Vector Databases** (Pinecone, Weaviate, etc.)
-- **Handle Chat History** (conversation context and memory)
-- **Implement Reranking** (improve search result relevance)
-- **Track Metrics** (response times, errors, feedback)
-- **Rotate API Keys** (handle rate limits and failures)
-
-**LangChat simplifies all of this** by providing:
-
-- **🚀 Fast Development**: Get a production-ready chatbot running in minutes
-- **🔧 Modular Architecture**: Use components independently or together
-- **🔄 Automatic API Key Rotation**: Built-in fault tolerance for OpenAI API
-- **📊 Production Ready**: Includes chat history, metrics, and feedback tracking
-- **🎨 Highly Customizable**: Easy to extend with custom prompts and adapters
-- **🐳 Docker Ready**: Auto-generated Dockerfile for easy deployment
-
-## Key Features
-
-### 🤖 LLM Integration
-
-- **OpenAI**: Native OpenAI API support with automatic API key rotation
-- **Fault Tolerant**: Automatic retry logic with multiple API keys
-- **Production Ready**: Handles rate limits and errors gracefully
-
-### 🔍 Vector Search
-
-- **Pinecone Integration**: Seamless vector database integration
-- **Reranking**: Flashrank reranker for improved search results
-- **Configurable Retrieval**: Adjustable document retrieval and reranking
-
-### 💾 Database Management
-
-- **Supabase**: Built-in Supabase integration
-- **ID Management**: Automatic ID generation with conflict resolution
-- **Session Management**: User-specific chat history and memory
-
-### 🎨 Customization
-
-- **Custom Prompts**: Configure both system prompts and standalone question prompts
-- **Flexible Configuration**: Environment variables or direct configuration
-- **Modular Architecture**: Use components independently or together
-
-### 🚀 Developer Experience
-
-- **Auto-Generated Interface**: Chat interface HTML auto-created on startup
-- **Auto-Generated Dockerfile**: Dockerfile auto-created with correct port
-- **Easy Setup**: Simple configuration and initialization
+### 🎨 Customizable
+- Custom prompts and behavior
+- Flexible configuration
+- Easy to extend
 
 ## Quick Example
 
-Here's how easy it is to get started with LangChat:
+Here's how simple it is:
 
 ```python
-import asyncio
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-async def main():
-    # Create configuration
-    config = LangChatConfig(
-        openai_api_keys=["your-openai-api-key"],
-        pinecone_api_key="your-pinecone-api-key",
-        pinecone_index_name="your-index-name",
-        supabase_url="your-supabase-url",
-        supabase_key="your-supabase-key"
-    )
-    
-    # Initialize LangChat
-    langchat = LangChat(config=config)
-    
-    # Chat with the AI
-    result = await langchat.chat(
-        query="What are the best universities in Europe?",
-        user_id="user123",
-        domain="education"
-    )
+# Setup (one time)
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="my-index")
+db = Supabase(url="https://...", key="...")
 
-asyncio.run(main())
+# Create chatbot
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+
+# Use it
+result = await ai.chat(
+    query="What can you help me with?",
+    user_id="user123"
+)
+print(result["response"])
 ```
 
-<success>
-  That's it! With just a few lines of code, you have a fully functional chatbot with vector search, chat history, and automatic API key rotation.
-</success>
+<Callout type="success">
+That's it! In just a few lines, you have a fully functional chatbot with search, memory, and AI capabilities.
+</Callout>
 
-## Architecture Overview
+## Perfect For
 
-LangChat follows a modular architecture where each component is designed to work independently or together:
-
-``` expandable
-┌──────────────────────────────────────────────┐
-│                LangChat Engine                                           │
-│     (Main orchestrator for all components)                               │
-└──────────────────────────────────────────────┘
-                      │
-                      ├─── LLM Service (OpenAI)
-                      │       └─── Automatic key rotation
-                      │
-                      ├─── Vector Database (Pinecone)
-                      │       └─── Document retrieval & embeddings
-                      │
-                      ├─── Reranker (Flashrank)
-                      │       └─── Result relevance improvement
-                      │
-                      ├─── Database (Supabase)
-                      │       ├─── Chat history storage
-                      │       ├─── Metrics tracking
-                      │       └─── Feedback collection
-                      │
-                      └─── Session Management
-                              └─── User context & memory
-```
-
-## Use Cases
-
-LangChat is perfect for:
-
-- **📚 Education Chatbots**: Help students find universities and programs
-- **✈️ Travel Assistants**: Provide travel recommendations and booking guidance
-- **🛒 Customer Support**: Answer product questions with RAG (Retrieval-Augmented Generation)
-- **💼 Business Assistants**: Internal knowledge base queries
-- **🎓 Learning Platforms**: Answer questions about course materials
-- **🏥 Healthcare**: Provide medical information with context
-
-## What Makes LangChat Different?
-
-| Feature              | LangChat     | Other Libraries |
-| -------------------- | ------------ | --------------- |
-| **Setup Time**       | Minutes      | Days/Weeks      |
-| **API Key Rotation** | ✅ Built-in   | ❌ Manual        |
-| **Chat History**     | ✅ Automatic  | ⚠️ Manual       |
-| **Vector Search**    | ✅ Integrated | ⚠️ Separate     |
-| **Reranking**        | ✅ Built-in   | ❌ Manual        |
-| **Metrics Tracking** | ✅ Automatic  | ❌ Manual        |
-| **Production Ready** | ✅ Yes        | ⚠️ Depends      |
+- **Customer Support**: Answer questions with your knowledge base
+- **Education**: Help students find information
+- **Business**: Internal knowledge assistants
+- **E-commerce**: Product recommendations and support
 
 ## Next Steps
 
-Ready to get started? Check out our guides:
+Ready to start? Here's your path:
 
-1. [**Getting Started**](/getting-started) - Set up LangChat in minutes
-2. [**Installation Guide**](/installation) - Install and configure LangChat
-3. [**Configuration**](/guides/configuration) - Learn about all configuration options
-4. [**Examples**](/examples/basic-usage) - See LangChat in action
-
-## Community & Support
-
-- **GitHub**: [github.com/neurobrains/langchat](https://github.com/neurobrains/langchat)
-- **Issues**: Report bugs or request features
-- **Contributions**: We welcome contributions!
-
-<warning>
-  LangChat is currently in active development. Some features may change. We recommend pinning your version in production.
-</warning>
+1. **[Quick Start](/quick-start)** - Get running in 5 minutes
+2. **[Examples](/examples/basic-usage)** - See it in action
+3. **[Guides](/guides/configuration)** - Learn advanced features
 
 ---
 
-[**Built with ❤️ by NeuroBrain**](https://neurobrain.co)
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

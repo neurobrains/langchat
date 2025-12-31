@@ -1,66 +1,78 @@
 ---
 title: Extending Adapters
-description: Guide to extending and creating custom adapters. Learn how to extend LangChat adapters and create custom ones.
+description: Create custom adapters for LangChat
 ---
 
-## Custom LLM Adapter
+import { Callout } from 'mintlify';
 
-Create a custom LLM adapter:
+## Custom LLM Provider
+
+Extend existing providers:
 
 ```python
-from langchat.adapters.services.openai_service import OpenAILLMService
+from langchat.llm import OpenAI
 
-class CustomLLMAdapter(OpenAILLMService):
-    def invoke(self, messages, **kwargs):
+class CustomOpenAI(OpenAI):
+    def ainvoke(self, messages, **kwargs):
         # Custom preprocessing
-        processed_messages = self.preprocess(messages)
+        processed = self.preprocess(messages)
         
-        # Call parent method
-        response = super().invoke(processed_messages, **kwargs)
+        # Call parent
+        response = await super().ainvoke(processed, **kwargs)
         
         # Custom postprocessing
         return self.postprocess(response)
     
     def preprocess(self, messages):
-        # Custom preprocessing logic
+        # Your custom logic
         return messages
     
     def postprocess(self, response):
-        # Custom postprocessing logic
+        # Your custom logic
         return response
 ```
 
 ## Custom Vector Adapter
 
-Create a custom vector adapter:
+Extend Pinecone adapter:
 
 ```python
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+from langchat.vector_db import Pinecone
 
-class CustomVectorAdapter(PineconeVectorAdapter):
+class CustomPinecone(Pinecone):
     def get_retriever(self, k=5):
         retriever = super().get_retriever(k=k)
-        # Custom retriever logic
+        # Add custom filtering or logic
         return retriever
 ```
 
-## Integration
-
-Integrate custom adapters:
+## Using Custom Adapters
 
 ```python
-from langchat.core.engine import LangChatEngine
+from langchat import LangChat
 
-class CustomLangChatEngine(LangChatEngine):
-    def _initialize_adapters(self):
-        # Use custom adapters
-        self.llm = CustomLLMAdapter(...)
-        self.vector_adapter = CustomVectorAdapter(...)
-        # ... other adapters
+# Use custom adapters
+custom_llm = CustomOpenAI(api_key="sk-...", model="gpt-4o-mini")
+custom_vector = CustomPinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
+
+ai = LangChat(
+    llm=custom_llm,
+    vector_db=custom_vector,
+    db=db
+)
 ```
 
-## Related Documentation
+<Callout type="info">
+Custom adapters must implement the same interface as the base adapters.
+</Callout>
 
-- **[Customization](/advanced/customization)** - Customization guide
+## Next Steps
+
+- **[Customization](/advanced/customization)** - More customization options
 - **[Adapters Overview](/adapters/overview)** - All adapters
+- **[Configuration](/guides/configuration)** - Configuration guide
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

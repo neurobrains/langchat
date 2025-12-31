@@ -1,10 +1,9 @@
-"""
-Tests for IDManager.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from unittest.mock import MagicMock
 
-from langchat.adapters.supabase.id_manager import IDManager
+from langchat.adapters.database.id_manager import IDManager
 
 
 class TestIDManager:

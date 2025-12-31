@@ -1,61 +1,26 @@
-# LangChat
-
 <div align="center">
+<img src="docs/public/logo-sidebar.png" alt="Lagchat-logo">
 
-<h2>🚀 Production-ready AI chatbots in minutes, not months</h2>
+<h2>Ship production-grade AI chatbots in minutes</h2>
 
 <p>
-  <a href="https://pypi.org/project/langchat/">
-    <img src="https://badge.fury.io/py/langchat.svg" alt="PyPI version" />
-  </a>
-  <a href="https://www.python.org/downloads/">
-    <img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python 3.8+" />
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" />
-  </a>
+  <strong>LangChat</strong> is a high-performance Python library designed to bridge the gap between "prototype" and "production." It unifies LLMs, vector databases, and session management into a single, modular interface.
 </p>
 
 <p>
-  <strong>A powerful, modular conversational AI library</strong> with vector search capabilities, designed to help developers build production-ready AI chatbots with minimal effort.
-</p>
-
-<p>
-  <a href="https://langchat.neurobrains.co/"><strong>📖 Full Documentation →</strong></a> • 
-  <a href="https://github.com/neurobrains/langchat"><strong>⭐ GitHub</strong></a> • 
-  <a href="https://pypi.org/project/langchat/"><strong>📦 PyPI</strong></a>
+  <a href="https://langchat.neurobrains.co/"><strong>Explore the Docs</strong></a>
 </p>
 
 </div>
 
 ---
 
-## 🎯 What is LangChat?
+## Why LangChat?
 
 <p>
-  <strong>LangChat</strong> is a production-ready conversational AI library that simplifies building intelligent chatbots with vector search capabilities. Instead of juggling multiple libraries, API integrations, vector databases, and chat history management, LangChat provides a unified, modular architecture that handles all these concerns out of the box.
+  Most AI frameworks are great for experiments but require massive boilerplate for production. LangChat handles the "hard parts" out of the box so you can focus on building features.
 </p>
 
-<div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; border-left: 4px solid #2196F3;">
-<strong>💡 Key Insight:</strong> LangChat combines the power of LLMs (Large Language Models), vector search, and conversation management into one easy-to-use library.
-</div>
-
----
-
-## 🎯 Why LangChat?
-
-<p>Building production-ready conversational AI systems is complex. You need to:</p>
-
-<ul>
-  <li><strong>Integrate LLM APIs</strong> (OpenAI, Anthropic, etc.)</li>
-  <li><strong>Manage Vector Databases</strong> (Pinecone, Weaviate, etc.)</li>
-  <li><strong>Handle Chat History</strong> (conversation context and memory)</li>
-  <li><strong>Implement Reranking</strong> (improve search result relevance)</li>
-  <li><strong>Track Metrics</strong> (response times, errors, feedback)</li>
-  <li><strong>Rotate API Keys</strong> (handle rate limits and failures)</li>
-</ul>
-
-<p><strong>LangChat simplifies all of this</strong> by providing a complete solution out of the box.</p>
 
 <table>
   <thead>
@@ -68,208 +33,117 @@
   <tbody>
     <tr>
       <td><strong>Setup Time</strong></td>
-      <td>⚡ Minutes</td>
-      <td>⏳ Days/Weeks</td>
+      <td>Minutes</td>
+      <td>Days/Weeks</td>
     </tr>
     <tr>
       <td><strong>API Key Rotation</strong></td>
-      <td>✅ Built-in</td>
-      <td>❌ Manual</td>
+      <td>Built-in</td>
+      <td>Manual</td>
     </tr>
     <tr>
       <td><strong>Chat History</strong></td>
-      <td>✅ Automatic</td>
-      <td>⚠️ Manual</td>
+      <td>Automatic</td>
+      <td>Manual</td>
     </tr>
     <tr>
       <td><strong>Vector Search</strong></td>
-      <td>✅ Integrated</td>
-      <td>⚠️ Separate</td>
+      <td>Integrated</td>
+      <td>Separate</td>
     </tr>
     <tr>
       <td><strong>Reranking</strong></td>
-      <td>✅ Built-in</td>
-      <td>❌ Manual</td>
+      <td>Built-in</td>
+      <td>Manual</td>
     </tr>
     <tr>
       <td><strong>Production Ready</strong></td>
-      <td>✅ Yes</td>
-      <td>⚠️ Depends</td>
+      <td>Yes</td>
+      <td>Depends</td>
     </tr>
   </tbody>
 </table>
 
 ---
 
-## 📦 Installation
+## Installation
 
 <pre><code>pip install langchat</code></pre>
 
-<p><strong>Requirements:</strong> Python 3.8+, OpenAI API key(s), Pinecone account, Supabase project</p>
 
 ---
 
 ## 🚀 Quick Start
 
-### Step 1: Set Environment Variables
-
-```bash
-export OPENAI_API_KEYS="sk-...,sk-..."
-export PINECONE_API_KEY="your-key"
-export PINECONE_INDEX_NAME="your-index"
-export SUPABASE_URL="https://xxxxx.supabase.co"
-export SUPABASE_KEY="your-key"
-```
-
-### Step 2: Write Your First Chatbot
+### Step 1: Build and run a production-ready agent in just a few lines of code
 
 ```python
 import asyncio
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
 async def main():
-    # Load configuration from environment variables
-    config = LangChatConfig.from_env()
+    # Initialize providers
+    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+    vector_db = Pinecone(api_key="your-key", index_name="your-index")
+    db = Supabase(url="https://xxxxx.supabase.co", key="your-key")
     
     # Initialize LangChat
-    langchat = LangChat(config=config)
+    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
     
     # Chat with the AI
-    # Note: Response is automatically displayed in a Rich panel
-    result = await langchat.chat(
+    result = await ai.chat(
         query="Hello! What can you help me with?",
-        user_id="user123",
-        domain="general"
+        user_id="guest",
+        domain="default"
     )
+    print(result["response"])
 
-asyncio.run(main())
-```
-
----
-
-## 📚 Examples
-
-### Basic Usage
-
-```python
-import asyncio
-from langchat import LangChat, LangChatConfig
-
-async def main():
-    config = LangChatConfig.from_env()
-    langchat = LangChat(config=config)
-    
-    result = await langchat.chat(
-        query="What are the best universities in Europe?",
-        user_id="user123",
-        domain="education"
-    )
-    
-
-asyncio.run(main())
-```
-
-### Custom Configuration
-
-```python
-from langchat import LangChat, LangChatConfig
-
-config = LangChatConfig(
-    openai_api_keys=["sk-...", "sk-..."],  # Multiple keys for rotation
-    openai_model="gpt-4o-mini",
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    supabase_url="https://xxxxx.supabase.co",
-    supabase_key="eyJhbGc...",
-    system_prompt_template="""You are a helpful assistant.
-    
-    Context: {context}
-    Chat History: {chat_history}
-    Question: {question}
-    Answer:"""
-)
-
-langchat = LangChat(config=config)
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ### As API Server
 
 ```python
 from langchat.api.app import create_app
-from langchat.config import LangChatConfig
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 import uvicorn
 
-config = LangChatConfig.from_env()
+# Initialize providers
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
+vector_db = Pinecone(api_key="your-key", index_name="your-index")
+db = Supabase(url="https://xxxxx.supabase.co", key="your-key")
 
 app = create_app(
-    config=config,
-    auto_generate_interface=True,
-    auto_generate_docker=True
+    llm=llm,
+    vector_db=vector_db,
+    db=db
 )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=config.server_port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
 ---
 
-## 🌐 API Endpoints
+## Use Cases
 
-<p>When running as an API server:</p>
-
-<ul>
-  <li><code>POST /chat</code> - Send a chat message</li>
-  <li><code>GET /frontend</code> - Access the chat interface</li>
-  <li><code>GET /health</code> - Health check endpoint</li>
-</ul>
-
----
-
-## 💡 Use Cases
-
-## 🌟 Where You Can Use Our AI Assistants
-
-| 📚 Education Chatbots | ✈️ Travel Assistants | 🛒 Customer Support |
+| Education            | E-commerce | Enterprise|
 |----------------------|----------------------|----------------------|
-| Help students find universities | Give travel recommendations | Answer product questions |
-
-| 💼 Business Assistants | 🎓 Learning Platforms | 🏥 Healthcare |
-|------------------------|------------------------|----------------|
-| Knowledge base queries | Course material Q&A | Medical information |
+| Intelligent tutoring and course Q&A | Customer support and product discovery | Internal knowledge base search |
 
 ---
 
-## 📖 Documentation
+## Roadmap & Contributing
 
-<p>
-  For complete documentation, examples, guides, and API reference, visit:
-</p>
+<p> We are building the future of conversational AI infrastructure. </p>
 
-<div align="center" style="margin: 30px 0;">
-  <a href="https://langchat.neurobrains.co/" style="font-size: 18px; font-weight: bold; color: #2196F3; text-decoration: none;">
-    📖 https://langchat.neurobrains.co/
-  </a>
-</div>
-
-<p>The documentation includes:</p>
-
-<ul>
-  <li>📘 <a href="https://langchat.neurobrains.co/getting-started">Getting Started Guide</a></li>
-  <li>⚙️ <a href="https://langchat.neurobrains.co/guides/configuration">Configuration Guide</a></li>
-  <li>📝 <a href="https://langchat.neurobrains.co/api-reference/langchat">API Reference</a></li>
-  <li>💡 <a href="https://langchat.neurobrains.co/examples/basic-usage">Examples</a></li>
-  <li>🔧 <a href="https://langchat.neurobrains.co/advanced/customization">Advanced Topics</a></li>
-</ul>
-
----
-
-## 🤝 Contributing
-
-<p>We welcome contributions! Please see <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for guidelines.</p>
-
-<div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
-<strong>⚠️ Important:</strong> All contributions require a <a href="DCO.md">Developer Certificate of Origin (DCO)</a> sign-off.
-</div>
+ - <p>Contributing: We welcome PRs! Please check <a href="CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
 
 ---
 
@@ -280,9 +154,9 @@ if __name__ == "__main__":
 </p>
 
 <p style="margin-top: 15px;">
-  <a href="https://github.com/neurobrains/langchat">⭐ Star us on GitHub</a> • 
-  <a href="https://langchat.neurobrains.co/">📖 Read the Docs</a> • 
-  <a href="https://github.com/neurobrains/langchat/issues">🐛 Report Issues</a>
+  <a href="https://github.com/neurobrains/langchat">GitHub</a> • 
+  <a href="https://pypi.org/project/langchat/">PyPI</a> • 
+  <a href="https://langchat.neurobrains.co/">Documentation</a>
 </p>
 
 </div>

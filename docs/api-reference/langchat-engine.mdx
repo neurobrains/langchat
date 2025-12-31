@@ -1,24 +1,61 @@
 ---
 title: LangChatEngine
-description: LangChatEngine API reference - core orchestrator for all LangChat components
+description: Core engine API reference
 ---
 
 import { ParamField } from 'mintlify';
 
 ## Class: LangChatEngine
 
-Main engine for LangChat library. Handles initialization of adapters and chat processing.
+Core orchestrator for LangChat components.
 
 ### Constructor
 
 ```python
-LangChatEngine(config: Optional[LangChatConfig] = None)
+LangChatEngine(
+    llm,
+    vector_db,
+    db,
+    reranker=None,
+    prompt_template=None,
+    standalone_question_prompt=None,
+    verbose=False,
+    max_chat_history=20
+)
 ```
 
 **Parameters:**
 
-<ParamField path="config" type="LangChatConfig | None" default="None">
-  LangChat configuration. If None, uses default config.
+<ParamField path="llm" type="Any" required>
+  LLM provider instance
+</ParamField>
+
+<ParamField path="vector_db" type="Any" required>
+  Vector database provider
+</ParamField>
+
+<ParamField path="db" type="Any" required>
+  Database provider
+</ParamField>
+
+<ParamField path="reranker" type="Any" default="None">
+  Optional reranker provider
+</ParamField>
+
+<ParamField path="prompt_template" type="str | None" default="None">
+  Custom system prompt template
+</ParamField>
+
+<ParamField path="standalone_question_prompt" type="str | None" default="None">
+  Custom standalone question prompt
+</ParamField>
+
+<ParamField path="verbose" type="bool" default="False">
+  Enable verbose logging
+</ParamField>
+
+<ParamField path="max_chat_history" type="int" default="20">
+  Maximum chat history messages
 </ParamField>
 
 ### Methods
@@ -37,28 +74,6 @@ async def chat(
 ) -> dict
 ```
 
-**Parameters:**
-
-<ParamField path="query" type="str" required>
-  User query text
-</ParamField>
-
-<ParamField path="user_id" type="str" required>
-  User identifier
-</ParamField>
-
-<ParamField path="domain" type="str" default="default">
-  User domain
-</ParamField>
-
-<ParamField path="standalone_question" type="str | None" default="None">
-  Optional standalone question (if already generated)
-</ParamField>
-
-**Returns:**
-
-`dict` - Response dictionary with `response`, `user_id`, `timestamp`, `status`, `response_time`
-
 #### `get_session()`
 
 Get or create a user session.
@@ -71,32 +86,19 @@ def get_session(
 ) -> UserSession
 ```
 
-**Parameters:**
-
-<ParamField path="user_id" type="str" required>
-  User identifier
-</ParamField>
-
-<ParamField path="domain" type="str" default="default">
-  User domain
-</ParamField>
-
-**Returns:**
-
-`UserSession` - User session instance
-
 ### Properties
 
-- `config`: LangChatConfig instance
-- `llm`: OpenAILLMService instance
-- `vector_adapter`: PineconeVectorAdapter instance
-- `reranker_adapter`: FlashrankRerankAdapter instance
-- `supabase_adapter`: SupabaseAdapter instance
-- `id_manager`: IDManager instance
-- `sessions`: Dict[str, UserSession] - Active sessions
+- `llm` - LLM provider instance
+- `vector_adapter` - Vector database adapter
+- `reranker_adapter` - Reranker adapter
+- `history_store` - Database adapter
+- `sessions` - Active user sessions
 
-## Related Documentation
+## Next Steps
 
-- **[LangChat](/api-reference/langchat)** - Main API
-- **[Adapters](/adapters/overview)** - Adapter documentation
+- **[LangChat API](/api-reference/langchat)** - Main API
+- **[Adapters](/adapters/overview)** - Adapter docs
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

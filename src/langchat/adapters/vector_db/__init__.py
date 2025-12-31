@@ -1,7 +1,12 @@
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
-Vector database adapters.
+Vector Database Providers - Support for multiple vector databases.
 """
 
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+from langchat.adapters.vector_db.pinecone_provider import Pinecone
 
-__all__ = ["PineconeVectorAdapter"]
+__all__ = [
+    "Pinecone",
+]

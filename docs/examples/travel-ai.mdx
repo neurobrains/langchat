@@ -1,61 +1,53 @@
 ---
-title: Travel AI
-description: Complete example of a travel assistant chatbot built with LangChat
+title: Travel AI Example
+description: Complete travel assistant chatbot example
 ---
 
-## Travel Assistant Configuration
+import { Callout } from 'mintlify';
 
-```python
-from langchat import LangChat, LangChatConfig
+## Travel Assistant
 
-TRAVEL_SYSTEM_PROMPT = """You are a helpful travel assistant specializing in trip planning, recommendations, and travel information.
-
-Your expertise includes:
-- Destination recommendations based on budget and preferences
-- Flight and hotel booking guidance
-- Local attractions and activities
-- Travel tips and safety information
-- Cultural insights and local customs
-- Visa and travel document requirements
-
-Be friendly, concise, and helpful. Provide practical, actionable advice.
-
-Use the following context to answer questions:
-{context}
-
-Chat history: {chat_history}
-
-Question: {question}
-Answer:"""
-
-TRAVEL_STANDALONE_PROMPT = """Convert this travel-related question to a standalone search query.
-Make sure the query captures the intent for finding relevant travel information.
-
-Chat History: {chat_history}
-Question: {question}
-Standalone query:"""
-
-config = LangChatConfig(
-    openai_api_keys=["sk-..."],
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="travel-index",
-    supabase_url="https://...",
-    supabase_key="eyJ...",
-    system_prompt_template=TRAVEL_SYSTEM_PROMPT,
-    standalone_question_prompt=TRAVEL_STANDALONE_PROMPT,
-    server_port=8007
-)
-```
-
-## Travel Assistant Chat
+Complete example of a travel assistant chatbot:
 
 ```python
 import asyncio
 from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-async def travel_chat():
-    langchat = LangChat(config=config)
-    
+# Custom travel prompt
+TRAVEL_PROMPT = """You are a helpful travel assistant.
+
+Your expertise:
+- Destination recommendations
+- Flight and hotel booking
+- Local attractions
+- Travel tips and safety
+
+Be friendly, concise, and helpful.
+
+Context: {context}
+History: {chat_history}
+Question: {question}
+
+Answer:"""
+
+# Setup providers
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="travel-index")
+db = Supabase(url="https://...", key="...")
+
+# Create chatbot
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    prompt_template=TRAVEL_PROMPT
+)
+
+# Chat
+async def main():
     queries = [
         "What are the best travel destinations in Europe?",
         "What about budget-friendly options?",
@@ -63,35 +55,52 @@ async def travel_chat():
     ]
     
     for query in queries:
-        result = await langchat.chat(
+        result = await ai.chat(
             query=query,
             user_id="traveler123",
             domain="travel"
         )
-        print(f"User: {query}")
-        print(f"AI: {result['response']}\n")
+        print(f"Q: {query}")
+        print(f"A: {result['response']}\n")
 
-asyncio.run(travel_chat())
+asyncio.run(main())
 ```
 
 ## As API Server
 
 ```python
 from langchat.api.app import create_app
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 import uvicorn
 
+# Setup
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="travel-index")
+db = Supabase(url="https://...", key="...")
+
+# Create server
 app = create_app(
-    config=config,
-    auto_generate_interface=True,
-    auto_generate_docker=True
+    llm=llm,
+    vector_db=vector_db,
+    db=db
 )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8007)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
+
+<Callout type="info">
+Index travel documents first using `load_and_index_documents()` for best results.
+</Callout>
 
 ## Next Steps
 
-- **[Configuration](/guides/configuration)** - Learn about configuration
-- **[Prompts](/guides/prompts)** - Customize prompts
+- **[Custom Prompts](/examples/custom-prompts)** - More prompt examples
+- **[API Server](/examples/api-server)** - Server setup
+- **[Basic Usage](/examples/basic-usage)** - More examples
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

@@ -1,6 +1,5 @@
-"""
-Pytest configuration and fixtures.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 import sys
 from pathlib import Path

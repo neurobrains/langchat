@@ -1,7 +1,12 @@
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
-Reranker adapters for document ranking.
+Reranker Providers - Support for multiple reranking services.
 """
 
-from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
+from langchat.adapters.reranker.flashrank_provider import Flashrank
 
-__all__ = ["FlashrankRerankAdapter"]
+__all__ = [
+    "Flashrank",
+]

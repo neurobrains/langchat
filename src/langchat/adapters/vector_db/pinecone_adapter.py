@@ -1,6 +1,5 @@
-"""
-Pinecone vector database adapter.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 import os
 from typing import Optional
@@ -9,10 +8,11 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone.vectorstores import PineconeVectorStore
 from pinecone import Pinecone
 
-from langchat.logger import logger
+from langchat.adapters.base import VectorStoreProvider
+from langchat.adapters.logger import logger
 
 
-class PineconeVectorAdapter:
+class PineconeVectorAdapter(VectorStoreProvider):
     """
     Adapter for Pinecone vector database operations.
     """

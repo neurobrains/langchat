@@ -1,320 +1,78 @@
 # Contributing to LangChat
 
-Thank you for your interest in contributing to LangChat! We welcome contributions from the community.
+First off, thank you for considering contributing to LangChat! Whether you're fixing a bug, adding a feature, or improving documentation, your help makes this project better for everyone.
 
-> **Important**: All contributions require a [Developer Certificate of Origin (DCO)](DCO.md) sign-off. See [Sign-off Process](#sign-off-process) below for details.
 
-## How to Contribute
+## 1. Getting Started in 3 Steps
 
-### Reporting Bugs
-
-If you find a bug, please open an issue with:
-- A clear, descriptive title
-- Steps to reproduce the bug
-- Expected behavior
-- Actual behavior
-- Environment details (Python version, OS, etc.)
-- Any relevant error messages or logs
-
-### Suggesting Features
-
-We welcome feature suggestions! Please open an issue with:
-- A clear description of the feature
-- Use cases and examples
-- Why this feature would be useful
-
-### Code Contributions
-
-#### Setting Up Development Environment
-
-1. Fork the repository
-2. Clone your fork:
-   ```bash
-   git clone https://github.com/your-username/LangChat.git
-   cd LangChat
-   ```
-3. Install in development mode:
-   ```bash
-   pip install -e .
-   ```
-4. Install development dependencies:
-   ```bash
-   pip install pytest pytest-asyncio black flake8 mypy
-   ```
-
-#### Development Workflow
-
-1. Create a new branch for your changes:
-   ```bash
-   git checkout -b feature/your-feature-name
-   # or
-   git checkout -b fix/your-bug-fix
-   ```
-
-2. Make your changes following our coding standards:
-   - Follow PEP 8 style guide
-   - Add type hints where appropriate
-   - Write docstrings for functions and classes
-   - Keep functions focused and small
-
-3. Run tests:
-   ```bash
-   pytest
-   ```
-
-4. Run code formatting:
-   ```bash
-   black src/
-   ```
-
-5. Run linting:
-   ```bash
-   flake8 src/
-   ```
-
-6. Commit your changes with DCO sign-off:
-   ```bash
-   git add .
-   git commit -m "Description of your changes" -s
-   ```
-   
-   **Important**: All commits must be signed off using the `-s` or `--signoff` flag to certify that you have the right to submit the code under the project's license. See [Sign-off Process](#sign-off-process) below for more details.
-
-7. Push to your fork:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-8. Create a Pull Request on GitHub
-
-#### Coding Standards
-
-- **Python Style**: Follow PEP 8
-- **Type Hints**: Use type hints for function parameters and return types
-- **Docstrings**: Use Google-style docstrings
-- **Naming**: Use descriptive names, follow Python naming conventions
-- **Error Handling**: Handle errors gracefully with appropriate exceptions
-
-#### Code Structure
-
-The project follows a modular architecture:
-- `src/langchat/adapters/` - External service adapters
-- `src/langchat/core/` - Core business logic
-- `src/langchat/api/` - FastAPI routes and app
-- `src/langchat/utils/` - Utility functions
-
-When adding new features:
-- Keep modules focused and cohesive
-- Follow existing patterns
-- Add appropriate tests
-- Update documentation
-
-#### Writing Tests
-
-- Add tests for new features
-- Ensure existing tests pass
-- Aim for good test coverage
-- Use pytest and pytest-asyncio for async tests
-
-Example test:
-```python
-import pytest
-from langchat.config import LangChatConfig
-
-def test_config_creation():
-    config = LangChatConfig(
-        openai_api_keys=["test-key"],
-        pinecone_api_key="test-key",
-        pinecone_index_name="test-index",
-        supabase_url="test-url",
-        supabase_key="test-key"
-    )
-    assert config.openai_model == "gpt-4o-mini"
-```
-
-#### Documentation
-
-- Update README.md if adding new features
-- Add docstrings to new functions/classes
-- Update relevant documentation files
-- Add examples if applicable
-
-#### Pull Request Guidelines
-
-1. **Clear Title**: Summarize your changes in the title
-2. **Description**: Explain what and why you changed
-3. **Tests**: Ensure all tests pass
-4. **Documentation**: Update relevant docs
-5. **Breaking Changes**: Clearly mark any breaking changes
-
-Example PR description:
-```markdown
-## Description
-Adds support for custom reranker models.
-
-## Changes
-- Added `reranker_model` parameter to LangChatConfig
-- Updated FlashrankRerankAdapter to use custom models
-- Added tests for custom reranker
-
-## Testing
-- [x] All existing tests pass
-- [x] New tests added for custom reranker
-- [x] Tested with different reranker models
-
-## Documentation
-- [x] Updated README.md
-- [x] Updated config documentation
-```
-
-### Sign-off Process
-
-All contributions to LangChat must include a Developer Certificate of Origin (DCO) sign-off. This certifies that you have the right to submit the code under the project's license.
-
-#### What is DCO?
-
-The Developer Certificate of Origin (DCO) is a lightweight way to certify that you wrote or have the right to submit the code you're contributing. It's based on the Linux Foundation's DCO, which is used by many open-source projects.
-
-#### How to Sign Off Your Commits
-
-**Option 1: Sign off when committing**
-```bash
-git commit -s -m "Your commit message"
-```
-
-**Option 2: Use --signoff flag**
-```bash
-git commit --signoff -m "Your commit message"
-```
-
-**Option 3: Add sign-off to the last commit**
-If you forgot to sign off:
-```bash
-git commit --amend --signoff
-```
-
-**Option 4: Configure Git to auto-sign off**
-```bash
-git config --global commit.gpgsign false
-git config --global format.signOff true
-```
-
-#### What Gets Added
-
-When you sign off, Git automatically adds a "Signed-off-by" line to your commit message:
-
-```
-Your commit message
-
-Signed-off-by: Your Name <your.email@example.com>
-```
-
-#### Example
+### Setup Your Environment
 
 ```bash
-git commit -s -m "Add feature to support custom reranker models"
+# Fork & Clone
+git clone https://github.com/your-username/LangChat.git && cd LangChat
+
+# Install in development mode with dev dependencies
+pip install -e ".[dev]"
 ```
+---
 
-This creates a commit message like:
-```
-Add feature to support custom reranker models
+### 2. Development Workflow
 
-Signed-off-by: John Doe <john.doe@example.com>
-```
+Always create a new branch for your work:
+- Features: `feature/awesome-new-capability`
+- Fixes: `fix/resolved-issue-name`
 
-#### Why is DCO Required?
+### Before committing, ensure your code stays sharp
+- Format: `ruff check .`
+- Test: `pytest`
 
-- **Legal Protection**: Ensures you have the right to contribute the code
-- **License Compliance**: Certifies the contribution meets license requirements
-- **Project Integrity**: Maintains a clear chain of ownership
-- **Industry Standard**: Used by many major open-source projects (Linux Kernel, Kubernetes, etc.)
+---
 
-#### DCO Verification
+### 3. The "Golden Rule": DCO Sign-off
 
-Your Pull Request will be automatically checked for DCO sign-off via GitHub Actions. The check will show:
-- ✅ **Green checkmark** if all commits are signed off
-- ❌ **Red X** if any commits are missing sign-off
+To maintain project integrity, all commits must be signed off. It’s as simple as adding `-s` to your commit command.
 
-If your commits don't have sign-off, you'll need to add it before the PR can be merged.
-
-##### Automatic Sign-off Hook
-
-A git commit hook automatically appends DCO sign-off to your commit messages if you forget to add it.
-
-**To enable the hook:**
-
-Run the setup script:
-- **Linux/macOS/Git Bash**: `./scripts/setup-dco-hook.sh`
-- **Windows PowerShell**: `.\scripts\setup-dco-hook.ps1`
-
-Or manually copy the hook:
 ```bash
-cp scripts/prepare-commit-msg .git/hooks/prepare-commit-msg
-chmod +x .git/hooks/prepare-commit-msg
+git commit -s -m "Brief description of your amazing work"
 ```
+This adds `Signed-off-by: Your Name <email>` to your message, certifying your contribution.
 
-**Check if your commits are signed off:**
-```bash
-git log --grep="Signed-off-by:"
-```
+---
 
-**Check the status of DCO verification in your PR:**
-- Look at the PR checks section on GitHub
-- You'll see a "DCO Check" status that shows ✅ (passed) or ❌ (failed)
+# Project Architecture
 
-**Fix unsigned commits:**
-```bash
-# For the last commit
-git commit --amend --signoff --no-edit
+Keep your contributions modular by following our directory structure:
 
-# For multiple commits (interactive rebase)
-git rebase -i HEAD~n  # Replace n with number of commits
-# Change 'pick' to 'edit' for commits that need sign-off
-# Then for each commit:
-git commit --amend --signoff --no-edit
-git rebase --continue
-```
+|    Module          |                          Responsibility                         |
+|--------------------|-----------------------------------------------------------------|
+| `adapters/`        |  External service integrations (OpenAI, Pinecone, etc.)         |
+| `core/`            |  Logic for chat, memory, and orchestration.                     |
+| `api/`             |  FastAPI implementation and routes.                             |
+| `utils/`           |  Shared helpers and formatting.                                 |
 
-#### Troubleshooting
+---
 
-**Q: I forgot to sign off a commit, what do I do?**
-A: Use `git commit --amend --signoff --no-edit` for the last commit, or rebase to fix multiple commits.
+# ✅ Pull Request Checklist
+Before you hit "Create Pull Request," make sure:
+- [ ] Your code follows PEP 8 and includes type hints.
+- [ ] You’ve added/updated tests for your changes.
+- [ ] Every commit has the -s sign-off.
+- [ ] The documentation (README or docstrings) is updated.
 
-**Q: Can I sign off on behalf of someone else?**
-A: No, only the author of the code can sign off. If you're incorporating someone else's work, they must sign off first, or you must have explicit permission.
+---
 
-**Q: Do I need to sign off on every commit?**
-A: Yes, every commit in your PR must be signed off.
+# Have an Idea or Found a Bug?
 
-**Q: What if I'm contributing a small fix?**
-A: Even small fixes require sign-off. It's a quick process - just add `-s` to your commit command.
+- Bugs: Open an issue with a clear description and steps to reproduce.
+- Features: Start a discussion in Issues. We love bold ideas!
 
-#### More Information
+---
 
-- Read the full [DCO.md](DCO.md) document
-- Learn more at [developercertificate.org](https://developercertificate.org/)
+# Let's Build the Future of AI Together.
 
-### Review Process
+Your contributions help developers worldwide ship production-ready AI faster. We can't wait to see what you build!
 
-1. Maintainers will review your PR
-2. DCO sign-off will be verified on all commits
-3. We may request changes or provide feedback
-4. Once approved, your PR will be merged
-5. Thank you for contributing! 🎉
-
-## Questions?
-
-If you have questions about contributing:
-- Open an issue for discussion
-- Check existing issues and PRs
-- Review the codebase to understand patterns
-
-## Code of Conduct
-
-- Be respectful and inclusive
-- Welcome newcomers and help them learn
-- Focus on what is best for the community
-- Show empathy towards others
-
-Thank you for making LangChat better! 🚀
-
+<p style="margin-top: 15px;">
+  <a href="https://github.com/neurobrains/langchat/issues">Open an Issue</a> • 
+  <a href="https://langchat.neurobrains.co/">Documentation</a>
+</p>

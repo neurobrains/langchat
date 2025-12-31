@@ -1,8 +1,7 @@
-"""
-Tests for prompts module.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -48,59 +47,33 @@ class TestPromptsAsync:
         ]
         query = "Tell me more about it"
 
+        # Mock the LLM with an async ainvoke method
         mock_llm = MagicMock()
-        mock_llm.model = "gpt-4o-mini"
-        mock_llm.temperature = 1.0
-        mock_llm.current_key = "test-key"
+        mock_llm.ainvoke = AsyncMock(return_value="Tell me more about Python")
 
-        with patch("langchat.core.prompts.ChatOpenAI"), patch(
-            "langchat.core.prompts.LLMChain"
-        ) as mock_chain:
-            mock_chain_instance = MagicMock()
+        result = await generate_standalone_question(
+            query=query,
+            chat_history=chat_history,
+            llm=mock_llm,
+        )
 
-            # Mock the async ainvoke method properly
-            async def mock_ainvoke(*args, **kwargs):
-                return {"standalone_question": "Tell me more about Python"}
-
-            mock_chain_instance.ainvoke = mock_ainvoke
-            mock_chain.return_value = mock_chain_instance
-
-            result = await generate_standalone_question(
-                query=query,
-                chat_history=chat_history,
-                llm=mock_llm,
-            )
-
-            assert isinstance(result, str)
-            assert len(result) > 0
+        assert isinstance(result, str)
+        assert len(result) > 0
 
     async def test_generate_standalone_question_no_history(self):
         """Test standalone question generation with no history."""
         chat_history = []
         query = "What is Python?"
 
+        # Mock the LLM with an async ainvoke method
         mock_llm = MagicMock()
-        mock_llm.model = "gpt-4o-mini"
-        mock_llm.temperature = 1.0
-        mock_llm.current_key = "test-key"
+        mock_llm.ainvoke = AsyncMock(return_value=query)
 
-        with patch("langchat.core.prompts.ChatOpenAI"), patch(
-            "langchat.core.prompts.LLMChain"
-        ) as mock_chain:
-            mock_chain_instance = MagicMock()
+        result = await generate_standalone_question(
+            query=query,
+            chat_history=chat_history,
+            llm=mock_llm,
+        )
 
-            # Mock the async ainvoke method properly
-            async def mock_ainvoke(*args, **kwargs):
-                return {"standalone_question": query}
-
-            mock_chain_instance.ainvoke = mock_ainvoke
-            mock_chain.return_value = mock_chain_instance
-
-            result = await generate_standalone_question(
-                query=query,
-                chat_history=chat_history,
-                llm=mock_llm,
-            )
-
-            assert isinstance(result, str)
-            assert len(result) > 0
+        assert isinstance(result, str)
+        assert len(result) > 0

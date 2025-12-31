@@ -1,16 +1,14 @@
-"""
-FastAPI routes for LangChat API.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
-from langchat.api.app import get_config, get_engine
-from langchat.logger import logger
+from langchat.adapters.logger import logger
+from langchat.api.app import get_engine
 
 router = APIRouter()
 
@@ -18,35 +16,7 @@ router = APIRouter()
 @router.get("/")
 async def root():
     """Root endpoint - redirects to frontend"""
-    return RedirectResponse(url="/frontend")
-
-
-@router.get("/frontend")
-async def frontend():
-    """Serve the chat interface HTML"""
-    try:
-        # Try to read the generated chat interface
-        interface_path = Path("chat_interface.html")
-        if interface_path.exists():
-            html_content = interface_path.read_text(encoding="utf-8")
-            return HTMLResponse(content=html_content)
-        else:
-            # Generate interface on the fly if not exists
-            from langchat.utils.interface_generator import generate_chat_interface
-
-            config = get_config()
-            api_url = (
-                f"http://localhost:{config.server_port}" if config else "http://localhost:8000"
-            )
-            generate_chat_interface(output_path=str(interface_path), api_url=api_url)
-            html_content = interface_path.read_text(encoding="utf-8")
-            return HTMLResponse(content=html_content)
-    except Exception as e:
-        logger.error(f"Error serving frontend: {str(e)}")
-        return HTMLResponse(
-            content=f"<html><body><h1>Error loading interface</h1><p>{str(e)}</p></body></html>",
-            status_code=500,
-        )
+    return RedirectResponse(url="/frontend/")
 
 
 @router.get("/health")
@@ -97,10 +67,22 @@ async def chat(
             standalone_question=standalone_question,
         )
 
+        # Ensure result has the expected format
+        if not isinstance(result, dict):
+            result = {"response": str(result) if result else "No response received."}
+
+        # Ensure response field exists
+        if "response" not in result or not result.get("response"):
+            result["response"] = "No response received."
+
+        # Ensure status field exists
+        if "status" not in result:
+            result["status"] = "success"
+
         return JSONResponse(content=result)
 
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
+        logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         return JSONResponse(
             content={
                 "response": "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment.",

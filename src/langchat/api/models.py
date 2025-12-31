@@ -1,6 +1,5 @@
-"""
-Pydantic models for API requests and responses.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from typing import Optional
 

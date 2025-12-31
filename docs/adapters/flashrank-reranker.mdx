@@ -1,52 +1,101 @@
 ---
 title: Flashrank Reranker
-description: Document reranking for improved search results. The Flashrank Reranker Adapter provides document reranking using Flashrank models to improve retrieval quality.
+description: Improve search results with reranking
 ---
+
+import { Callout } from 'mintlify';
 
 ## Overview
 
-The `FlashrankRerankAdapter` implements reranking functionality that:
+The Flashrank reranker improves search result relevance by re-scoring retrieved documents.
 
-- **Improves Relevance**: Re-ranks retrieved documents for better relevance
-- **Fast Performance**: Uses optimized ONNX models for speed
-- **Easy Integration**: Seamlessly integrates with LangChain retrieval chains
-- **Automatic Model Download**: Downloads models automatically on first use
+## Features
+
+- ✅ **Better Relevance** - Improves search accuracy
+- ✅ **Fast Performance** - Optimized ONNX models
+- ✅ **Automatic Download** - Models downloaded automatically
+- ✅ **Easy Setup** - Simple configuration
+
+## Basic Usage
+
+```python
+from langchat.reranker import Flashrank
+
+reranker = Flashrank(
+    model_name="ms-marco-MiniLM-L-12-v2",
+    top_n=3  # Keep top 3 after reranking
+)
+```
 
 ## Configuration
 
-Configure through `LangChatConfig`:
-
 ```python
-from langchat.config import LangChatConfig
-
-config = LangChatConfig(
-    reranker_model="ms-marco-MiniLM-L-12-v2",
-    reranker_cache_dir="rerank_models",
-    reranker_top_n=3  # Top documents after reranking
+reranker = Flashrank(
+    model_name="ms-marco-MiniLM-L-12-v2",  # Model name
+    top_n=3,  # Number of documents to keep
+    cache_dir="rerank_models"  # Where to store models
 )
 ```
 
-## Usage
+<Callout type="info">
+Reranker models are automatically downloaded on first use (~50MB).
+</Callout>
 
-### Basic Usage
-
-The adapter is automatically initialized by `LangChatEngine`:
+## Using with LangChat
 
 ```python
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
+from langchat.reranker import Flashrank
 
-config = LangChatConfig(
-    reranker_model="ms-marco-MiniLM-L-12-v2",
-    reranker_top_n=3,
-    # ... other config
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
+reranker = Flashrank(top_n=3)
+
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    reranker=reranker
 )
-
-langchat = LangChat(config=config)
-# Adapter is automatically initialized
 ```
 
-## Related Documentation
+## How It Works
 
-- **[Vector Search Guide](/guides/vector-search)** - Vector search guide
+1. Vector search retrieves K documents
+2. Reranker re-scores documents for relevance
+3. Top N documents selected
+4. Used as context for LLM response
+
+## Best Practices
+
+### 1. Balance Retrieval and Reranking
+
+```python
+# Retrieve more, rerank to fewer
+retriever = vector_db.get_retriever(k=10)  # Retrieve 10
+reranker = Flashrank(top_n=3)  # Keep top 3
+```
+
+### 2. Use Appropriate Top N
+
+```python
+# Precise queries
+reranker = Flashrank(top_n=3)
+
+# Broad queries
+reranker = Flashrank(top_n=5)
+```
+
+## Next Steps
+
+- **[Vector Search Guide](/guides/vector-search)** - Learn about search
 - **[Configuration](/guides/configuration)** - Configuration options
+- **[Performance](/advanced/performance)** - Optimization tips
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

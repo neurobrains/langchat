@@ -167,6 +167,11 @@ Dockerfile
 .dockerignore
 requirements.txt
 
+# Vite UI (packaged under src/langchat/ui)
+src/langchat/ui/node_modules/
+src/langchat/ui/dist/
+src/langchat/ui/.vite/
+
 # Temporary files
 *.tmp
 *.temp

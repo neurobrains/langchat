@@ -1,13 +1,13 @@
 ---
 title: UserSession
-description: UserSession API reference. The UserSession class manages user conversation history and context.
+description: User session API reference
 ---
 
 import { ParamField } from 'mintlify';
 
 ## Class: UserSession
 
-Represents a user's conversation session within a specific domain.
+Manages user conversation history and context.
 
 ### Properties
 
@@ -37,14 +37,6 @@ chat_history: List[Tuple[str, str]]
 
 Format: `[(query1, response1), (query2, response2), ...]`
 
-#### `config`
-
-Session configuration.
-
-```python
-config: LangChatConfig
-```
-
 ### Methods
 
 #### `save_message()`
@@ -65,8 +57,11 @@ def save_message(self, query: str, response: str) -> None
   AI response
 </ParamField>
 
-## Related Documentation
+## Next Steps
 
 - **[Session Management](/guides/sessions)** - Session guide
-- **[LangChat](/api-reference/langchat)** - Main API
+- **[LangChat API](/api-reference/langchat)** - Main API
 
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

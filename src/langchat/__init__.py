@@ -1,21 +1,14 @@
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
+
 """
-LangChat - A conversational AI library with vector search capabilities.
+LangChat - A powerful library for RAG and chat systems.
 """
 
-__version__ = "0.0.3"
+from langchat.sdk import LangChat
 
-from langchat.config import LangChatConfig
-from langchat.core.engine import LangChatEngine
-from langchat.core.session import UserSession
-from langchat.exceptions import UnsupportedFileTypeError
-from langchat.main import LangChat
-from langchat.utils.document_indexer import DocumentIndexer
+__version__ = "1.0.1"
 
 __all__ = [
     "LangChat",
-    "LangChatEngine",
-    "UserSession",
-    "LangChatConfig",
-    "DocumentIndexer",
-    "UnsupportedFileTypeError",
 ]

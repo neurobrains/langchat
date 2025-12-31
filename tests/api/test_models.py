@@ -1,6 +1,5 @@
-"""
-Tests for API models module.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from langchat.api.models import QueryRequest
 

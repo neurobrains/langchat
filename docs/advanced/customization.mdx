@@ -1,51 +1,95 @@
 ---
 title: Customization
-description: Advanced customization guide for LangChat. Learn how to customize and extend LangChat for your specific needs.
+description: Customize and extend LangChat
 ---
 
-## Custom Adapters
-
-### Creating Custom LLM Adapter
-
-```python
-from langchat.adapters.services.openai_service import OpenAILLMService
-
-class CustomLLMAdapter(OpenAILLMService):
-    def invoke(self, messages, **kwargs):
-        # Custom logic here
-        return super().invoke(messages, **kwargs)
-```
-
-### Creating Custom Vector Adapter
-
-```python
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
-
-class CustomVectorAdapter(PineconeVectorAdapter):
-    def get_retriever(self, k=5):
-        # Custom retrieval logic
-        return super().get_retriever(k=k)
-```
+import { Callout } from 'mintlify';
 
 ## Custom Prompts
 
-See [Prompts Guide](/guides/prompts) for detailed prompt customization.
-
-## Advanced Configuration
-
-### Custom Session Management
+Control chatbot behavior:
 
 ```python
-from langchat.core.session import UserSession
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-class CustomSession(UserSession):
-    def save_message(self, query: str, response: str) -> None:
-        # Custom save logic
-        super().save_message(query, response)
+# Custom prompt
+custom_prompt = """You are a helpful assistant.
+Answer questions clearly.
+
+Context: {context}
+History: {chat_history}
+Question: {question}
+
+Answer:"""
+
+# Setup
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
+
+# Use custom prompt
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    prompt_template=custom_prompt
+)
 ```
 
-## Related Documentation
+## Custom Reranker
 
-- **[Configuration](/guides/configuration)** - Configuration options
-- **[Prompts](/guides/prompts)** - Custom prompts
+```python
+from langchat.reranker import Flashrank
 
+reranker = Flashrank(
+    model_name="ms-marco-MiniLM-L-12-v2",
+    top_n=5  # Custom top N
+)
+
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    reranker=reranker
+)
+```
+
+## Session Settings
+
+```python
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    max_chat_history=50  # Keep more history
+)
+```
+
+## Accessing Components
+
+Access internal components for advanced use:
+
+```python
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+
+# Access engine
+engine = ai.engine
+
+# Access providers
+llm_provider = engine.llm
+vector_adapter = engine.vector_adapter
+reranker = engine.reranker_adapter
+```
+
+## Next Steps
+
+- **[Prompts Guide](/guides/prompts)** - Prompt customization
+- **[Configuration](/guides/configuration)** - All options
+- **[Extending Adapters](/advanced/extending-adapters)** - Advanced extension
+
+---
+
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

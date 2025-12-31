@@ -1,6 +1,5 @@
-"""
-Tests for FlashrankRerankAdapter.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from unittest.mock import MagicMock, patch
 
@@ -17,6 +16,8 @@ class TestFlashrankRerankAdapter:
         """Test adapter initialization with default model."""
         mock_ranker_instance = MagicMock()
         mock_ranker.return_value = mock_ranker_instance
+        mock_rerank_instance = MagicMock()
+        mock_rerank.return_value = mock_rerank_instance
 
         adapter = FlashrankRerankAdapter()
 
@@ -30,6 +31,8 @@ class TestFlashrankRerankAdapter:
         """Test adapter initialization with custom model."""
         mock_ranker_instance = MagicMock()
         mock_ranker.return_value = mock_ranker_instance
+        mock_rerank_instance = MagicMock()
+        mock_rerank.return_value = mock_rerank_instance
 
         adapter = FlashrankRerankAdapter(
             model_name="custom-model",
@@ -48,6 +51,8 @@ class TestFlashrankRerankAdapter:
         """Test that adapter has create_compression_retriever method."""
         mock_ranker_instance = MagicMock()
         mock_ranker.return_value = mock_ranker_instance
+        mock_rerank_instance = MagicMock()
+        mock_rerank.return_value = mock_rerank_instance
 
         adapter = FlashrankRerankAdapter()
 

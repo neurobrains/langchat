@@ -1,231 +1,74 @@
 ---
 title: Installation
-description: Install and set up LangChat for your project. This guide covers all the ways to install and set up LangChat.
+description: Install LangChat in seconds
 ---
 
 import { Callout } from 'mintlify';
+import { CodeGroup } from 'mintlify';
 
 ## Quick Install
-
-The fastest way to get started:
 
 ```bash
 pip install langchat
 ```
 
 <Callout type="info">
-LangChat requires Python 3.8 or higher.
-</Callout>
-
-## Installation Methods
-
-### From PyPI (Recommended)
-
-For production use, specify a version:
-
-```bash
-pip install langchat==0.0.2
-```
-
-### From Source
-
-Clone the repository and install:
-
-```bash
-git clone https://github.com/neurobrains/langchat.git
-cd langchat
-pip install -e .
-```
-
-### Development Installation
-
-For development with all dependencies:
-
-```bash
-git clone https://github.com/neurobrains/langchat.git
-cd langchat
-pip install -e ".[dev]"
-```
-
-This includes:
-- `pytest` for testing
-- `pytest-asyncio` for async tests
-
-## System Requirements
-
-### Python Version
-
-- **Minimum**: Python 3.8
-- **Recommended**: Python 3.10+
-
-### Operating System
-
-LangChat works on:
-- ✅ Linux
-- ✅ macOS
-- ✅ Windows
-
-### Memory
-
-- **Minimum**: 2GB RAM
-- **Recommended**: 4GB+ RAM (for reranker models)
-
-<Callout type="warning">
-The Flashrank reranker downloads models (~50MB) on first use. Make sure you have sufficient disk space.
+Requires Python 3.8 or higher.
 </Callout>
 
 ## Verify Installation
 
-Test your installation:
+Test it works:
 
 ```python
 import langchat
-print(langchat.__version__)  # Should print: 0.0.2
-```
-
-Or check if components are importable:
-
-```python
-from langchat import LangChat, LangChatConfig, LangChatEngine
-print("✅ Installation successful!")
-```
-
-## Environment Setup
-
-### Required Environment Variables
-
-Create a `.env` file:
-
-```bash
-# OpenAI Configuration
-OPENAI_API_KEYS=sk-...  # Can be comma-separated for multiple keys
-OPENAI_MODEL=gpt-4o-mini
-OPENAI_TEMPERATURE=1.0
-OPENAI_EMBEDDING_MODEL=text-embedding-3-large
-
-# Pinecone Configuration
-PINECONE_API_KEY=pcsk-...
-PINECONE_INDEX_NAME=your-index-name
-
-# Supabase Configuration
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_KEY=eyJhbGc...
-
-# Optional: Server Configuration
-SERVER_PORT=8000
-```
-
-### Load Environment Variables
-
-Using `python-dotenv`:
-
-```bash
-pip install python-dotenv
-```
-
-```python
-from dotenv import load_dotenv
-load_dotenv()
-
-from langchat.config import LangChatConfig
-config = LangChatConfig.from_env()
-```
-
-## Docker Installation
-
-LangChat auto-generates a Dockerfile when running as an API server. You can also create your own:
-
-### Using Auto-Generated Dockerfile
-
-```python
-from langchat.api.app import create_app
-from langchat.config import LangChatConfig
-
-config = LangChatConfig.from_env()
-app = create_app(
-    config=config,
-    auto_generate_docker=True  # Creates Dockerfile automatically
-)
-```
-
-### Manual Dockerfile
-
-```dockerfile
-FROM python:3.10-slim
-
-WORKDIR /app
-
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application
-COPY . .
-
-# Expose port
-EXPOSE 8000
-
-# Run server
-CMD ["uvicorn", "langchat.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+print(langchat.__version__)  # Should print: 2.0.0
 ```
 
 ## Virtual Environment (Recommended)
 
 Always use a virtual environment:
 
-```bash
-# Create virtual environment
+<CodeGroup>
+```bash Linux/macOS
 python -m venv venv
-
-# Activate (Linux/macOS)
 source venv/bin/activate
-
-# Activate (Windows)
-venv\Scripts\activate
-
-# Install LangChat
 pip install langchat
 ```
 
-## Troubleshooting
+```bash Windows
+python -m venv venv
+venv\Scripts\activate
+pip install langchat
+```
+</CodeGroup>
 
-### Issue: pip install fails
+## System Requirements
 
-**Solutions**:
-- Upgrade pip: `pip install --upgrade pip`
-- Use Python 3.8+
-- Check your internet connection
+- **Python**: 3.8 or higher (3.10+ recommended)
+- **OS**: Windows, macOS, or Linux
+- **RAM**: 2GB minimum (4GB+ recommended)
 
-### Issue: Import errors
+<Callout type="warning">
+The reranker downloads models (~50MB) on first use. Make sure you have internet and disk space.
+</Callout>
 
-**Solutions**:
-- Verify Python version: `python --version`
-- Reinstall: `pip uninstall langchat && pip install langchat`
-- Check virtual environment is activated
+## What You Need
 
-### Issue: Reranker model download fails
+Before using LangChat, get these accounts:
 
-**Solutions**:
-- Check internet connection
-- Verify disk space
-- Check write permissions in project directory
-
-### Issue: Dependencies conflict
-
-**Solutions**:
-- Use a fresh virtual environment
-- Check version compatibility
-- Review `requirements.txt` for conflicts
+1. **OpenAI**: [platform.openai.com](https://platform.openai.com) - For AI models
+2. **Pinecone**: [pinecone.io](https://pinecone.io) - For search (create an index)
+3. **Supabase**: [supabase.com](https://supabase.com) - For storing chat history
 
 ## Next Steps
 
-Now that LangChat is installed:
+Once installed:
 
-1. **[Getting Started](/getting-started)** - Build your first chatbot
-2. **[Configuration](/guides/configuration)** - Configure LangChat
-3. **[Examples](/examples/basic-usage)** - See examples
+1. **[Quick Start](/quick-start)** - Build your first chatbot
+2. **[Examples](/examples/basic-usage)** - See code examples
+3. **[Configuration](/guides/configuration)** - Learn customization
 
 ---
 
-Ready to start building? Check out our [Getting Started Guide](/getting-started)!
-
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

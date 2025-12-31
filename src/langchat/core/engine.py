@@ -1,34 +1,23 @@
-"""
-LangChat Engine - Main entry point for using LangChat.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 import asyncio
 import threading
 import time
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
-import pyperclip
 from rich.console import Console
 from rich.panel import Panel
-from rich.syntax import Syntax
 
+from langchat.adapters.database.id_manager import IDManager
+from langchat.adapters.logger import logger
 from langchat.adapters.reranker.flashrank_adapter import FlashrankRerankAdapter
-from langchat.adapters.services.openai_service import OpenAILLMService
-from langchat.adapters.supabase.id_manager import IDManager
-from langchat.adapters.supabase.supabase_adapter import SupabaseAdapter
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
-from langchat.config import LangChatConfig
 from langchat.core.prompts import generate_standalone_question
 from langchat.core.session import UserSession
-from langchat.logger import logger
 
 # Global flag to track if running as API server
 _is_api_server_mode = False
-
-# Class-level flag to prevent duplicate SQL printing
-_sql_printed = False
 
 
 def set_api_server_mode(enabled: bool = True):
@@ -43,167 +32,72 @@ class LangChatEngine:
     Developers use this to create conversational AI applications.
     """
 
-    def __init__(self, config: Optional[LangChatConfig] = None):
+    def __init__(
+        self,
+        *,
+        llm=None,
+        vector_db=None,
+        db=None,
+        reranker=None,
+        prompt_template: Optional[str] = None,
+        standalone_question_prompt: Optional[str] = None,
+        verbose: Optional[bool] = False,
+        max_chat_history: int = 20,
+    ):
         """
         Initialize LangChat engine.
 
         Args:
-            config: LangChat configuration. If None, uses default config.
+            llm: LLM provider instance (required)
+            vector_db: Vector database adapter (required)
+            db: Database adapter for history storage (required)
+            reranker: Reranker adapter (optional, defaults to FlashrankRerankAdapter)
+            prompt_template: System prompt template (optional)
+            standalone_question_prompt: Standalone question prompt (optional)
+            verbose: Enable verbose logging (default: False)
+            max_chat_history: Maximum chat history to keep (default: 20)
         """
-        if config is None:
-            self.config = LangChatConfig.from_env()
-        else:
-            self.config = config
+        if llm is None:
+            raise ValueError("LLM provider is required")
+        if vector_db is None:
+            raise ValueError("Vector database adapter is required")
+        if db is None:
+            raise ValueError("Database adapter is required")
 
-        # Initialize adapters
-        self._initialize_adapters()
-
-        # Initialize database
-        self._initialize_database()
-
-        # Sessions storage
-        self.sessions: Dict[str, UserSession] = {}
-
-        logger.info("LangChat Engine initialized successfully")
-
-    def _initialize_adapters(self):
-        """Initialize all adapters."""
-        # Initialize Supabase adapter
-        if self.config.supabase_url and self.config.supabase_key:
-            self.supabase_adapter = SupabaseAdapter.from_config(
-                self.config.supabase_url, self.config.supabase_key
-            )
-        else:
-            raise ValueError("Supabase URL and key must be provided")
-
-        # Initialize ID manager
-        self.id_manager = IDManager(self.supabase_adapter.client, initial_value=0, retry_attempts=5)
-
-        # Initialize LLM service (OpenAI)
-        if not self.config.openai_api_keys:
-            raise ValueError("OpenAI API keys must be provided")
-        self.llm = OpenAILLMService(
-            model=self.config.openai_model,
-            temperature=self.config.openai_temperature,
-            api_keys=self.config.openai_api_keys,
-            max_retries_per_key=self.config.max_llm_retries,
+        self.llm = llm
+        self.vector_adapter = vector_db
+        self.history_store = db
+        self.reranker_adapter = reranker or FlashrankRerankAdapter(
+            model_name="ms-marco-MiniLM-L-12-v2",
+            cache_dir="rerank_models",
+            top_n=3,
         )
 
-        # Initialize Pinecone vector adapter
-        if not self.config.pinecone_api_key:
-            raise ValueError("Pinecone API key must be provided")
-        if not self.config.pinecone_index_name:
-            raise ValueError("Pinecone index name must be provided")
+        # Internal state
+        self.sessions: dict[str, UserSession] = {}
+        self.id_manager = IDManager(self.history_store.client)
 
-        # Get embedding API key (OpenAI)
-        embedding_api_key = self.config.openai_api_keys[0] if self.config.openai_api_keys else None
+        # Prompts / behavior
+        self.prompt_template = prompt_template or self._get_default_prompt_template()
+        self.standalone_question_prompt = standalone_question_prompt
+        self.verbose = verbose or False
 
-        self.vector_adapter = PineconeVectorAdapter(
-            api_key=self.config.pinecone_api_key,
-            index_name=self.config.pinecone_index_name,
-            embedding_model=self.config.openai_embedding_model,
-            embedding_api_key=embedding_api_key,
-        )
-        logger.info(f"Successfully connected to Pinecone index: {self.config.pinecone_index_name}")
+        # Session tuning
+        self.max_chat_history = max_chat_history
 
-        # Initialize Flashrank reranker
-        # Use config's reranker_cache_dir (relative to current working directory)
-        reranker_cache_dir = Path(self.config.reranker_cache_dir)
-        reranker_cache_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Reranker cache directory created/verified: {reranker_cache_dir}")
+    def _get_default_prompt_template(self) -> str:
+        """Get default prompt template."""
+        return """You are a helpful AI assistant. Answer questions clearly and accurately.
 
-        # Initialize ranker (this will download the model if not already present)
-        self.reranker_adapter = FlashrankRerankAdapter(
-            model_name=self.config.reranker_model,
-            cache_dir=reranker_cache_dir,
-            top_n=self.config.reranker_top_n,
-        )
-        logger.info(f"Reranker model '{self.config.reranker_model}' initialized")
+Use the following context to answer:
+{context}
 
-    def _initialize_database(self):
-        """Initialize database tables."""
+Previous conversation:
+{chat_history}
 
-        global _sql_printed
+User question: {question}
 
-        try:
-            # First, try to create tables if they don't exist
-            logger.info("Checking database tables...")
-            tables_exist = self.supabase_adapter.check_tables_exist()
-
-            if not tables_exist and not _sql_printed:
-                _sql_printed = True
-
-                # Provide SQL for manual execution (only print once)
-                console = Console()
-
-                sql_text = self.supabase_adapter.get_create_tables_sql().strip()
-
-                # Create formatted SQL code block
-                # Note: lexer is the second positional argument, not a keyword
-                sql_code = Syntax(
-                    sql_text,
-                    "sql",  # lexer as second positional argument
-                    theme="monokai",
-                    line_numbers=True,
-                )
-
-                # Create info panel
-                info_text = (
-                    "[bold yellow]⚠ Could not create tables automatically[/bold yellow]\n\n"
-                    "[bold]Please run the following SQL in your Supabase SQL Editor:[/bold]\n"
-                    "[dim]Go to: Supabase Dashboard > SQL Editor > New Query[/dim]\n\n"
-                    "[dim]After running the SQL, the tables will be created automatically.[/dim]\n"
-                    "[dim]Alternatively, use a service role key for automatic table creation.[/dim]\n\n"
-                    "[bold green]✓ RLS (Row Level Security) is included in the SQL[/bold green]"
-                )
-
-                # Print warning message
-                logger.warning("Table was not created automatically")
-
-                # Print formatted SQL in a beautiful panel
-                console.print()
-                console.print(
-                    Panel(
-                        info_text,
-                        title="[bold yellow]Database Setup Required[/bold yellow]",
-                        border_style="yellow",
-                    )
-                )
-                console.print()
-                console.print(
-                    Panel(
-                        sql_code,
-                        title="[bold cyan]SQL Schema with RLS[/bold cyan]",
-                        border_style="cyan",
-                    )
-                )
-                console.print()
-
-                # Copy SQL to clipboard (with error handling)
-                try:
-                    pyperclip.copy(sql_text)
-                    logger.info("SQL has been copied to clipboard")
-                except Exception as e:
-                    logger.debug(f"Could not copy to clipboard: {str(e)}")
-
-            elif tables_exist:
-                logger.info("Database tables already exist and are accessible")
-
-            # Always initialize ID Manager early to prevent initialization during save
-            # This ensures counters are set up before any inserts happen
-            if not self.id_manager.initialized:
-                self.id_manager.initialize()
-
-            logger.info("Database connection successful")
-
-        except Exception as e:
-            logger.error(f"Error initializing database: {str(e)}")
-            # Try to initialize ID manager anyway (with default values)
-            if not self.id_manager.initialized:
-                try:
-                    self.id_manager.initialize()
-                except Exception as init_error:
-                    logger.error(f"Error initializing ID Manager: {str(init_error)}")
+Your response:"""
 
     def get_session(self, user_id: str, domain: str = "default") -> UserSession:
         """
@@ -219,21 +113,15 @@ class LangChatEngine:
         session_key = f"{user_id}_{domain}"
 
         if session_key not in self.sessions:
-            # Get prompt template
-            prompt_template = (
-                self.config.system_prompt_template or self.config.get_default_prompt_template()
-            )
-
             self.sessions[session_key] = UserSession(
                 domain=domain,
                 user_id=user_id,
-                config=self.config,
                 llm=self.llm,
                 vector_adapter=self.vector_adapter,
                 reranker_adapter=self.reranker_adapter,
-                supabase_adapter=self.supabase_adapter,
+                history_store=self.history_store,
                 id_manager=self.id_manager,
-                prompt_template=prompt_template,
+                prompt_template=self.prompt_template,
             )
 
         return self.sessions[session_key]
@@ -269,9 +157,9 @@ class LangChatEngine:
                     standalone_question = await generate_standalone_question(
                         query=query,
                         chat_history=session.chat_history,
+                        custom_prompt=self.standalone_question_prompt,
+                        verbose_chains=self.verbose,
                         llm=self.llm,
-                        custom_prompt=self.config.standalone_question_prompt,
-                        verbose_chains=self.config.verbose_chains,
                     )
                     logger.info(f"Generated standalone question: {standalone_question}")
                 except Exception as e:
@@ -289,6 +177,17 @@ class LangChatEngine:
             response_text = result.get("output_text", "")
             if not response_text and "answer" in result:
                 response_text = result["answer"]
+
+            # Validate response
+            if not response_text or len(response_text.strip()) < 1:
+                logger.warning("Empty or invalid response received from LLM")
+                response_text = (
+                    "I apologize, but I didn't receive a valid response. Please try again."
+                )
+            elif len(response_text.strip()) < 3:
+                logger.warning(
+                    f"Response too short: '{response_text}'. This might indicate an issue with the LLM."
+                )
 
             # Print formatted response to console with better styling
             # Show panel unless running in API server mode
@@ -352,10 +251,10 @@ class LangChatEngine:
 
             # Update in-memory chat history
             session.chat_history.append((query, response_text))
-            if len(session.chat_history) > self.config.max_chat_history:
+            if len(session.chat_history) > self.max_chat_history:
                 # Modify list in place to preserve reference (don't reassign)
                 # This ensures CustomConversationChain still has a valid reference
-                excess = len(session.chat_history) - self.config.max_chat_history
+                excess = len(session.chat_history) - self.max_chat_history
                 del session.chat_history[:excess]
 
             # Calculate response time

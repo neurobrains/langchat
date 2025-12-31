@@ -1,179 +1,90 @@
 ---
 title: Session Management
-description: Understand how LangChat manages user sessions and chat history. LangChat automatically manages user sessions, chat history, and conversation context. This guide explains how sessions work.
+description: How LangChat manages user sessions and chat history
 ---
 
 import { Callout } from 'mintlify';
 
-## Understanding Sessions
+## What are Sessions?
 
-A session represents a user's conversation history and context within a specific domain. Sessions are:
+Sessions track each user's conversation history and context. They're:
 
-- **User-specific**: Each user has separate sessions
-- **Domain-specific**: Users can have different sessions for different domains
-- **Persistent**: Chat history is saved to the database
-- **In-memory**: Recent history is cached for fast access
+- **User-specific** - Each user has separate sessions
+- **Domain-specific** - Different domains = different sessions
+- **Automatic** - Created and managed automatically
+- **Persistent** - Saved to database
 
-## Session Creation
+## Automatic Session Management
 
-Sessions are automatically created when a user first chats:
+Sessions are created automatically:
 
 ```python
-from langchat import LangChat, LangChatConfig
+from langchat import LangChat
+from langchat.llm import OpenAI
+from langchat.vector_db import Pinecone
+from langchat.database import Supabase
 
-config = LangChatConfig.from_env()
-langchat = LangChat(config=config)
+llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+vector_db = Pinecone(api_key="...", index_name="...")
+db = Supabase(url="https://...", key="...")
 
-# First chat creates a session automatically
-result = await langchat.chat(
+ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+
+# First chat creates session automatically
+result = await ai.chat(
     query="Hello!",
     user_id="user123",
-    domain="education"
+    domain="default"
 )
+```
+
+## Conversation History
+
+LangChat remembers previous messages:
+
+```python
+# First message
+result1 = await ai.chat(
+    query="What universities offer computer science?",
+    user_id="user123"
+)
+
+# Second message (remembers context)
+result2 = await ai.chat(
+    query="What about in Europe?",
+    user_id="user123"
+)
+# AI knows "What about in Europe?" refers to CS programs
 ```
 
 ## Accessing Sessions
 
-You can access a session directly:
+Get session information:
 
 ```python
-# Get or create a session
-session = langchat.get_session(
-    user_id="user123",
-    domain="education"
-)
+# Get session
+session = ai.engine.get_session(user_id="user123", domain="default")
 
-# Access chat history
+# Access history
 print(session.chat_history)  # List of (query, response) tuples
-
-# Access domain
-print(session.domain)  # "education"
-
-# Access user_id
+print(session.domain)  # "default"
 print(session.user_id)  # "user123"
 ```
 
-## Chat History
-
-Chat history is automatically maintained:
-
-```python
-# First message
-result1 = await langchat.chat(
-    query="What universities offer computer science?",
-    user_id="user123",
-    domain="education"
-)
-
-# Second message (includes previous context)
-result2 = await langchat.chat(
-    query="What about in Europe?",
-    user_id="user123",
-    domain="education"
-)
-# The AI knows "What about in Europe?" refers to CS programs
-```
-
-### History Format
-
-Chat history is stored as a list of tuples:
-
-```python
-session = langchat.get_session("user123", "education")
-print(session.chat_history)
-# Output:
-# [
-#     ("What universities offer computer science?", "Here are some universities..."),
-#     ("What about in Europe?", "Here are European universities..."),
-#     ...
-# ]
-```
-
-### History Limits
-
-History is automatically limited:
-
-```python
-config = LangChatConfig(
-    # Maximum messages to keep in memory
-    max_chat_history=20,  # Default: 20
-    
-    # Conversation buffer window
-    memory_window=20  # Default: 20
-)
-```
-
-<Callout type="info">
-Only the most recent messages (up to `max_chat_history`) are kept in memory. Older messages are stored in the database but not loaded automatically.
-</Callout>
-
-## Session Configuration
-
-Configure session behavior in `LangChatConfig`:
-
-```python
-config = LangChatConfig(
-    # Maximum chat history messages in memory
-    max_chat_history=50,  # Keep last 50 messages
-    
-    # Conversation buffer window
-    memory_window=50  # Context window size
-)
-```
-
-### Increasing History
-
-For longer conversations:
-
-```python
-config = LangChatConfig(
-    max_chat_history=100,  # Keep last 100 messages
-    memory_window=100
-)
-```
-
-### Reducing Memory Usage
-
-For smaller applications:
-
-```python
-config = LangChatConfig(
-    max_chat_history=10,  # Keep last 10 messages
-    memory_window=10
-)
-```
-
-## Session Persistence
-
-Sessions are persisted to Supabase:
-
-- **Chat History**: Saved to `chat_history` table
-- **Messages**: Automatically saved after each chat
-- **Metadata**: User ID, domain, timestamps
-
-### Database Storage
-
-Chat history is stored with:
-- `user_id`: User identifier
-- `domain`: Session domain
-- `query`: User's question
-- `response`: AI's response
-- `timestamp`: When the message was created
-
 ## Multi-Domain Sessions
 
-Users can have separate sessions for different domains:
+Separate sessions for different domains:
 
 ```python
-# Education domain session
-result1 = await langchat.chat(
+# Education domain
+result1 = await ai.chat(
     query="What universities offer CS?",
     user_id="user123",
     domain="education"
 )
 
-# Travel domain session (separate history)
-result2 = await langchat.chat(
+# Travel domain (separate history)
+result2 = await ai.chat(
     query="What are good travel destinations?",
     user_id="user123",
     domain="travel"
@@ -181,34 +92,40 @@ result2 = await langchat.chat(
 ```
 
 <Callout type="info">
-Each domain maintains its own separate chat history. Messages in one domain don't affect another.
+Each domain maintains separate chat history. Messages in one domain don't affect another.
 </Callout>
 
-## Session Lifecycle
+## History Limits
 
-1. **Creation**: Session created on first chat
-2. **Update**: History updated after each chat
-3. **Persistence**: Messages saved to database
-4. **Retention**: History kept in memory (up to limit)
-5. **Cleanup**: Old messages removed from memory (but kept in DB)
+Control how much history to keep:
+
+```python
+ai = LangChat(
+    llm=llm,
+    vector_db=vector_db,
+    db=db,
+    max_chat_history=50  # Keep last 50 messages
+)
+```
+
+**Recommendations:**
+- **Short conversations**: `max_chat_history=10`
+- **Normal use**: `max_chat_history=20` (default)
+- **Long conversations**: `max_chat_history=50`
 
 ## Best Practices
 
 ### 1. Use Consistent User IDs
 
-Use stable user identifiers:
-
 ```python
 # ✅ Good: Stable user ID
 user_id = "user_12345"
 
-# ❌ Bad: Random or changing IDs
+# ❌ Bad: Random IDs
 user_id = str(uuid.uuid4())  # Creates new session each time
 ```
 
 ### 2. Choose Appropriate Domains
-
-Use domains to separate contexts:
 
 ```python
 # Separate contexts
@@ -217,97 +134,46 @@ domain = "travel"     # For travel queries
 domain = "support"    # For support queries
 ```
 
-### 3. Adjust History Limits
-
-Balance memory usage with context:
+### 3. Monitor History Size
 
 ```python
-# More history = better context, more memory
-config.max_chat_history = 100
-
-# Less history = less memory, less context
-config.max_chat_history = 10
-```
-
-### 4. Monitor Session Usage
-
-Check session sizes:
-
-```python
-session = langchat.get_session("user123", "education")
+session = ai.engine.get_session("user123", "default")
 print(f"History length: {len(session.chat_history)}")
-```
-
-## Advanced Usage
-
-### Manual Session Management
-
-You can manage sessions manually:
-
-```python
-# Get session
-session = langchat.get_session("user123", "education")
-
-# Chat history is automatically updated
-# You can access it directly
-for query, response in session.chat_history:
-    print(f"Q: {query}")
-    print(f"A: {response}\n")
-```
-
-### Clearing History
-
-To start fresh (clear memory, but DB persists):
-
-```python
-session = langchat.get_session("user123", "education")
-session.chat_history = []  # Clear in-memory history
-# Note: Database history persists
 ```
 
 ## Troubleshooting
 
-### Issue: History not persisting
+### History Not Persisting
 
-**Solution**: Check Supabase configuration:
+Check database configuration:
 
 ```python
-config = LangChatConfig(
-    supabase_url="https://...",  # Verify URL
-    supabase_key="eyJ..."  # Verify key
+db = Supabase(
+    url="https://...",  # Verify URL
+    key="..."  # Verify key
 )
 ```
 
-### Issue: Too much memory usage
+### Context Lost Between Messages
 
-**Solution**: Reduce history limits:
-
-```python
-config.max_chat_history = 10
-config.memory_window = 10
-```
-
-### Issue: Context lost between messages
-
-**Solution**: Ensure same user_id and domain:
+Ensure same user_id and domain:
 
 ```python
 # ✅ Same session
-await langchat.chat(query="Q1", user_id="user123", domain="education")
-await langchat.chat(query="Q2", user_id="user123", domain="education")
+await ai.chat(query="Q1", user_id="user123", domain="default")
+await ai.chat(query="Q2", user_id="user123", domain="default")
 
 # ❌ Different sessions
-await langchat.chat(query="Q1", user_id="user123", domain="education")
-await langchat.chat(query="Q2", user_id="user456", domain="education")  # Different user
+await ai.chat(query="Q1", user_id="user123", domain="default")
+await ai.chat(query="Q2", user_id="user456", domain="default")  # Different user
 ```
 
 ## Next Steps
 
-- **[Configuration Guide](/guides/configuration)** - Learn about configuration options
-- **[API Reference](/api-reference/user-session)** - Full session API
-- **[Vector Search](/guides/vector-search)** - Learn about vector search integration
+- **[Configuration](/guides/configuration)** - Learn about settings
+- **[Basic Usage](/examples/basic-usage)** - See examples
+- **[API Reference](/api-reference/user-session)** - Full API docs
 
 ---
 
-Questions? Check the [API Reference](/api-reference/user-session) for complete details!
-
+**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

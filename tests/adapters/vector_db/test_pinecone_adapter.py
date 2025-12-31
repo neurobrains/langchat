@@ -1,10 +1,9 @@
-"""
-Tests for PineconeVectorAdapter.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from unittest.mock import MagicMock, patch
 
-from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter
+from langchat.adapters.vector_db import Pinecone
 
 
 class TestPineconeVectorAdapter:
@@ -20,7 +19,7 @@ class TestPineconeVectorAdapter:
         mock_pinecone_instance.Index.return_value = mock_index
         mock_pinecone.return_value = mock_pinecone_instance
 
-        adapter = PineconeVectorAdapter(
+        adapter = Pinecone(
             api_key="test-key",
             index_name="test-index",
         )
@@ -41,7 +40,7 @@ class TestPineconeVectorAdapter:
         mock_pinecone_instance.Index.return_value = mock_index
         mock_pinecone.return_value = mock_pinecone_instance
 
-        adapter = PineconeVectorAdapter(
+        adapter = Pinecone(
             api_key="test-key",
             index_name="test-index",
             embedding_model="text-embedding-ada-002",
@@ -59,7 +58,7 @@ class TestPineconeVectorAdapter:
         mock_pinecone_instance.Index.return_value = mock_index
         mock_pinecone.return_value = mock_pinecone_instance
 
-        adapter = PineconeVectorAdapter(
+        adapter = Pinecone(
             api_key="test-key",
             index_name="test-index",
         )

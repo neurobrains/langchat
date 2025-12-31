@@ -1,15 +1,13 @@
-"""
-Prompt templates and question generation utilities.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 import warnings
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple
 
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-
-from langchat.adapters.services.openai_service import OpenAILLMService
+try:
+    from langchain_core.prompts import PromptTemplate
+except ImportError:
+    from langchain.prompts import PromptTemplate  # type: ignore
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -45,7 +43,7 @@ def create_standalone_question_prompt(
 async def generate_standalone_question(
     query: str,
     chat_history: List[Tuple[str, str]],
-    llm: OpenAILLMService,
+    llm,
     custom_prompt: Optional[str] = None,
     verbose_chains: bool = False,
 ) -> str:
@@ -56,6 +54,8 @@ async def generate_standalone_question(
         query: User query
         chat_history: List of (query, response) tuples
         llm: LLM provider instance
+        custom_prompt: Custom prompt template (optional)
+        verbose_chains: Verbose mode
 
     Returns:
         Standalone question string
@@ -84,32 +84,13 @@ async def generate_standalone_question(
     # Create prompt
     prompt = create_standalone_question_prompt(custom_prompt=custom_prompt)
 
-    # Use standalone LLM for question generation (can use a simpler/cheaper model)
-    # OpenAI service
-    if not hasattr(llm, "current_key") or not llm.current_key:
-        raise ValueError("No API key available for standalone question generation")
+    # Provider-agnostic invocation: call the configured LLM directly.
+    try:
+        from langchain_core.messages import HumanMessage
+    except ImportError:
+        from langchain.schema import HumanMessage  # type: ignore[no-redef]
 
-    standalone_llm = ChatOpenAI(
-        model=llm.model,
-        temperature=llm.temperature,
-        openai_api_key=llm.current_key,  # type: ignore[call-arg]
-        max_retries=1,
-    )
+    formatted_prompt = prompt.format(question=query, chat_history=formatted_chat_history)
+    result = await llm.ainvoke([HumanMessage(content=formatted_prompt)])
 
-    # Create chain with verbose based on config
-    chain = LLMChain(
-        llm=standalone_llm,
-        prompt=prompt,
-        output_key="standalone_question",
-        verbose=verbose_chains,
-    )
-
-    # Generate standalone question
-    result = await chain.ainvoke({"question": query, "chat_history": formatted_chat_history})
-
-    standalone_question = result.get("standalone_question", query)
-    return (
-        cast("str", standalone_question).strip()
-        if isinstance(standalone_question, str)
-        else query.strip()
-    )
+    return result.strip() if isinstance(result, str) else query.strip()

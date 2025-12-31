@@ -1,6 +1,5 @@
-"""
-Tests for API routes module.
-"""
+# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Licensed under the MIT License.
 
 from unittest.mock import MagicMock, patch
 

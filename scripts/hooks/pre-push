@@ -1,42 +1,62 @@
 #!/usr/bin/env python3
 """
-Pre-push hook to run MyPy type checking.
+Pre-push hook to run ty type checking.
 Works on Windows, Linux, and Mac.
 """
 
+import os
 import subprocess
 import sys
 
 def main():
     """Main hook function."""
     print("=" * 60)
-    print("Running MyPy type checking on total project...")
+    print("Running ty type checking on Langchat...")
     print("=" * 60)
+    
+    # Try to use venv Python if available, otherwise fall back to system Python
+    # Check if we're in a venv
+    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+        python_cmd = sys.executable
+    else:
+        # Try to find venv Python
+        venv_python = os.path.join(os.getcwd(), "venv", "Scripts", "python.exe")
+        if os.path.exists(venv_python):
+            python_cmd = venv_python
+        else:
+            # Fallback to system Python
+            python_cmd = "python"
     
     try:
         result = subprocess.run(
-            ["python", "-m", "mypy", "src/", "--config-file", "mypy.ini"],
+            [python_cmd, "-m", "ty", "check", "src/", "tests/"],
             check=True,
             capture_output=True,
-            text=True
+            text=True,
+            cwd=os.getcwd()
         )
         
         if result.stdout:
             print(result.stdout)
         
-        print("\n✅ MyPy type checking passed!")
+        print("\n[PASS] ty type checking passed!")
         print("=" * 60)
         sys.exit(0)
         
     except subprocess.CalledProcessError as e:
-        print("\n❌ MyPy found type errors. Please fix them before pushing.")
+        print("\n[FAIL] ty found type errors. Please fix them before pushing.")
         print("\nError details:")
-        print(e.stderr if e.stderr else e.stdout)
-        print("\nRun manually: python -m mypy src/ --config-file mypy.ini")
+        if e.stderr:
+            print(e.stderr)
+        if e.stdout:
+            print(e.stdout)
+        print(f"\nRun manually: {python_cmd} -m ty check src/ tests/")
         print("=" * 60)
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Unexpected error running MyPy: {e}")
+        print(f"\n[ERROR] Unexpected error running ty: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
