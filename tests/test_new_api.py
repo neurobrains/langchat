@@ -11,7 +11,7 @@ def test_version():
     import langchat
 
     assert hasattr(langchat, "__version__")
-    assert langchat.__version__ == "2.0.0"
+    assert langchat.__version__ == "1.0.1"
 
 
 if __name__ == "__main__":
