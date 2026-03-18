@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 
 from langchat.adapters.logger import logger
 from langchat.api.app import get_engine
@@ -94,3 +94,34 @@ async def chat(
             },
             status_code=500,
         )
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    query: str = Form(...),
+    userId: str = Form(...),
+    platform: str = Form(...),
+):
+    """
+    Streaming chat endpoint — returns tokens via Server-Sent Events.
+
+    Each SSE event has the form::
+
+        data: <token>\\n\\n
+
+    A final ``data: [DONE]\\n\\n`` event signals the end of the stream.
+    """
+    engine = get_engine()
+
+    async def event_generator():
+        try:
+            async for token in engine.chat_stream(query=query, user_id=userId, platform=platform):
+                # Escape newlines so each SSE data field stays on one line
+                yield f"data: {token.replace(chr(10), ' ')}\n\n"
+        except Exception as e:
+            logger.error(f"Error in chat_stream endpoint: {str(e)}", exc_info=True)
+            yield f"data: [ERROR] {str(e)}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

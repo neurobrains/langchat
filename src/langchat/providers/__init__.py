@@ -41,6 +41,7 @@ from langchat.adapters.llm.gemini_provider import Gemini as _GeminiBase
 from langchat.adapters.llm.mistral_provider import Mistral as _MistralBase
 from langchat.adapters.llm.ollama_provider import Ollama as _OllamaBase
 from langchat.adapters.llm.openai_provider import OpenAI as _OpenAIBase
+from langchat.adapters.vector_db.faiss_adapter import FAISSVectorAdapter as _FAISSBase
 from langchat.adapters.vector_db.pinecone_adapter import PineconeVectorAdapter as _PineconeBase
 
 # ---------------------------------------------------------------------------
@@ -373,6 +374,45 @@ class Pinecone(_PineconeBase):
         )
 
 
+class FAISS(_FAISSBase):
+    """FAISS local vector store — runs fully offline, no cloud API needed.
+
+    Uses ``OPENAI_API_KEY`` for embeddings (still requires an OpenAI key).
+
+    Args:
+        index_path: Directory to save/load the FAISS index (default: ``"faiss_index"``).
+        embedding_api_key: OpenAI key for embeddings — overrides ``OPENAI_API_KEY``.
+        embedding_model: Embedding model (default: ``"text-embedding-3-large"``).
+
+    Examples::
+
+        FAISS()                                   # saves to ./faiss_index
+        FAISS("my_local_index")
+        FAISS("my_local_index", embedding_model="text-embedding-3-small")
+    """
+
+    def __init__(
+        self,
+        index_path: str = "faiss_index",
+        *,
+        embedding_api_key: str | None = None,
+        embedding_model: str = "text-embedding-3-large",
+    ):
+        if not embedding_api_key:
+            embedding_api_key = os.getenv("OPENAI_API_KEY")
+            if not embedding_api_key:
+                raise ValueError(
+                    "OpenAI API key required for FAISS embeddings. "
+                    "Set the OPENAI_API_KEY environment variable or pass embedding_api_key='sk-...'."
+                )
+
+        super().__init__(
+            index_path=index_path,
+            embedding_model=embedding_model,
+            embedding_api_key=embedding_api_key,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Database providers
 # ---------------------------------------------------------------------------
@@ -427,6 +467,7 @@ __all__ = [
     "Ollama",
     "OpenAI",
     # Vector DB
+    "FAISS",
     "Pinecone",
     # Database
     "Supabase",

@@ -5,6 +5,10 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 from dotenv import load_dotenv
 
@@ -121,6 +125,30 @@ class LangChat:
             timestamp=raw.get("timestamp", ""),
             error=raw.get("error"),
         )
+
+    async def chat_stream(
+        self,
+        query: str,
+        user_id: str,
+        platform: str = "default",
+    ) -> AsyncGenerator[str, None]:
+        """Stream the assistant's reply token by token.
+
+        Args:
+            query: The user's message.
+            user_id: Identifier for the user.
+            platform: Logical namespace (default: ``"default"``).
+
+        Yields:
+            Text chunks as they are produced by the LLM.
+
+        Examples::
+
+            async for token in lc.chat_stream("Explain RAG", user_id="alice"):
+                print(token, end="", flush=True)
+        """
+        async for token in self.engine.chat_stream(query, user_id, platform):
+            yield token
 
     def chat_sync(
         self,

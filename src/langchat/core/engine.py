@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import asyncio
-import threading
 import time
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 from rich.console import Console
 from rich.panel import Panel
@@ -215,40 +218,11 @@ Your response:"""
             async def save_message_background():
                 """Background async task to save message"""
                 try:
-                    # Get event loop and run sync save_message in thread pool
-                    loop = asyncio.get_event_loop()
-                    await loop.run_in_executor(None, session.save_message, query, response_text)
+                    await asyncio.to_thread(session.save_message, query, response_text)
                 except Exception as e:
                     logger.error(f"Exception in save_message_background: {str(e)}", exc_info=True)
 
-            # Create task to run in background (fire and forget for performance)
-            try:
-                # Schedule the save task
-                # Store task reference to prevent garbage collection issues
-                # The task will complete in background
-                asyncio.create_task(save_message_background())
-            except RuntimeError:
-                # Fallback if no event loop is running (shouldn't happen in async context)
-                # Use thread as fallback
-                def save_in_thread():
-                    try:
-                        session.save_message(query, response_text)
-                    except Exception as e:
-                        logger.error(f"Exception in save_in_thread: {str(e)}", exc_info=True)
-
-                threading.Thread(
-                    target=save_in_thread, daemon=False, name="save-message-thread"
-                ).start()
-            except Exception as e:
-                logger.error(f"Error scheduling save_message task: {str(e)}", exc_info=True)
-                # Last resort: try direct save (will block but ensures save)
-                try:
-                    session.save_message(query, response_text)
-                except Exception as save_error:
-                    logger.error(
-                        f"Error in direct save_message: {str(save_error)}",
-                        exc_info=True,
-                    )
+            asyncio.create_task(save_message_background())
 
             # Update in-memory chat history
             session.chat_history.append((query, response_text))
@@ -261,10 +235,11 @@ Your response:"""
             # Calculate response time
             response_time = time.time() - start_time
 
-            # Save metrics in background (non-blocking - don't wait for it)
-            def save_metrics_background():
+            # Save metrics in background (non-blocking)
+            async def save_metrics_background():
                 try:
-                    self.id_manager.insert_with_retry(
+                    await asyncio.to_thread(
+                        self.id_manager.insert_with_retry,
                         "request_metrics",
                         {
                             "user_id": user_id,
@@ -277,7 +252,7 @@ Your response:"""
                 except Exception as e:
                     logger.error(f"Error saving metrics: {str(e)}")
 
-            threading.Thread(target=save_metrics_background, daemon=True).start()
+            asyncio.create_task(save_metrics_background())
 
             return {
                 "response": response_text,
@@ -294,9 +269,10 @@ Your response:"""
             response_time = time.time() - start_time
             error_message = str(e)
 
-            def save_error_metrics_background():
+            async def save_error_metrics_background():
                 try:
-                    self.id_manager.insert_with_retry(
+                    await asyncio.to_thread(
+                        self.id_manager.insert_with_retry,
                         "request_metrics",
                         {
                             "user_id": user_id,
@@ -309,7 +285,7 @@ Your response:"""
                 except Exception as save_error:
                     logger.error(f"Error saving error metrics: {str(save_error)}")
 
-            threading.Thread(target=save_error_metrics_background, daemon=True).start()
+            asyncio.create_task(save_error_metrics_background())
 
             return {
                 "response": "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment.",
@@ -318,3 +294,50 @@ Your response:"""
                 "status": "error",
                 "error": str(e),
             }
+
+    async def chat_stream(
+        self,
+        query: str,
+        user_id: str,
+        platform: str = "default",
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream LLM response tokens as they are generated.
+
+        Args:
+            query: User query
+            user_id: User ID
+            platform: Session namespace
+
+        Yields:
+            Text chunks produced by the LLM.
+        """
+        session = self.get_session(user_id, platform)
+
+        try:
+            from langchat.core.prompts import generate_standalone_question
+
+            standalone_question = await generate_standalone_question(
+                query=query,
+                chat_history=session.chat_history,
+                custom_prompt=self.standalone_question_prompt,
+                verbose_chains=self.verbose,
+                llm=self.llm,
+            )
+        except Exception:
+            standalone_question = query
+
+        full_response = ""
+        async for token in session.conversation.astream(
+            {"query": query, "standalone_question": standalone_question}
+        ):
+            full_response += token
+            yield token
+
+        # Persist history after streaming completes
+        session.chat_history.append((query, full_response))
+        if len(session.chat_history) > self.max_chat_history:
+            excess = len(session.chat_history) - self.max_chat_history
+            del session.chat_history[:excess]
+
+        asyncio.create_task(asyncio.to_thread(session.save_message, query, full_response))

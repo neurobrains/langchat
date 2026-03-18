@@ -3,9 +3,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import warnings
 from datetime import datetime, timezone
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 # Fix langchain imports - handle different versions
 from langchain.memory import ConversationBufferWindowMemory
@@ -306,13 +310,13 @@ class CustomConversationChain:
             )
             console.print()
 
-        # Get relevant documents using the newer invoke method
+        # Get relevant documents — wrapped in to_thread to avoid blocking the event loop
         try:
-            # Try using the newer invoke method first
-            docs = self.retrieval_qa.retriever.invoke(standalone_question)
+            docs = await asyncio.to_thread(self.retrieval_qa.retriever.invoke, standalone_question)
         except AttributeError:
-            # Fallback to deprecated method if invoke doesn't exist
-            docs = self.retrieval_qa.retriever.get_relevant_documents(standalone_question)
+            docs = await asyncio.to_thread(
+                self.retrieval_qa.retriever.get_relevant_documents, standalone_question
+            )
 
         # Combine documents into context
         context = "\n\n".join([doc.page_content for doc in docs])
@@ -386,3 +390,57 @@ class CustomConversationChain:
             "answer": response_text,
             "source_documents": docs,
         }
+
+    async def astream(self, inputs: dict) -> AsyncGenerator[str, None]:
+        """
+        Stream the LLM response token by token.
+
+        Args:
+            inputs: Dictionary with 'query' and optionally 'standalone_question'
+
+        Yields:
+            Text chunks as they are produced by the LLM.
+        """
+        query = inputs.get("query", "")
+        standalone_question = inputs.get("standalone_question", query)
+
+        chat_history_to_use = self.session_chat_history if self.session_chat_history else []
+        if chat_history_to_use:
+            formatted_chat_history = "\n".join(
+                [f"Human: {q}\nAssistant: {a}" for q, a in chat_history_to_use]
+            )
+        else:
+            memory_vars = self.memory.load_memory_variables({})
+            formatted_chat_history = str(memory_vars.get("chat_history", ""))
+
+        try:
+            docs = await asyncio.to_thread(self.retrieval_qa.retriever.invoke, standalone_question)
+        except AttributeError:
+            docs = await asyncio.to_thread(
+                self.retrieval_qa.retriever.get_relevant_documents, standalone_question
+            )
+
+        context = "\n\n".join([doc.page_content for doc in docs])
+
+        prompt = PromptTemplate(
+            template=self.retrieval_qa.prompt_template,
+            input_variables=["context", "question", "chat_history"],
+        )
+        formatted_prompt = prompt.format(
+            context=context, question=query, chat_history=formatted_chat_history
+        )
+
+        try:
+            from langchain_core.messages import HumanMessage
+        except ImportError:
+            from langchain.schema import HumanMessage
+
+        messages = [HumanMessage(content=formatted_prompt)]
+        full_response = ""
+        async for chunk in self.retrieval_qa.llm.astream(messages):
+            token = chunk.content if hasattr(chunk, "content") else str(chunk)
+            if token:
+                full_response += token
+                yield token
+
+        self.memory.save_context({"input": query}, {"answer": full_response})

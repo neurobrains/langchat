@@ -5,8 +5,10 @@
 Vector Database Providers - Support for multiple vector databases.
 """
 
+from langchat.adapters.vector_db.faiss_adapter import FAISSVectorAdapter
 from langchat.adapters.vector_db.pinecone_provider import Pinecone
 
 __all__ = [
+    "FAISSVectorAdapter",
     "Pinecone",
 ]

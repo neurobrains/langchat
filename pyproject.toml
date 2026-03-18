@@ -49,6 +49,7 @@ dependencies = [
     "docsuite>=0.1.0",
     "pyperclip>=1.11.0",
     "rich>=13.0.0",
+    "faiss-cpu>=1.7.0",
 ]
 
 [project.urls]
