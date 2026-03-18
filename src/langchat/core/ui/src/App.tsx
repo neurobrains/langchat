@@ -11,15 +11,14 @@ function newSessionId() {
 }
 
 function formatTime(ts: number) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function initialGreeting(): ChatMessage {
   return {
     id: nowId(),
     role: "assistant",
-    text: "Hi — I’m LangChat. Ask me anything.",
+    text: "Hi — I'm LangChat. Ask me anything.",
     ts: Date.now(),
   };
 }
@@ -36,10 +35,8 @@ function loadSessions(): { sessions: ChatSession[]; activeId: string | null } {
       .filter((s) => s && typeof s === "object")
       .map((s) => {
         const session = s as ChatSession;
-        // Restore full text for messages that have fullText but incomplete text
         if (Array.isArray(session.messages)) {
           session.messages = session.messages.map((m) => {
-            // If message has fullText but text is incomplete, restore full text
             if (m.fullText && m.text !== m.fullText) {
               return { ...m, text: m.fullText, isTyping: false };
             }
@@ -62,48 +59,40 @@ function saveSessions(sessions: ChatSession[], activeId: string) {
 }
 
 function buildSessionKey(baseUserId: string, sessionId: string) {
-  // Backend session key is `${userId}_${platform}`. We keep platform constant and encode
-  // conversation id into userId so each conversation becomes a separate backend session.
   return `${baseUserId}:${sessionId}`;
 }
 
 function summarizeTitle(messages: ChatMessage[]) {
-  // Find first user message (not AI response)
   const firstUser = messages.find((m) => m.role === "user" && m.text.trim().length > 0);
   const t = firstUser?.text.trim() ?? "New conversation";
   return t.length > 34 ? `${t.slice(0, 34)}…` : t;
 }
 
 function previewText(messages: ChatMessage[]) {
-  // Show first user message as preview, not AI response
   const firstUser = messages.find((m) => m.role === "user" && m.text.trim().length > 0);
   if (!firstUser) return "";
   const t = firstUser.text.replace(/\s+/g, " ").trim();
   return t.length > 44 ? `${t.slice(0, 44)}…` : t;
 }
 
+function userInitials(userId: string) {
+  return userId.slice(0, 2).toUpperCase();
+}
+
+// ── Icons ─────────────────────────────────────────────────────────────────
+
 function IconPlus(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 
 function IconCopy(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path
-        d="M8 8h10v12H8V8Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path d="M8 8h10v12H8V8Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       <path
         d="M6 16H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"
         stroke="currentColor"
@@ -116,19 +105,9 @@ function IconCopy(props: React.SVGProps<SVGSVGElement>) {
 
 function IconTrash(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path
-        d="M4 7h16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M10 11v7M14 11v7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path d="M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M10 11v7M14 11v7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path
         d="M6 7l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14"
         stroke="currentColor"
@@ -155,15 +134,79 @@ function IconMore(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+function IconSend(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M22 2L11 13"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M22 2L15 22L11 13L2 9L22 2Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconBot(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 2v4M8 2v2M16 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="9" cy="16" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="16" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+
 function ThinkingDots() {
   return (
     <span className="thinking" aria-label="Thinking">
-      <span className="thinkingDot" />
-      <span className="thinkingDot" />
-      <span className="thinkingDot" />
+      <span className="thinking-dot" />
+      <span className="thinking-dot" />
+      <span className="thinking-dot" />
     </span>
   );
 }
+
+// ── Welcome screen ────────────────────────────────────────────────────────
+
+const HINT_PROMPTS = [
+  "What can you help me with?",
+  "Summarize recent documents",
+  "Explain how RAG works",
+  "What data do you have access to?",
+];
+
+function WelcomeScreen({ onHint }: { onHint: (text: string) => void }) {
+  return (
+    <div className="welcome">
+      <div className="welcome-icon">
+        <IconBot />
+      </div>
+      <div className="welcome-title">How can I help you today?</div>
+      <div className="welcome-sub">
+        I'm powered by retrieval-augmented generation. Ask me anything about your data.
+      </div>
+      <div className="welcome-hints">
+        {HINT_PROMPTS.map((p) => (
+          <button key={p} className="welcome-hint" onClick={() => onHint(p)}>
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────
 
 export function App() {
   const [text, setText] = useState<string>("");
@@ -209,68 +252,69 @@ export function App() {
   });
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const typingControllerRef = useRef<{ sessionId: string; messageId: string; timer: number } | null>(
-    null
-  );
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const typingControllerRef = useRef<{
+    sessionId: string;
+    messageId: string;
+    timer: number;
+  } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Scroll to bottom when session changes
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    // Always scroll to bottom when active session changes
     requestAnimationFrame(() => {
       el.scrollTop = el.scrollHeight;
     });
   }, [activeId]);
 
-  // Auto-scroll when new message is added or typing updates
+  // Auto-scroll on message changes
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const active = sessions.find((s) => s.id === activeId);
-    if (!active) return;
-    
-    // Scroll to bottom when messages change (new message or typing update)
-    const scrollToBottom = () => {
-      if (el) {
-        el.scrollTop = el.scrollHeight;
-      }
-    };
-    
-    // Use requestAnimationFrame for smooth scrolling
     requestAnimationFrame(() => {
-      scrollToBottom();
-      // Also scroll after a short delay to catch typewriter updates
-      setTimeout(scrollToBottom, 50);
+      el.scrollTop = el.scrollHeight;
+      setTimeout(() => {
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 50);
     });
-  }, [sessions.find((s) => s.id === activeId)?.messages.length, sessions.find((s) => s.id === activeId)?.messages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    sessions.find((s) => s.id === activeId)?.messages.length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    sessions.find((s) => s.id === activeId)?.messages,
+  ]);
 
+  // Toast auto-dismiss
   useEffect(() => {
     if (!toast) return;
     const t = window.setTimeout(() => setToast(null), 1100);
     return () => window.clearTimeout(t);
   }, [toast]);
 
-  // Close session menu when clicking outside
+  // Close session menu on outside click
   useEffect(() => {
     if (!sessionMenuOpen) return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
+    const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.sessionMenu') && !target.closest('.sessionActions')) {
+      if (!target.closest(".session-menu") && !target.closest(".session-menu-wrap")) {
         setSessionMenuOpen(null);
       }
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [sessionMenuOpen]);
 
+  // Typewriter effect
   useEffect(() => {
     const active = sessions.find((s) => s.id === activeId);
     if (!active) return;
 
-    const typingMsg = active.messages.find((m) => m.role === "assistant" && m.isTyping && m.fullText);
+    const typingMsg = active.messages.find(
+      (m) => m.role === "assistant" && m.isTyping && m.fullText,
+    );
     if (!typingMsg) {
       if (typingControllerRef.current) {
         window.clearInterval(typingControllerRef.current.timer);
@@ -279,7 +323,6 @@ export function App() {
       return;
     }
 
-    // Only start a new typewriter loop if we haven't already started one for this msg.
     if (
       typingControllerRef.current &&
       typingControllerRef.current.sessionId === active.id &&
@@ -295,15 +338,18 @@ export function App() {
 
     const full = typingMsg.fullText ?? typingMsg.text;
     if (!full || full.length === 0) {
-      // If no fullText, mark as done immediately
       setSessionState((st) => {
         const nextSessions = st.sessions.map((s) => {
           if (s.id !== active.id) return s;
-          const nextMessages = s.messages.map((m) => {
-            if (m.id !== typingMsg.id) return m;
-            return { ...m, text: m.text || "", isTyping: false, fullText: m.text || "" };
-          });
-          return { ...s, messages: nextMessages, updatedAt: Date.now() };
+          return {
+            ...s,
+            messages: s.messages.map((m) =>
+              m.id !== typingMsg.id
+                ? m
+                : { ...m, text: m.text || "", isTyping: false, fullText: m.text || "" },
+            ),
+            updatedAt: Date.now(),
+          };
         });
         saveSessions(nextSessions, st.activeId);
         return { ...st, sessions: nextSessions };
@@ -311,69 +357,40 @@ export function App() {
       return;
     }
 
-    // Start from current text length if already partially typed, otherwise start from 0
-    let idx = typingMsg.text?.length || 0;
-    // Ensure we don't start beyond the full text length
-    idx = Math.min(idx, full.length);
-    
-    // Calculate step size - type faster for shorter messages
+    let idx = Math.min(typingMsg.text?.length || 0, full.length);
     const step = Math.max(1, Math.ceil(full.length / 100));
-    // Adaptive interval delay - faster for shorter messages (10-30ms range)
     const intervalDelay = Math.max(10, Math.min(30, 500 / Math.max(1, full.length / 5)));
 
     const timer = window.setInterval(() => {
       idx = Math.min(full.length, idx + step);
-      
+
       setSessionState((st) => {
         const nextSessions = st.sessions.map((s) => {
           if (s.id !== active.id) return s;
-          const nextMessages = s.messages.map((m) => {
-            if (m.id !== typingMsg.id) return m;
-            const nextText = full.slice(0, idx);
-            const done = idx >= full.length;
-            
-            if (done) {
-              // Complete - ensure full text is set
-              return { 
-                ...m, 
-                text: full, 
-                isTyping: false, 
-                fullText: full 
-              };
-            } else {
-              // Still typing - keep isTyping true
-              return { 
-                ...m, 
-                text: nextText, 
-                fullText: full,
-                isTyping: true 
-              };
-            }
-          });
-          return { ...s, messages: nextMessages, updatedAt: Date.now() };
+          return {
+            ...s,
+            messages: s.messages.map((m) => {
+              if (m.id !== typingMsg.id) return m;
+              const done = idx >= full.length;
+              return done
+                ? { ...m, text: full, isTyping: false, fullText: full }
+                : { ...m, text: full.slice(0, idx), fullText: full, isTyping: true };
+            }),
+            updatedAt: Date.now(),
+          };
         });
         saveSessions(nextSessions, st.activeId);
         return { ...st, sessions: nextSessions };
       });
 
-      // Auto-scroll during typing
       requestAnimationFrame(() => {
         const el = scrollerRef.current;
-        if (el) {
-          el.scrollTop = el.scrollHeight;
-        }
+        if (el) el.scrollTop = el.scrollHeight;
       });
 
       if (idx >= full.length) {
         window.clearInterval(timer);
         typingControllerRef.current = null;
-        // Final scroll to bottom when typing completes
-        requestAnimationFrame(() => {
-          const el = scrollerRef.current;
-          if (el) {
-            el.scrollTop = el.scrollHeight;
-          }
-        });
       }
     }, intervalDelay);
 
@@ -387,21 +404,29 @@ export function App() {
     };
   }, [sessions, activeId]);
 
-  const activeSession = useMemo(() => sessions.find((s) => s.id === activeId) ?? sessions[0], [
-    sessions,
-    activeId,
-  ]);
+  const activeSession = useMemo(
+    () => sessions.find((s) => s.id === activeId) ?? sessions[0],
+    [sessions, activeId],
+  );
+
+  // Show welcome screen if only the greeting message is present (no user messages yet)
+  const showWelcome = useMemo(() => {
+    const msgs = activeSession?.messages ?? [];
+    return msgs.length === 1 && msgs[0].role === "assistant";
+  }, [activeSession]);
 
   const canSend = useMemo(() => !busy && text.trim().length > 0, [busy, text]);
 
-  async function onSend() {
-    const query = text.trim();
-    // Prevent sending if query is too short or busy
-    if (!query || query.length < 1 || busy) return;
+  async function onSend(overrideText?: string) {
+    const query = (overrideText ?? text).trim();
+    if (!query || busy) return;
 
     setError(null);
     setBusy(true);
     setText("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
     const sessionId = activeSession?.id ?? activeId;
     const userMsg: ChatMessage = { id: nowId(), role: "user", text: query, ts: Date.now() };
@@ -418,102 +443,62 @@ export function App() {
       const nextSessions = st.sessions.map((s) => {
         if (s.id !== sessionId) return s;
         const nextMessages = [...s.messages, userMsg, pending];
-        const nextTitle = s.title === "New conversation" ? summarizeTitle(nextMessages) : s.title;
+        const nextTitle =
+          s.title === "New conversation" ? summarizeTitle(nextMessages) : s.title;
         return { ...s, title: nextTitle, messages: nextMessages, updatedAt: Date.now() };
       });
       saveSessions(nextSessions, st.activeId);
       return { ...st, sessions: nextSessions };
     });
-    
-    // Immediately scroll to bottom when user sends message
+
     requestAnimationFrame(() => {
       const el = scrollerRef.current;
-      if (el) {
-        el.scrollTop = el.scrollHeight;
-      }
+      if (el) el.scrollTop = el.scrollHeight;
     });
 
     try {
       const sessionKey = buildSessionKey(baseUserId, sessionId);
       const res = await sendChat({ query, sessionKey });
-      
-      // Ensure we have a valid response - don't trim here, preserve full response
       const fullResponse = res?.response || res?.error || "No response received.";
-      
-      // Check if there was an error
+
       if (res.status === "error") {
         setError(res.error ?? "Server returned an error.");
-        // Still show the error message in the chat
-        setSessionState((st) => {
-          const nextSessions = st.sessions.map((s) => {
-            if (s.id !== sessionId) return s;
-            const nextMessages = s.messages.map((m) => {
-              if (m.id !== pendingId) return m;
-              return {
-                ...m,
-                pending: false,
-                isTyping: true,
-                fullText: fullResponse, // Store full response
-                text: "", // Start with empty text for typewriter effect
-                ts: Date.now(),
-              };
-            });
-            return { ...s, messages: nextMessages, updatedAt: Date.now() };
-          });
-          saveSessions(nextSessions, st.activeId);
-          return { ...st, sessions: nextSessions };
-        });
-      } else {
-        // Success - update message with response
-        setSessionState((st) => {
-          const nextSessions = st.sessions.map((s) => {
-            if (s.id !== sessionId) return s;
-            const nextMessages = s.messages.map((m) => {
-              if (m.id !== pendingId) return m;
-              return {
-                ...m,
-                pending: false,
-                isTyping: true,
-                fullText: fullResponse, // Store full response
-                text: "", // Start with empty text for typewriter effect
-                ts: Date.now(),
-              };
-            });
-            return { ...s, messages: nextMessages, updatedAt: Date.now() };
-          });
-          saveSessions(nextSessions, st.activeId);
-          return { ...st, sessions: nextSessions };
-        });
       }
-      
-      // Auto-scroll to bottom after response is received
-      requestAnimationFrame(() => {
-        const el = scrollerRef.current;
-        if (el) {
-          el.scrollTop = el.scrollHeight;
-        }
-        // Also scroll after a delay to ensure it happens
-        setTimeout(() => {
-          if (el) {
-            el.scrollTop = el.scrollHeight;
-          }
-        }, 100);
+
+      setSessionState((st) => {
+        const nextSessions = st.sessions.map((s) => {
+          if (s.id !== sessionId) return s;
+          return {
+            ...s,
+            messages: s.messages.map((m) =>
+              m.id !== pendingId
+                ? m
+                : { ...m, pending: false, isTyping: true, fullText: fullResponse, text: "", ts: Date.now() },
+            ),
+            updatedAt: Date.now(),
+          };
+        });
+        saveSessions(nextSessions, st.activeId);
+        return { ...st, sessions: nextSessions };
       });
     } catch (e) {
       setSessionState((st) => {
         const nextSessions = st.sessions.map((s) => {
           if (s.id !== sessionId) return s;
-          const nextMessages = s.messages.map((m) =>
-            m.id === pendingId
-              ? {
-                  ...m,
-                  pending: false,
-                  text: "Unable to reach the server. Is FastAPI running?",
-                  ts: Date.now(),
-                }
-              : m
-          );
-          return { ...s, messages: nextMessages, updatedAt: Date.now() };
+          return {
+            ...s,
+            messages: s.messages.map((m) =>
+              m.id !== pendingId
+                ? m
+                : {
+                    ...m,
+                    pending: false,
+                    text: "Unable to reach the server. Is FastAPI running?",
+                    ts: Date.now(),
+                  },
+            ),
+            updatedAt: Date.now(),
+          };
         });
         saveSessions(nextSessions, st.activeId);
         return { ...st, sessions: nextSessions };
@@ -526,7 +511,7 @@ export function App() {
 
   function autoGrow(el: HTMLTextAreaElement) {
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }
 
   function onNewConversation() {
@@ -539,9 +524,9 @@ export function App() {
       messages: [initialGreeting()],
     };
     setSessionState((st) => {
-      const nextSessions = [s, ...st.sessions];
-      saveSessions(nextSessions, id);
-      return { sessions: nextSessions, activeId: id };
+      const next = [s, ...st.sessions];
+      saveSessions(next, id);
+      return { sessions: next, activeId: id };
     });
     setMobileSidebarOpen(false);
     setError(null);
@@ -558,24 +543,19 @@ export function App() {
 
   function onDeleteSession(id: string) {
     setSessionState((st) => {
-      const nextSessions = st.sessions.filter((s) => s.id !== id);
-      const nextActive =
-        st.activeId === id ? (nextSessions[0]?.id ?? newSessionId()) : st.activeId;
-
-      // If we deleted the last session, create a new one automatically.
-      let finalSessions = nextSessions;
-      if (!finalSessions.length) {
-        finalSessions = [
-          {
-            id: nextActive,
-            title: "New conversation",
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            messages: [initialGreeting()],
-          },
-        ];
-      }
-
+      const next = st.sessions.filter((s) => s.id !== id);
+      const nextActive = st.activeId === id ? (next[0]?.id ?? newSessionId()) : st.activeId;
+      const finalSessions = next.length
+        ? next
+        : [
+            {
+              id: nextActive,
+              title: "New conversation",
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+              messages: [initialGreeting()],
+            },
+          ];
       saveSessions(finalSessions, nextActive);
       return { sessions: finalSessions, activeId: nextActive };
     });
@@ -588,46 +568,56 @@ export function App() {
       await navigator.clipboard.writeText(value);
       setToast("Copied");
     } catch {
-      // Best effort: no extra colors / modals
       setToast("Copy failed");
     }
   }
 
+  const activeMessages = activeSession?.messages ?? [];
+
   return (
     <div className="app">
-      <div className={`sidebar ${mobileSidebarOpen ? "open" : ""}`}>
-        <div className="sidebarTop">
+      {/* ── Sidebar ─────────────────────────────────────────────────── */}
+      <div className={`sidebar${mobileSidebarOpen ? " open" : ""}`}>
+        <div className="sidebar-top">
+          {/* Brand */}
           <div className="brand">
-            <img src="/frontend/logo-sidebar.png" alt="LangChat" className="brandLogo" onError={(e) => {
-              // Fallback if logo fails to load - try alternative path
-              const target = e.target as HTMLImageElement;
-              if (target.src.includes('/frontend/')) {
-                target.src = '/logo-sidebar.png';
-              } else {
-                target.style.display = 'none';
-              }
-            }} />
+            <div className="brand-icon">
+              <IconBot />
+            </div>
+            <div className="brand-text">
+              <span className="brand-name">LangChat</span>
+              <span className="brand-tagline">Powered by RAG</span>
+            </div>
           </div>
 
-          <button className="btnPrimary" onClick={onNewConversation}>
+          {/* New conversation */}
+          <button className="btn-new-chat" onClick={onNewConversation}>
             <IconPlus />
             New conversation
           </button>
         </div>
 
-        <div className="sessionList" role="list" aria-label="Conversations">
+        {/* Session list */}
+        <div className="session-list" role="list" aria-label="Conversations">
+          {sessions.length > 0 && (
+            <div className="session-list-label">Recent</div>
+          )}
           {sessions.map((s) => {
-            const active = s.id === activeId;
+            const isActive = s.id === activeId;
             const menuOpen = sessionMenuOpen === s.id;
             return (
-              <div key={s.id} className={`sessionItem ${active ? "active" : ""}`} role="listitem">
-                <button className="sessionMain" onClick={() => onSelectSession(s.id)}>
-                  <div className="sessionTitle">{s.title || "Conversation"}</div>
-                  <div className="sessionPreview">{previewText(s.messages)}</div>
+              <div
+                key={s.id}
+                className={`session-item${isActive ? " active" : ""}`}
+                role="listitem"
+              >
+                <button className="session-btn" onClick={() => onSelectSession(s.id)}>
+                  <div className="session-title">{s.title || "Conversation"}</div>
+                  <div className="session-meta">{previewText(s.messages)}</div>
                 </button>
-                <div className="sessionActions">
+                <div className="session-menu-wrap">
                   <button
-                    className="iconBtn"
+                    className="session-opts-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSessionMenuOpen(menuOpen ? null : s.id);
@@ -639,21 +629,21 @@ export function App() {
                   </button>
                   {menuOpen && (
                     <>
-                      <div 
-                        className="sessionMenuBackdrop"
+                      <div
+                        className="session-menu-backdrop"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSessionMenuOpen(null);
                         }}
                       />
-                      <div className="sessionMenu">
-                        <div className="sessionMenuHeader">Session Details</div>
-                        <div className="sessionMenuInfo">
-                          <div className="sessionMenuLabel">Session ID:</div>
-                          <div className="sessionMenuValue">{s.id}</div>
+                      <div className="session-menu">
+                        <div className="session-menu-header">Session Details</div>
+                        <div className="session-menu-id">
+                          <div className="session-menu-id-label">Session ID</div>
+                          <div className="session-menu-id-value">{s.id}</div>
                         </div>
                         <button
-                          className="sessionMenuDelete"
+                          className="session-menu-delete"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSessionMenuOpen(null);
@@ -661,7 +651,7 @@ export function App() {
                           }}
                         >
                           <IconTrash />
-                          Delete Conversation
+                          Delete conversation
                         </button>
                       </div>
                     </>
@@ -671,63 +661,108 @@ export function App() {
             );
           })}
         </div>
+
+        {/* Sidebar footer — status dot */}
+        <div className="sidebar-footer">
+          <div className="sidebar-status">
+            <span className="status-dot" />
+            LangChat is ready
+          </div>
+        </div>
       </div>
 
+      {/* ── Main area ─────────────────────────────────────────────────── */}
       <div className="main">
-        <button className="iconBtn mobileOnly mobileMenuBtn" onClick={() => setMobileSidebarOpen((v) => !v)}>
-          <span className="hamburger" aria-hidden="true" />
-          <span className="srOnly">Toggle conversations</span>
-        </button>
+        {/* Mobile topbar */}
+        <div className="topbar mobile-only">
+          <button
+            className="icon-btn"
+            onClick={() => setMobileSidebarOpen((v) => !v)}
+            aria-label="Toggle conversations"
+          >
+            <span
+              className={`hamburger${mobileSidebarOpen ? " is-open" : ""}`}
+              aria-hidden="true"
+            >
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+          <div className="topbar-title">
+            <div className="topbar-title-main">
+              {activeSession?.title || "LangChat"}
+            </div>
+          </div>
+        </div>
 
-        <div className="content">
+        {/* Messages / Welcome */}
+        {showWelcome ? (
+          <WelcomeScreen
+            onHint={(hint) => {
+              setText(hint);
+              textareaRef.current?.focus();
+            }}
+          />
+        ) : (
           <div className="messages" ref={scrollerRef} aria-label="Messages">
-            {(activeSession?.messages ?? []).map((m) => (
-              <div key={m.id} className={`bubble ${m.role}`}>
-                <div className="bubbleBody">
+            {activeMessages.map((m) => (
+              <div key={m.id} className={`msg-row ${m.role}`}>
+                {/* Avatar */}
+                <div className="msg-avatar" aria-hidden="true">
+                  {m.role === "assistant" ? <IconBot /> : userInitials(baseUserId)}
+                </div>
+
+                {/* Body */}
+                <div className="msg-body">
                   {m.pending ? (
-                    <div className="pendingRow">
-                      <span className="pendingText">Thinking</span>
+                    <div className="bubble-pending">
+                      <span>Thinking</span>
                       <ThinkingDots />
                     </div>
                   ) : (
-                    m.text
+                    <div className="bubble">{m.text}</div>
                   )}
-                </div>
 
-                <div className="bubbleMeta">
-                  <span className="metaTime">{formatTime(m.ts)}</span>
-                  {m.role === "assistant" && !m.pending && m.text.trim().length > 0 ? (
-                    <button
-                      className="metaAction"
-                      onClick={() => void copyToClipboard(m.text)}
-                      aria-label="Copy response"
-                      title="Copy"
-                    >
-                      <IconCopy />
-                      Copy
-                    </button>
-                  ) : null}
+                  {!m.pending && (
+                    <div className="msg-meta">
+                      <span className="meta-time">{formatTime(m.ts)}</span>
+                      {m.role === "assistant" && m.text.trim().length > 0 && (
+                        <button
+                          className="meta-copy"
+                          onClick={() => void copyToClipboard(m.text)}
+                          aria-label="Copy response"
+                          title="Copy"
+                        >
+                          <IconCopy />
+                          Copy
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+        )}
 
-          {error ? <div className="notice">{error}</div> : null}
-        </div>
+        {/* Error notice */}
+        {error && <div className="notice">{error}</div>}
 
-        <div className="composerWrap">
+        {/* Composer */}
+        <div className="composer-wrap">
           <form
             className="composer"
             onSubmit={(e) => {
               e.preventDefault();
-              if (canSend) {
-                void onSend();
-              }
+              if (canSend) void onSend();
             }}
           >
             <textarea
+              ref={textareaRef}
+              className="composer-textarea"
               value={text}
-              placeholder="Write a message… (Enter to send, Shift+Enter for newline)"
+              placeholder="Message LangChat… (Enter to send)"
               onChange={(e) => {
                 setText(e.target.value);
                 autoGrow(e.target);
@@ -735,38 +770,36 @@ export function App() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (canSend) {
-                    void onSend();
-                  }
+                  if (canSend) void onSend();
                 }
               }}
               disabled={busy}
               rows={1}
             />
-            <button type="submit" className="btnPrimary" disabled={!canSend}>
-              {busy ? "Sending…" : "Send"}
+            <button
+              type="submit"
+              className="btn-send"
+              disabled={!canSend}
+              aria-label="Send message"
+            >
+              <IconSend />
             </button>
           </form>
+          <div className="composer-hint">Shift+Enter for new line</div>
         </div>
       </div>
 
-      <div 
-        className={`backdrop ${mobileSidebarOpen || sessionMenuOpen ? "show" : ""}`} 
+      {/* ── Backdrop (mobile) ─────────────────────────────────────────── */}
+      <div
+        className={`backdrop${mobileSidebarOpen || !!sessionMenuOpen ? " show" : ""}`}
         onClick={() => {
           setMobileSidebarOpen(false);
           setSessionMenuOpen(null);
         }}
-        onMouseDown={(e) => {
-          // Close menu when clicking outside
-          if (sessionMenuOpen) {
-            setSessionMenuOpen(null);
-          }
-        }}
       />
-      {toast ? <div className="toast">{toast}</div> : null}
+
+      {/* ── Toast ─────────────────────────────────────────────────────── */}
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
-
-
-
