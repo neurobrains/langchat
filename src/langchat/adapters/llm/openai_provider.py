@@ -4,7 +4,7 @@
 """OpenAI LLM Provider."""
 
 from itertools import cycle
-from typing import List, Optional
+from typing import Optional
 
 from langchain_openai import ChatOpenAI
 
@@ -21,7 +21,7 @@ class OpenAI:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        api_keys: Optional[List[str]] = None,
+        api_keys: Optional[list[str]] = None,
         model: str = "gpt-4o-mini",
         temperature: float = 1.0,
         max_retries_per_key: int = 2,
@@ -73,7 +73,7 @@ class OpenAI:
         return ChatOpenAI(
             model_name=self._model,
             temperature=self._temperature,
-            openai_api_key=self._current_key,  # type: ignore[call-arg]
+            openai_api_key=self._current_key,
             max_retries=1,
         )
 

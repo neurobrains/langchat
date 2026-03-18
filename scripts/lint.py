@@ -5,23 +5,23 @@ import sys
 from functools import partial
 
 try:
-    from utils import Package, die, for_each_package  # type: ignore[import-untyped]
+    from utils import Package, die, for_each_package
 except ImportError:
     # Fallback: Define minimal stubs if utils module is not available
     print("Warning: utils module not found. Lint script may not work correctly.", file=sys.stderr)
-    
+
     class Package:
         def __init__(self, name: str, path: str):
             self.name = name
             self.path = path
-        
-        def run_cmd(self, cmd: str):
+
+        def run_cmd(self, _cmd: str):
             return (0, "")
-    
+
     def die(msg: str):
         print(msg, file=sys.stderr)
         sys.exit(1)
-    
+
     def for_each_package(func):
         # No-op if no packages are defined
         pass

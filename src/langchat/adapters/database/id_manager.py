@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from langchat.adapters.logger import logger
 
@@ -24,7 +24,7 @@ class IDManager:
         self.supabase_client = supabase_client
         self.initial_value = initial_value
         self.retry_attempts = retry_attempts
-        self.table_counters: Dict[str, int] = {}
+        self.table_counters: dict[str, int] = {}
         self.initialized = False
         self._initializing = False  # Flag to prevent concurrent initialization
 
@@ -133,7 +133,7 @@ class IDManager:
         self.table_counters[table_name] += 1
         return current_id
 
-    def insert_with_retry(self, table_name: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def insert_with_retry(self, table_name: str, data: dict[str, Any]) -> Optional[dict[str, Any]]:
         """
         Insert data into the specified table with automatic ID generation and retry on conflicts.
 
@@ -161,7 +161,7 @@ class IDManager:
                 response = self.supabase_client.table(table_name).insert(insert_data).execute()
 
                 # If successful, return the response
-                return response.data  # type: ignore[no-any-return]
+                return response.data
 
             except Exception as e:
                 attempts += 1

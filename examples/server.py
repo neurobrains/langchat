@@ -2,45 +2,49 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+"""
+FastAPI server example — production REST API.
+
+Exposes a /chat endpoint that any frontend or mobile app can call.
+All providers read credentials from environment variables automatically.
+
+Setup
+-----
+    OPENAI_API_KEY=sk-...
+    PINECONE_API_KEY=pc-...
+    PINECONE_INDEX_NAME=my-index
+    SUPABASE_URL=https://yourproject.supabase.co
+    SUPABASE_KEY=your-service-role-key
+    PORT=8000           (optional, default 8000)
+
+Run
+---
+    python examples/server.py
+
+    # or with uv:
+    uv run examples/server.py
+
+Endpoints
+---------
+    POST /chat      { "query": "...", "userId": "...", "domain": "..." }
+    GET  /health    returns service status
+    GET  /frontend  serves the built-in chat UI
+"""
+
 import os
-from dotenv import load_dotenv
 
-from langchat.adapters.llm import OpenAI
-from langchat.adapters.vector_db import Pinecone
-from langchat.adapters.database import Supabase
+import uvicorn
+
 from langchat.api.app import create_app
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-load_dotenv()
-
-def main():
-    llm = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        temperature=float(os.getenv("OPENAI_TEMPERATURE", "1.0"))
-    )
-    
-    vector_db = Pinecone(
-        api_key=os.getenv("PINECONE_API_KEY"),
-        index_name=os.getenv("PINECONE_INDEX_NAME"),
-        embedding_model="text-embedding-3-large",
-        embedding_api_key=os.getenv("OPENAI_API_KEY")
-    )
-    
-    db = Supabase.from_config(
-        supabase_url=os.getenv("SUPABASE_URL"),
-        supabase_key=os.getenv("SUPABASE_KEY")
-    )
-    
-    app = create_app(
-        llm=llm,
-        vector_db=vector_db,
-        db=db,
-        port=int(os.getenv("PORT", "8000"))
-    )
-    
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))
+app = create_app(
+    llm=OpenAI(os.getenv("OPENAI_MODEL", "gpt-4o-mini")),
+    vector_db=Pinecone(os.getenv("PINECONE_INDEX_NAME", "my-index")),
+    db=Supabase(),
+)
 
 if __name__ == "__main__":
-    main()
-
+    port = int(os.getenv("PORT", "8000"))
+    print(f"Starting LangChat server on http://0.0.0.0:{port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -1,16 +1,17 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "poetry-core>=1.0.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "langchat"
 version = "1.0.1"
-description = "A powerful library for Ship production-grade AI chatbots in minutes"
+description = "A powerful library for shipping production-grade AI chatbots in minutes"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
-    {name = "Sifat Hasan, NeuroBrain"}
+    {name = "Sifat Hasan", email = "sihabhossan633@gmail.com"},
+    {name = "IMRANEMU",    email = "alimransujon1@gmail.com"},
 ]
 keywords = ["rag", "llm", "ai", "langchain", "chatbot", "vector-search", "retrieval-augmented-generation"]
 classifiers = [
@@ -19,10 +20,10 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
@@ -34,37 +35,71 @@ dependencies = [
     "python-multipart>=0.0.20",
     "pytz>=2022.7",
     "requests>=2.32.3",
+    "python-dotenv>=1.0.0",
     "langchain==0.3.27",
     "langchain-core>=0.3.72,<1.0.0",
     "langchain-pinecone>=0.1.0,<0.3.0",
     "langchain-community>=0.3.0,<0.4.0",
     "langchain-openai>=0.2.0,<0.3.0",
-    "openai",
+    "openai>=1.0.0",
     "tiktoken>=0.9.0",
-    "pinecone-client",
+    "pinecone-client>=3.0.0",
     "flashrank>=0.2.10",
     "supabase>=2.15.2",
     "docsuite>=0.1.0",
     "pyperclip>=1.11.0",
+    "rich>=13.0.0",
 ]
+
+[project.urls]
+Homepage      = "https://langchat.neurobrains.co"
+Repository    = "https://github.com/neurobrains/langchat"
+Documentation = "https://langchat.neurobrains.co"
+"Bug Tracker" = "https://github.com/neurobrains/langchat/issues"
+Changelog     = "https://github.com/neurobrains/langchat/blob/main/CHANGELOG.md"
+
+# ---------------------------------------------------------------------------
+# Optional / dev dependencies
+# ---------------------------------------------------------------------------
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
     "ty>=0.0.1",
-    "ruff>=0.1.0",
 ]
+
+# ---------------------------------------------------------------------------
+# uv — fast Python package manager
+# ---------------------------------------------------------------------------
+
+[tool.uv]
+# (add index overrides or VCS sources here if needed)
+
+# ---------------------------------------------------------------------------
+# setuptools
+# ---------------------------------------------------------------------------
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths    = ["tests"]
+addopts      = "-v --tb=short"
+
+# ---------------------------------------------------------------------------
+# ruff — linter + formatter
+# ---------------------------------------------------------------------------
+
 [tool.ruff]
-# Ruff configuration for linting and formatting
-line-length = 100
-target-version = "py38"
+line-length    = 100
+target-version = "py39"
 exclude = [
     ".git",
     "__pycache__",
@@ -91,26 +126,27 @@ select = [
     "PTH", # flake8-use-pathlib
 ]
 ignore = [
-    "E501",  # line too long (handled by formatter)
-    "B008",  # do not perform function calls in argument defaults
-    "ARG001", # unused function argument (for compatibility)
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function calls in argument defaults
+    "ARG001", # unused function argument (common in hooks/callbacks)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
-    "ARG",  # Allow unused arguments in tests
-    "FBT",  # Allow boolean positional values in tests
-    "SIM117",  # Allow nested with statements in tests (pytest.raises)
+    "ARG",    # unused arguments are fine in test helpers
+    "FBT",    # boolean positional values in tests
+    "SIM117", # nested with-statements in pytest.raises blocks
 ]
 
 [tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
+quote-style              = "double"
+indent-style             = "space"
 skip-magic-trailing-comma = false
-line-ending = "auto"
+line-ending              = "auto"
+
+# ---------------------------------------------------------------------------
+# ty — type checker
+# ---------------------------------------------------------------------------
 
 [tool.ty.rules]
-# Ty type checker configuration
-# Ignore unresolved imports for third-party packages that are installed at runtime
-# These packages are available when the code runs but ty can't resolve them statically
 unresolved-import = "ignore"

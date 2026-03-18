@@ -2,58 +2,94 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+"""
+Custom prompt example — internal HR knowledge base.
+
+An HR bot that answers employee questions using the company handbook.
+Uses a custom system prompt to enforce tone and citation rules.
+
+Setup
+-----
+    OPENAI_API_KEY=sk-...
+    PINECONE_API_KEY=pc-...
+    PINECONE_INDEX_NAME=hr-handbook
+    SUPABASE_URL=https://yourproject.supabase.co
+    SUPABASE_KEY=your-service-role-key
+
+Run
+---
+    python examples/custom_prompt.py
+"""
+
 import asyncio
-import os
-from dotenv import load_dotenv
 
 from langchat import LangChat
-from langchat.adapters.llm import OpenAI
-from langchat.adapters.vector_db import Pinecone
-from langchat.adapters.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-load_dotenv()
+# ---------------------------------------------------------------------------
+# Prompt — controls tone and rules
+# ---------------------------------------------------------------------------
 
-CUSTOM_PROMPT = """You are a helpful assistant. Answer questions clearly.
+HR_PROMPT = """You are Aria, an HR assistant for Acme Corp.
 
-Context: {context}
-History: {chat_history}
-Question: {question}
-Answer:"""
+Rules:
+- Answer ONLY from the provided context. Never guess.
+- Be concise, professional, and friendly.
+- If the answer is not in the context, say: "I don't have that information.
+  Please contact HR at hr@acme.com."
+- Always end with: "Is there anything else I can help you with?"
+
+Context:
+{context}
+
+Conversation so far:
+{chat_history}
+
+Employee question: {question}
+Aria:"""
+
+# ---------------------------------------------------------------------------
+# Build the assistant
+# ---------------------------------------------------------------------------
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o", temperature=0.3),  # lower temperature = more focused answers
+    vector_db=Pinecone("hr-handbook"),
+    db=Supabase(),
+    prompt_template=HR_PROMPT,
+    max_chat_history=10,  # keep last 10 exchanges in context
+)
+
+
+# ---------------------------------------------------------------------------
+# Chat
+# ---------------------------------------------------------------------------
+
+
+async def hr_chat(employee_id: str):
+    questions = [
+        "How many days of annual leave do I get?",
+        "What is the parental leave policy?",
+        "How do I submit an expense claim?",
+        "Can I work remotely full-time?",
+    ]
+
+    print(f"\n=== HR session for employee {employee_id} ===\n")
+
+    for q in questions:
+        print(f"Employee : {q}")
+
+        response = await lc.chat(q, user_id=employee_id, domain="hr")
+
+        if response:
+            print(f"Aria     : {response.text}\n")
+        else:
+            print(f"[Error]  : {response.error}\n")
+
 
 async def main():
-    llm = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        model="gpt-4o-mini",
-        temperature=0.7
-    )
-    
-    vector_db = Pinecone(
-        api_key=os.getenv("PINECONE_API_KEY"),
-        index_name=os.getenv("PINECONE_INDEX_NAME"),
-        embedding_model="text-embedding-3-large",
-        embedding_api_key=os.getenv("OPENAI_API_KEY")
-    )
-    
-    db = Supabase.from_config(
-        supabase_url=os.getenv("SUPABASE_URL"),
-        supabase_key=os.getenv("SUPABASE_KEY")
-    )
-    
-    langchat = LangChat(
-        llm=llm,
-        vector_db=vector_db,
-        db=db,
-        prompt_template=CUSTOM_PROMPT
-    )
-    
-    result = await langchat.chat(
-        query="Explain quantum computing",
-        user_id="user123",
-        domain="default"
-    )
-    
-    print(result["response"])
+    await hr_chat("emp-1042")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
-

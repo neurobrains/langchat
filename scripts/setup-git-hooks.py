@@ -8,7 +8,6 @@ Copies hooks from scripts/hooks/ to .git/hooks/
 Works on Windows, Linux, and Mac.
 """
 
-import os
 import platform
 import shutil
 import stat
@@ -19,8 +18,9 @@ from pathlib import Path
 def make_executable(filepath):
     """Make a file executable."""
     try:
-        current_permissions = os.stat(filepath).st_mode
-        os.chmod(filepath, current_permissions | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+        p = Path(filepath)
+        current_permissions = p.stat().st_mode
+        p.chmod(current_permissions | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
     except Exception:
         pass  # On Windows, this might not work, but that's okay
 
@@ -65,7 +65,7 @@ fi
 # Execute the hook script
 exec "$PYTHON_CMD" "{source_script_str}" "$@"
 '''
-    with open(hook_file, "w", encoding="utf-8", newline="\n") as f:
+    with hook_file.open("w", encoding="utf-8", newline="\n") as f:
         f.write(shell_content)
     make_executable(hook_file)
     return hook_file
@@ -88,9 +88,6 @@ def setup_hooks():
 
     # Get Python executable
     python_exe = sys.executable
-
-    # Detect Windows
-    platform.system() == "Windows"
 
     # List of hooks to copy
     hook_files = ["pre-commit", "pre-push", "prepare-commit-msg"]

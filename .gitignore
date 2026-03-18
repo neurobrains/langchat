@@ -151,8 +151,12 @@ __pycache__/
 *.pyd
 .Python
 
-# Poetry
+# Poetry (replaced by uv)
 poetry.lock
+poetry.toml
+
+# uv
+uv.lock
 
 # IDE
 .vscode/

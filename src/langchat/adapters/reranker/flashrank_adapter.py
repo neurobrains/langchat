@@ -10,7 +10,7 @@ from flashrank import Ranker
 from langchat.adapters.base import RerankerProvider
 
 
-def _import_flashrank_rerank() -> Any:  # type: ignore[no-redef]
+def _import_flashrank_rerank() -> Any:
     """Import FlashrankRerank with fallback to different import paths."""
     try:
         from langchain_community.document_compressors.flashrank_rerank import (
@@ -21,21 +21,21 @@ def _import_flashrank_rerank() -> Any:  # type: ignore[no-redef]
     except ImportError:
         try:
             from langchain.retrievers.document_compressors.flashrank_rerank import (
-                FlashrankRerank,  # type: ignore[no-redef]
+                FlashrankRerank,
             )
 
             return FlashrankRerank
         except ImportError:
             try:
                 from langchain_community.cross_encoders import (
-                    FlashrankRerank,  # type: ignore[no-redef]
+                    FlashrankRerank,
                 )
 
                 return FlashrankRerank
             except ImportError:
                 try:
                     from langchain.retrievers.document_compressors import (
-                        FlashrankRerank,  # type: ignore[no-redef]
+                        FlashrankRerank,
                     )
 
                     return FlashrankRerank
@@ -55,7 +55,7 @@ def _import_contextual_compression_retriever() -> Any:
         return ContextualCompressionRetriever
     except ImportError:
         try:
-            from langchain_core.retrievers import (  # type: ignore[attr-defined,no-redef]
+            from langchain_core.retrievers import (
                 ContextualCompressionRetriever,
             )
 

@@ -3,19 +3,55 @@
 
 import asyncio
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional, Union
 
 from dotenv import load_dotenv
 
 from langchat.adapters.logger import logger
 from langchat.core.engine import LangChatEngine
 from langchat.core.utils.document_indexer import DocumentIndexer
+from langchat.types import ChatResponse
 
 
 class LangChat:
-    """
-    Main LangChat class for developers.
-    Easy to use and highly customizable.
+    """Main entry point for the LangChat SDK.
+
+    Combine any supported LLM, vector database, and history database to build
+    a production-ready RAG chat application in a few lines of code.
+
+    Args:
+        llm: LLM provider instance (required).
+        vector_db: Vector database adapter (required).
+        db: Database adapter for chat-history storage (required).
+        reranker: Reranker adapter (optional, defaults to Flashrank).
+        prompt_template: Custom system-prompt template (optional).
+        standalone_question_prompt: Custom standalone-question prompt (optional).
+        verbose: Enable verbose debug logging (optional).
+        max_chat_history: Number of past messages kept in context (default: 20).
+
+    Examples::
+
+        # Recommended — use langchat.providers for automatic env-var loading
+        from langchat import LangChat
+        from langchat.providers import OpenAI, Pinecone, Supabase
+
+        lc = LangChat(
+            llm=OpenAI("gpt-4o"),
+            vector_db=Pinecone("my-index"),
+            db=Supabase(),
+        )
+
+        # Async chat
+        response = await lc.chat("What is RAG?", user_id="alice")
+        print(response.text)
+
+        # Sync chat (no asyncio boilerplate)
+        response = lc.chat_sync("What is RAG?", user_id="alice")
+        print(response.text)
+
+        # Index documents
+        lc.index("docs/guide.pdf")
+        lc.index(["docs/guide.pdf", "docs/api.pdf"])
     """
 
     def __init__(
@@ -30,35 +66,6 @@ class LangChat:
         verbose: Optional[bool] = None,
         max_chat_history: int = 20,
     ):
-        """
-        Initialize LangChat instance.
-
-        Args:
-            llm: LLM provider instance (required)
-            vector_db: Vector database adapter (required)
-            db: Database adapter for history storage (required)
-            reranker: Reranker adapter (optional)
-            prompt_template: System prompt template (optional)
-            standalone_question_prompt: Standalone question prompt (optional)
-            verbose: Enable verbose logging (optional)
-            max_chat_history: Maximum chat history to keep (default: 20)
-
-        Example:
-            ```python
-            from langchat import LangChat
-            from langchat.adapters.llm import OpenAI
-            from langchat.adapters.vector_db import Pinecone
-            from langchat.adapters.database import Supabase
-
-            # Initialize providers
-            llm = OpenAI(api_keys=["sk-..."], model="gpt-4o-mini")
-            vector_db = Pinecone(api_key="...", index_name="my-index", ...)
-            db = Supabase.from_config(supabase_url="...", supabase_key="...")
-
-            # Initialize LangChat
-            langchat = LangChat(llm=llm, vector_db=vector_db, db=db)
-            ```
-        """
         self.engine = LangChatEngine(
             llm=llm,
             vector_db=vector_db,
@@ -71,246 +78,199 @@ class LangChat:
         )
         logger.info("LangChat initialized successfully")
 
-    async def chat(self, query: str, user_id: str, domain: str = "default") -> dict:
-        """
-        Process a chat query.
+    # ------------------------------------------------------------------
+    # Chat
+    # ------------------------------------------------------------------
+
+    async def chat(
+        self,
+        query: str,
+        user_id: str,
+        domain: str = "default",
+    ) -> ChatResponse:
+        """Send a message and receive a typed response.
 
         Args:
-            query: User query text
-            user_id: User ID
-            domain: User domain (optional, defaults to "default")
+            query: The user's message.
+            user_id: Identifier for the user (used to isolate chat history).
+            domain: Logical namespace for the conversation (default: ``"default"``).
 
         Returns:
-            Dictionary with response and metadata
+            :class:`~langchat.types.ChatResponse` with ``.text``, ``.status``,
+            ``.response_time``, and more.
 
-        Example:
-            ```python
-            result = await langchat.chat(
-                query="What are the best universities in Europe?",
-                user_id="user123",
-                domain="education"
-            )
-            print(result["response"])
-            ```
+        Examples::
+
+            response = await lc.chat("Summarise the docs", user_id="alice")
+            print(response.text)
+
+            # Check success explicitly
+            if response:
+                print("OK:", response.text)
+            else:
+                print("Error:", response.error)
         """
-        return await self.engine.chat(query=query, user_id=user_id, domain=domain)
+        raw = await self.engine.chat(query=query, user_id=user_id, domain=domain)
+        return ChatResponse(
+            text=raw.get("response", ""),
+            user_id=raw.get("user_id", user_id),
+            domain=domain,
+            status=raw.get("status", "error"),
+            response_time=raw.get("response_time", 0.0),
+            timestamp=raw.get("timestamp", ""),
+            error=raw.get("error"),
+        )
 
-    def chat_sync(self, query: str, user_id: str, domain: str = "default") -> dict:
-        """Synchronous version of chat method.
+    def chat_sync(
+        self,
+        query: str,
+        user_id: str,
+        domain: str = "default",
+    ) -> ChatResponse:
+        """Synchronous version of :meth:`chat`. No ``asyncio`` boilerplate needed.
 
         Args:
-            query: User query text
-            user_id: User ID
-            domain: User domain (optional, defaults to "default")
+            query: The user's message.
+            user_id: Identifier for the user.
+            domain: Logical namespace (default: ``"default"``).
 
         Returns:
-            dict: Dictionary with response and metadata
-        """
+            :class:`~langchat.types.ChatResponse`.
 
+        Examples::
+
+            response = lc.chat_sync("Hello", user_id="bob")
+            print(response.text)
+        """
         return asyncio.run(self.chat(query, user_id, domain))
 
+    # ------------------------------------------------------------------
+    # Sessions
+    # ------------------------------------------------------------------
+
     def get_session(self, user_id: str, domain: str = "default"):
-        """Get or create a user session.
+        """Return (or create) the :class:`~langchat.core.session.UserSession`
+        for this ``user_id`` / ``domain`` pair.
 
         Args:
-            user_id: User ID
-            domain: User domain (optional, defaults to "default")
-
-        Returns:
-            UserSession instance
+            user_id: User identifier.
+            domain: Logical namespace (default: ``"default"``).
         """
-
         return self.engine.get_session(user_id, domain)
 
-    def load_env(self):
-        """Load environment variables from .env file
+    # ------------------------------------------------------------------
+    # Document indexing
+    # ------------------------------------------------------------------
 
-        Raises:
-            FileNotFoundError: Environment variables file not found
-        """
-        # Check if environment variables file exists
-        if not Path(".env").exists():
-            # Raise error if environment variables file not found
-            raise FileNotFoundError("Environment variables file not found")
-        else:
-            # Load environment variables from .env file
-            load_dotenv()
-            # Log success message
-            logger.info("Environment variables loaded successfully")
-
-    def load_and_index_documents(
+    def index(
         self,
-        file_path: str,
+        paths: Union[str, list[str]],
+        *,
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         namespace: Optional[str] = None,
         prevent_duplicates: bool = True,
     ) -> dict:
-        """
-        Load documents from a file, split them into chunks, and index them to Pinecone.
+        """Load and index one or more documents into the vector store.
 
-        This method uses docsuite to automatically detect and load various document types
-        (PDF, TXT, CSV, etc.), splits them using LangChain's text splitter, and adds them
-        to the Pinecone vectorstore using the existing configuration. Prevents duplicate
-        documents from being indexed multiple times.
+        Accepts a single file path or a list of file paths.  Supported formats
+        depend on the ``docsuite`` library (PDF, TXT, CSV, …).
+
+        Duplicate detection is enabled by default — the same file will not be
+        indexed twice even if you call ``index()`` multiple times.
 
         Args:
-            file_path: Path to the document file (supports PDF, TXT, CSV, etc.)
-            chunk_size: Size of each text chunk (default: 1000)
-            chunk_overlap: Overlap between chunks (default: 200)
-            namespace: Optional Pinecone namespace to store documents in
-            prevent_duplicates: If True, checks for existing documents before adding (default: True)
+            paths: A file path (str) **or** a list of file paths.
+            chunk_size: Token size of each text chunk (default: ``1000``).
+            chunk_overlap: Overlap between consecutive chunks (default: ``200``).
+            namespace: Pinecone namespace to store documents in (optional).
+            prevent_duplicates: Skip chunks already present in the index
+                (default: ``True``).
 
         Returns:
-            Dictionary with indexing results including number of chunks indexed and skipped
+            dict with indexing statistics (``chunks_indexed``, ``chunks_skipped``, …).
 
-        Example:
-            ```python
-            from langchat import LangChat
-            from langchat.adapters.llm import OpenAI
-            from langchat.adapters.vector_db import Pinecone
-            from langchat.adapters.database import Supabase
+        Examples::
 
-            llm = OpenAI(api_keys=["sk-..."], model="gpt-4o-mini")
-            vector_db = Pinecone(api_key="...", index_name="my-index", ...)
-            db = Supabase.from_config(supabase_url="...", supabase_key="...")
-            langchat = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-            # Load and index a PDF document (prevents duplicates by default)
-            result = langchat.load_and_index_documents(
-                file_path="example.pdf",
-                chunk_size=1000,
-                chunk_overlap=200
-            )
-            print(f"Indexed {result['chunks_indexed']} chunks")
-            print(f"Skipped {result.get('chunks_skipped', 0)} duplicate chunks")
-            ```
-
-        Raises:
-            ValueError: If vector adapter is not initialized or required parameters are missing
+            lc.index("docs/guide.pdf")
+            lc.index(["docs/guide.pdf", "docs/api.pdf"])
+            lc.index("docs/guide.pdf", namespace="v2", chunk_size=500)
         """
-        # Check if vector adapter is initialized
-        if not hasattr(self.engine, "vector_adapter") or self.engine.vector_adapter is None:
-            raise ValueError(
-                "Vector adapter not initialized. Please provide a vector_db adapter when initializing LangChat."
+        indexer = self._build_indexer()
+
+        if isinstance(paths, list):
+            return indexer.load_and_index_multiple_documents(
+                file_paths=paths,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                namespace=namespace,
+                prevent_duplicates=prevent_duplicates,
             )
 
-        # Get required parameters from vector adapter
-        vector_adapter = self.engine.vector_adapter
-        if not hasattr(vector_adapter, "api_key") or not hasattr(vector_adapter, "index_name"):
-            raise ValueError("Vector adapter must have api_key and index_name attributes")
-
-        # Get embedding API key from LLM if available
-        embedding_api_key = None
-        if hasattr(self.engine.llm, "api_keys") and self.engine.llm.api_keys:
-            embedding_api_key = self.engine.llm.api_keys[0]
-        elif hasattr(self.engine.llm, "current_llm") and hasattr(
-            self.engine.llm.current_llm, "api_key"
-        ):
-            embedding_api_key = self.engine.llm.current_llm.api_key
-
-        # Check if embedding API key is available
-        if embedding_api_key is None:
-            raise ValueError(
-                "Embedding API key is required for document indexing. "
-                "Please ensure your LLM provider has API keys configured."
-            )
-
-        # Get embedding model from vector adapter
-        embedding_model = getattr(vector_adapter, "embedding_model", "text-embedding-3-large")
-
-        # Create DocumentIndexer instance
-        indexer = DocumentIndexer(
-            pinecone_api_key=vector_adapter.api_key,
-            pinecone_index_name=vector_adapter.index_name,
-            openai_api_key=embedding_api_key,
-            embedding_model=embedding_model,
-        )
-
-        # Use DocumentIndexer to load and index documents
         return indexer.load_and_index_documents(
-            file_path=file_path,
+            file_path=paths,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             namespace=namespace,
             prevent_duplicates=prevent_duplicates,
         )
 
-    def load_and_index_multiple_documents(
-        self,
-        file_paths: List[str],
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
-        namespace: Optional[str] = None,
-        prevent_duplicates: bool = True,
-    ) -> dict:
+    # ------------------------------------------------------------------
+    # Environment helpers
+    # ------------------------------------------------------------------
+
+    def load_env(self) -> None:
+        """Load environment variables from a ``.env`` file in the working directory.
+
+        Raises:
+            FileNotFoundError: When ``.env`` does not exist.
         """
-        Load multiple documents, split them, and index them to Pinecone.
-
-        Args:
-            file_paths: List of file paths to load and index
-            chunk_size: Size of each text chunk (default: 1000)
-            chunk_overlap: Overlap between chunks (default: 200)
-            namespace: Optional Pinecone namespace to store documents in
-            prevent_duplicates: If True, checks for existing documents before adding (default: True)
-
-        Returns:
-            Dictionary with indexing results for all files
-
-        Example:
-            ```python
-            result = langchat.load_and_index_multiple_documents(
-                file_paths=["doc1.pdf", "doc2.txt", "data.csv"],
-                chunk_size=1000,
-                chunk_overlap=200
+        if not Path(".env").exists():
+            raise FileNotFoundError(
+                ".env file not found. Create one or set environment variables directly."
             )
-            print(f"Total chunks indexed: {result['total_chunks_indexed']}")
-            print(f"Total chunks skipped: {result.get('total_chunks_skipped', 0)}")
-            ```
-        """
-        # Check if vector adapter is initialized
-        if not hasattr(self.engine, "vector_adapter") or self.engine.vector_adapter is None:
+        load_dotenv()
+        logger.info("Environment variables loaded from .env")
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _build_indexer(self) -> DocumentIndexer:
+        """Resolve credentials from the attached adapters and build a DocumentIndexer."""
+        vector_adapter = getattr(self.engine, "vector_adapter", None)
+        if vector_adapter is None:
             raise ValueError(
-                "Vector adapter not initialized. Please provide a vector_db adapter when initializing LangChat."
+                "No vector_db adapter configured. Pass vector_db= when creating LangChat."
             )
 
-        # Get required parameters from vector adapter
-        vector_adapter = self.engine.vector_adapter
         if not hasattr(vector_adapter, "api_key") or not hasattr(vector_adapter, "index_name"):
-            raise ValueError("Vector adapter must have api_key and index_name attributes")
+            raise ValueError("The vector_db adapter must expose api_key and index_name attributes.")
 
-        # Get embedding API key from LLM if available
-        embedding_api_key = None
-        if hasattr(self.engine.llm, "api_keys") and self.engine.llm.api_keys:
-            embedding_api_key = self.engine.llm.api_keys[0]
-        elif hasattr(self.engine.llm, "current_llm") and hasattr(
-            self.engine.llm.current_llm, "api_key"
-        ):
-            embedding_api_key = self.engine.llm.current_llm.api_key
+        embedding_api_key = self._resolve_embedding_key()
 
-        # Check if embedding API key is available
-        if embedding_api_key is None:
-            raise ValueError(
-                "Embedding API key is required for document indexing. "
-                "Please ensure your LLM provider has API keys configured."
-            )
-
-        # Get embedding model from vector adapter
-        embedding_model = getattr(vector_adapter, "embedding_model", "text-embedding-3-large")
-
-        # Create DocumentIndexer instance
-        indexer = DocumentIndexer(
+        return DocumentIndexer(
             pinecone_api_key=vector_adapter.api_key,
             pinecone_index_name=vector_adapter.index_name,
             openai_api_key=embedding_api_key,
-            embedding_model=embedding_model,
+            embedding_model=getattr(vector_adapter, "embedding_model", "text-embedding-3-large"),
         )
 
-        # Use DocumentIndexer to load and index multiple documents
-        return indexer.load_and_index_multiple_documents(
-            file_paths=file_paths,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            namespace=namespace,
-            prevent_duplicates=prevent_duplicates,
+    def _resolve_embedding_key(self) -> str:
+        """Extract the OpenAI API key from the configured LLM adapter."""
+        llm = self.engine.llm
+
+        if hasattr(llm, "api_keys") and llm.api_keys:
+            # cycle() object — peek at the current key stored separately
+            key = getattr(llm, "_current_key", None)
+            if key:
+                return key
+
+        if hasattr(llm, "current_llm") and hasattr(llm.current_llm, "api_key"):
+            return llm.current_llm.api_key
+
+        raise ValueError(
+            "Could not resolve an OpenAI API key for embeddings from the LLM adapter. "
+            "Ensure your LLM provider has API keys configured, or pass embedding_api_key "
+            "directly to the Pinecone provider."
         )

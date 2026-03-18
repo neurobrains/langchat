@@ -3,7 +3,7 @@
 
 import warnings
 from datetime import datetime, timezone
-from typing import Any, List, Tuple, cast
+from typing import Any, cast
 
 # Fix langchain imports - handle different versions
 from langchain.memory import ConversationBufferWindowMemory
@@ -11,7 +11,7 @@ from langchain.memory import ConversationBufferWindowMemory
 try:
     from langchain_core.prompts import PromptTemplate
 except ImportError:
-    from langchain.prompts import PromptTemplate  # type: ignore
+    from langchain.prompts import PromptTemplate
 
 from langchat.adapters.logger import logger
 
@@ -88,7 +88,7 @@ class UserSession:
         # Create conversation chain
         self.conversation = self._create_conversation()
 
-    def _load_chat_history(self) -> List[Tuple[str, str]]:
+    def _load_chat_history(self) -> list[tuple[str, str]]:
         """
         Load chat history from database.
 

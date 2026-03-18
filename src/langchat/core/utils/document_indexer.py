@@ -4,13 +4,13 @@
 import hashlib
 import os
 import uuid
-from typing import Dict, List, Optional
+from typing import Optional
 
-from docsuite import UnifiedDocumentLoader  # type: ignore[import-untyped]
-from langchain.text_splitter import RecursiveCharacterTextSplitter  # type: ignore[import-untyped]
-from langchain_openai import OpenAIEmbeddings  # type: ignore[import-untyped]
-from langchain_pinecone.vectorstores import PineconeVectorStore  # type: ignore[import-untyped]
-from pinecone import Pinecone  # type: ignore[import-untyped]
+from docsuite import UnifiedDocumentLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_pinecone.vectorstores import PineconeVectorStore
+from pinecone import Pinecone
 
 from langchat.adapters.logger import logger
 from langchat.core.exceptions import UnsupportedFileTypeError
@@ -138,7 +138,7 @@ class DocumentIndexer:
         chunk_overlap: int = 200,
         namespace: Optional[str] = None,
         prevent_duplicates: bool = True,
-    ) -> Dict:
+    ) -> dict:
         """
         Load documents from a file, split them into chunks, and index them to Pinecone.
 
@@ -326,12 +326,12 @@ class DocumentIndexer:
 
     def load_and_index_multiple_documents(
         self,
-        file_paths: List[str],
+        file_paths: list[str],
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         namespace: Optional[str] = None,
         prevent_duplicates: bool = True,
-    ) -> Dict:
+    ) -> dict:
         """
         Load multiple documents, split them, and index them to Pinecone.
 

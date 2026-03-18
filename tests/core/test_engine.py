@@ -30,8 +30,9 @@ def mock_db():
 @pytest.fixture
 def engine(mock_llm, mock_vector_db, mock_db):
     """Create an engine instance with mocked dependencies."""
-    with patch("langchat.core.engine.FlashrankRerankAdapter"), patch(
-        "langchat.core.engine.IDManager"
+    with (
+        patch("langchat.core.engine.FlashrankRerankAdapter"),
+        patch("langchat.core.engine.IDManager"),
     ):
         engine = LangChatEngine(llm=mock_llm, vector_db=mock_vector_db, db=mock_db)
         return engine
@@ -42,8 +43,9 @@ class TestLangChatEngine:
 
     def test_engine_initialization(self, mock_llm, mock_vector_db, mock_db):
         """Test engine initialization with provided adapters."""
-        with patch("langchat.core.engine.FlashrankRerankAdapter"), patch(
-            "langchat.core.engine.IDManager"
+        with (
+            patch("langchat.core.engine.FlashrankRerankAdapter"),
+            patch("langchat.core.engine.IDManager"),
         ):
             engine = LangChatEngine(llm=mock_llm, vector_db=mock_vector_db, db=mock_db)
             assert engine.llm == mock_llm

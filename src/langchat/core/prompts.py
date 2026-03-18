@@ -2,12 +2,12 @@
 # Licensed under the MIT License.
 
 import warnings
-from typing import List, Optional, Tuple
+from typing import Optional
 
 try:
     from langchain_core.prompts import PromptTemplate
 except ImportError:
-    from langchain.prompts import PromptTemplate  # type: ignore
+    from langchain.prompts import PromptTemplate
 
 # Suppress warnings before importing langchain
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -42,7 +42,7 @@ def create_standalone_question_prompt(
 
 async def generate_standalone_question(
     query: str,
-    chat_history: List[Tuple[str, str]],
+    chat_history: list[tuple[str, str]],
     llm,
     custom_prompt: Optional[str] = None,
     verbose_chains: bool = False,
@@ -88,7 +88,7 @@ async def generate_standalone_question(
     try:
         from langchain_core.messages import HumanMessage
     except ImportError:
-        from langchain.schema import HumanMessage  # type: ignore[no-redef]
+        from langchain.schema import HumanMessage
 
     formatted_prompt = prompt.format(question=query, chat_history=formatted_chat_history)
     result = await llm.ainvoke([HumanMessage(content=formatted_prompt)])
