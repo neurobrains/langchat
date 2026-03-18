@@ -19,7 +19,7 @@ class TestPackageImports:
         import langchat
 
         assert hasattr(langchat, "__version__")
-        assert langchat.__version__ == "1.0.1"
+        assert langchat.__version__ == "1.0.2"
 
     def test_langchat_class_importable(self):
         from langchat import LangChat

@@ -1,6 +1,8 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile

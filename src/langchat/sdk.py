@@ -1,6 +1,8 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+from __future__ import annotations
+
 import asyncio
 from pathlib import Path
 

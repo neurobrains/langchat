@@ -1,6 +1,8 @@
 # Copyright (c) 2025 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
+from __future__ import annotations
+
 import warnings
 from datetime import datetime, timezone
 from typing import Any, cast
@@ -128,7 +130,9 @@ class UserSession:
             response: AI response
         """
         try:
-            logger.info(f"Attempting to save message for user {self.user_id}, platform {self.platform}")
+            logger.info(
+                f"Attempting to save message for user {self.user_id}, platform {self.platform}"
+            )
             result = self.id_manager.insert_with_retry(
                 "chat_history",
                 {

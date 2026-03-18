@@ -27,7 +27,7 @@ All providers read credentials from environment variables automatically:
 from langchat.sdk import LangChat
 from langchat.types import ChatResponse
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 __all__ = [
     "LangChat",

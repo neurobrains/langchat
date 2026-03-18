@@ -3,10 +3,12 @@
 
 """OpenAI LLM Provider."""
 
+from __future__ import annotations
+
 from itertools import cycle
-from typing import Optional
 
 from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from langchat.adapters.logger import logger
 
@@ -20,8 +22,8 @@ class OpenAI:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        api_keys: Optional[list[str]] = None,
+        api_key: str | None = None,
+        api_keys: list[str] | None = None,
         model: str = "gpt-4o-mini",
         temperature: float = 1.0,
         max_retries_per_key: int = 2,
@@ -73,7 +75,7 @@ class OpenAI:
         return ChatOpenAI(
             model_name=self._model,
             temperature=self._temperature,
-            openai_api_key=self._current_key,
+            openai_api_key=SecretStr(self._current_key),
             max_retries=1,
         )
 
