@@ -1,5 +1,5 @@
 <div align="center">
-<img src="docs/public/logo-sidebar.png" alt="LangChat logo">
+<img src="https://raw.githubusercontent.com/neurobrains/langchat/main/docs/public/logo-sidebar.png" alt="LangChat logo">
 
 <h2>Ship production-grade AI chatbots in minutes</h2>
 
