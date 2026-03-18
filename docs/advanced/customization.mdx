@@ -1,95 +1,194 @@
 ---
 title: Customization
-description: Customize and extend LangChat
+description: Customize LangChat's behavior beyond the built-in settings.
 ---
 
-import { Callout } from 'mintlify';
+## Custom prompt templates
 
-## Custom Prompts
-
-Control chatbot behavior:
+The fastest way to change behavior. See the [Prompts guide](/guides/prompts) and [Custom Prompts examples](/examples/custom-prompts) for full details.
 
 ```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    prompt_template="""You are Aria, a support agent for Acme Corp.
 
-# Custom prompt
-custom_prompt = """You are a helpful assistant.
-Answer questions clearly.
+Context:
+{context}
 
-Context: {context}
-History: {chat_history}
-Question: {question}
+History:
+{chat_history}
 
-Answer:"""
-
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Use custom prompt
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=custom_prompt
+Customer: {question}
+Aria:""",
 )
 ```
 
-## Custom Reranker
+---
+
+## Custom reranker settings
+
+Control how many chunks reach the LLM:
 
 ```python
-from langchat.reranker import Flashrank
+from langchat.adapters.reranker import FlashrankRerankAdapter
 
-reranker = Flashrank(
+reranker = FlashrankRerankAdapter(
     model_name="ms-marco-MiniLM-L-12-v2",
-    top_n=5  # Custom top N
+    cache_dir="rerank_models",
+    top_n=5,   # pass 5 chunks instead of the default 3
 )
 
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    reranker=reranker
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    reranker=reranker,
 )
 ```
-
-## Session Settings
-
-```python
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    max_chat_history=50  # Keep more history
-)
-```
-
-## Accessing Components
-
-Access internal components for advanced use:
-
-```python
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Access engine
-engine = ai.engine
-
-# Access providers
-llm_provider = engine.llm
-vector_adapter = engine.vector_adapter
-reranker = engine.reranker_adapter
-```
-
-## Next Steps
-
-- **[Prompts Guide](/guides/prompts)** - Prompt customization
-- **[Configuration](/guides/configuration)** - All options
-- **[Extending Adapters](/advanced/extending-adapters)** - Advanced extension
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Custom standalone question prompt
+
+Control how follow-up questions are reformulated:
+
+```python
+STANDALONE = """Rewrite the follow-up question as a standalone question in English.
+Keep greetings unchanged. Include domain context (Acme Corp products/services).
+
+History:
+{chat_history}
+
+Follow-up: {question}
+Standalone:"""
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    standalone_question_prompt=STANDALONE,
+)
+```
+
+---
+
+## History window
+
+Reduce token usage by keeping fewer past exchanges in context:
+
+```python
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    max_chat_history=5,   # only last 5 exchanges
+)
+```
+
+---
+
+## Pre-processing questions
+
+Intercept and modify questions before they reach the engine:
+
+```python
+async def chat_with_preprocessing(query: str, user_id: str) -> ChatResponse:
+    # Clean the query
+    clean_query = query.strip()
+
+    # Add user context
+    enriched = f"[User tier: premium] {clean_query}"
+
+    # Pass pre-processed standalone question to skip LLM reformulation
+    raw = await lc.engine.chat(
+        query=clean_query,
+        user_id=user_id,
+        standalone_question=enriched,
+    )
+    return ChatResponse(
+        text=raw["response"],
+        user_id=raw["user_id"],
+        platform="web",
+        status=raw["status"],
+        response_time=raw["response_time"],
+        timestamp=raw["timestamp"],
+        error=raw.get("error"),
+    )
+```
+
+---
+
+## Post-processing responses
+
+Wrap `chat()` to modify or enrich responses:
+
+```python
+import re
+
+async def chat_with_postprocessing(query: str, user_id: str) -> ChatResponse:
+    response = await lc.chat(query=query, user_id=user_id)
+
+    if response:
+        # Append disclaimer to financial answers
+        if any(word in query.lower() for word in ["invest", "stock", "money"]):
+            response = ChatResponse(
+                text=response.text + "\n\n*This is not financial advice.*",
+                user_id=response.user_id,
+                platform=response.platform,
+                status=response.status,
+                response_time=response.response_time,
+                timestamp=response.timestamp,
+            )
+
+    return response
+```
+
+---
+
+## Accessing the session directly
+
+Manipulate conversation history before a chat call:
+
+```python
+session = lc.get_session("alice", "web")
+
+# Inject a system context message
+session.chat_history.insert(0, (
+    "System: What products do we sell?",
+    "We sell enterprise software for HR teams.",
+))
+
+# Now the next chat() call will include this in history
+response = await lc.chat(query="Tell me more", user_id="alice", platform="web")
+```
+
+---
+
+## Custom routes in API server
+
+Add your own endpoints alongside LangChat's:
+
+```python
+from fastapi import APIRouter
+from langchat.api import create_app
+
+router = APIRouter(prefix="/api/v1")
+
+@router.get("/topics")
+async def get_topics():
+    return ["pricing", "features", "support", "billing"]
+
+@router.post("/feedback")
+async def submit_feedback(message_id: str, helpful: bool):
+    # save to your database
+    return {"saved": True}
+
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    custom_routes=[router],
+)
+```

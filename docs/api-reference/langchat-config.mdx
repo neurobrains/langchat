@@ -1,93 +1,131 @@
 ---
-title: Provider Configuration
-description: How to configure LLM, vector database, and database providers
+title: ChatResponse
+description: The typed return value from chat() and chat_sync().
 ---
 
-import { Callout } from 'mintlify';
+## Class: `ChatResponse`
 
-## Overview
-
-LangChat uses direct provider initialization. No configuration class needed.
-
-## LLM Providers
-
-### OpenAI
+A dataclass returned by every `chat()` and `chat_sync()` call. Provides typed access to the response and metadata.
 
 ```python
-from langchat.llm import OpenAI
-
-llm = OpenAI(
-    api_key="sk-...",
-    model="gpt-4o-mini",
-    temperature=0.7
-)
+from langchat import ChatResponse
 ```
-
-### Other LLMs
-
-```python
-from langchat.llm import Anthropic, Gemini, Ollama
-
-# Anthropic
-llm = Anthropic(api_key="...", model="claude-3-5-sonnet-20241022")
-
-# Gemini
-llm = Gemini(api_key="...", model="gemini-1.5-flash")
-
-# Ollama (local)
-llm = Ollama(model="llama2", base_url="http://localhost:11434")
-```
-
-## Vector Database
-
-### Pinecone
-
-```python
-from langchat.vector_db import Pinecone
-
-vector_db = Pinecone(
-    api_key="pcsk-...",
-    index_name="your-index",
-    embedding_model="text-embedding-3-large"  # Optional
-)
-```
-
-## Database
-
-### Supabase
-
-```python
-from langchat.database import Supabase
-
-db = Supabase(
-    url="https://xxxxx.supabase.co",
-    key="eyJhbGc..."
-)
-```
-
-## Complete Setup
-
-```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Create LangChat
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-```
-
-## Next Steps
-
-- **[Configuration Guide](/guides/configuration)** - Complete guide
-- **[Quick Start](/quick-start)** - Get started
-- **[Examples](/examples/basic-usage)** - See examples
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Fields
+
+<ParamField path="text" type="str">
+  The AI's response text. This is what you display to the user.
+</ParamField>
+
+<ParamField path="status" type='"success" | "error"'>
+  Whether the request succeeded. `"success"` means the LLM returned a valid response. `"error"` means something went wrong (LLM failure, timeout, etc.).
+</ParamField>
+
+<ParamField path="user_id" type="str">
+  The `user_id` you passed to `chat()`. Echoed back for convenience.
+</ParamField>
+
+<ParamField path="platform" type="str">
+  The `platform` you passed to `chat()`. Defaults to `"default"`.
+</ParamField>
+
+<ParamField path="response_time" type="float">
+  End-to-end latency in seconds, from when `chat()` was called to when the response was ready.
+</ParamField>
+
+<ParamField path="timestamp" type="str">
+  UTC timestamp of the response in ISO 8601 format (e.g. `"2025-01-15T10:30:00.000Z"`).
+</ParamField>
+
+<ParamField path="error" type="str | None">
+  Error message when `status == "error"`. `None` on success.
+</ParamField>
+
+---
+
+## Special methods
+
+### `__bool__`
+
+`if response:` returns `True` when `status == "success"`.
+
+```python
+response = await lc.chat(query="Hello", user_id="alice")
+
+if response:
+    print("Success!")
+else:
+    print("Failed.")
+```
+
+### `__str__`
+
+`print(response)` and `str(response)` return `response.text`.
+
+```python
+response = await lc.chat(query="Hello", user_id="alice")
+print(response)          # prints the AI response text
+```
+
+---
+
+## Usage patterns
+
+### Basic
+
+```python
+response = await lc.chat(query="What is RAG?", user_id="alice")
+print(response)
+```
+
+### With error handling
+
+```python
+response = await lc.chat(query="Explain quantum computing", user_id="alice")
+
+if response:
+    print(response.text)
+    print(f"Answered in {response.response_time:.2f}s")
+else:
+    # Log the error and show a user-friendly message
+    logger.error(f"Chat failed: {response.error}")
+    print("Sorry, something went wrong. Please try again.")
+```
+
+### In an API response
+
+```python
+from fastapi import FastAPI
+from langchat import LangChat, ChatResponse
+
+app = FastAPI()
+
+@app.post("/ask")
+async def ask(query: str, user_id: str):
+    response: ChatResponse = await lc.chat(query=query, user_id=user_id)
+    return {
+        "answer": response.text,
+        "ok": bool(response),
+        "latency": response.response_time,
+        "timestamp": response.timestamp,
+    }
+```
+
+### In a chat loop
+
+```python
+async def chat_loop(user_id: str):
+    while True:
+        query = input("You: ")
+        if not query.strip():
+            continue
+
+        response = await lc.chat(query=query, user_id=user_id)
+
+        if response:
+            print(f"Bot: {response.text}")
+        else:
+            print(f"Error: {response.error}")
+```

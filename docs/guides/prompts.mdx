@@ -1,169 +1,186 @@
 ---
 title: Custom Prompts
-description: Customize your chatbot's behavior with prompts
+description: Control how your chatbot thinks and speaks with custom prompt templates.
 ---
 
-import { Callout } from 'mintlify';
+LangChat uses two prompt templates internally:
 
-## What are Prompts?
+1. **System prompt** — defines the chatbot's persona, task, and how to use context
+2. **Standalone question prompt** — reformulates follow-up questions into self-contained queries before searching
 
-Prompts are instructions that tell your chatbot how to behave and respond. LangChat uses two types:
+Both have sensible defaults. Override either or both.
 
-1. **System Prompt** - Defines personality and behavior
-2. **Standalone Question Prompt** - Converts questions to search queries
+---
 
-## Basic Custom Prompt
+## System prompt
+
+The system prompt is built once per message. It contains three required placeholders:
+
+| Placeholder | Filled with |
+|-------------|-------------|
+| `{context}` | Top retrieved document chunks (after reranking) |
+| `{chat_history}` | Recent conversation exchanges |
+| `{question}` | The user's current message |
+
+### Default template
+
+```
+You are a helpful AI assistant. Answer questions clearly and accurately.
+
+Use the following context to answer:
+{context}
+
+Previous conversation:
+{chat_history}
+
+User question: {question}
+
+Your response:
+```
+
+### Custom template
+
+Pass `prompt_template` when creating `LangChat`:
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Custom prompt
-custom_prompt = """You are a helpful assistant.
-Answer questions clearly and concisely.
+MY_PROMPT = """You are Aria, a friendly support agent for Acme Corp.
+Always be concise and professional. If you don't know the answer, say so clearly
+and suggest contacting support@acme.com.
 
-Context: {context}
-History: {chat_history}
-Question: {question}
-
-Answer:"""
-
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Use custom prompt
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=custom_prompt
-)
-```
-
-## Prompt Variables
-
-Use these variables in your prompts:
-
-- `{context}` - Retrieved documents from your knowledge base
-- `{chat_history}` - Previous conversation messages
-- `{question}` - Current user question
-
-<Callout type="info">
-Use single braces `{variable}` in prompts. LangChat handles substitution automatically.
-</Callout>
-
-## Example Prompts
-
-### Education Assistant
-
-```python
-EDUCATION_PROMPT = """You are an expert education consultant.
-
-Help students find universities based on:
-- Academic profile
-- Preferred countries
-- Budget constraints
-
-Be friendly, professional, and concise.
-
-Context: {context}
-History: {chat_history}
-Question: {question}
-
-Answer:"""
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=EDUCATION_PROMPT
-)
-```
-
-### Customer Support
-
-```python
-SUPPORT_PROMPT = """You are a customer support agent.
-
-Guidelines:
-- Be professional and empathetic
-- Provide step-by-step solutions
-- Ask clarifying questions when needed
-
-Product Info: {context}
-Previous Chat: {chat_history}
-Customer Question: {question}
-
-Response:"""
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=SUPPORT_PROMPT
-)
-```
-
-## Best Practices
-
-### 1. Be Specific
-
-```python
-# ❌ Vague
-"""You are an assistant. Help users."""
-
-# ✅ Specific
-"""You are an expert education consultant specializing in study abroad programs."""
-```
-
-### 2. Include Context Instructions
-
-```python
-"""Use the following context to answer questions:
+Relevant knowledge base articles:
 {context}
 
-If context doesn't contain relevant information, say so honestly."""
+Previous messages:
+{chat_history}
+
+Customer: {question}
+
+Aria:"""
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    prompt_template=MY_PROMPT,
+)
 ```
 
-### 3. Guide Communication Style
+<Warning>
+  Your template must contain all three placeholders — `{context}`, `{chat_history}`, and `{question}` — or the chain will raise an error.
+</Warning>
 
-```python
-"""Communication Style:
-- Friendly and professional
-- Concise and actionable
-- Use emojis appropriately"""
+### Domain-specific examples
+
+<CodeGroup>
+```python Legal assistant
+LEGAL_PROMPT = """You are a legal research assistant. Provide accurate information
+based on the provided documents. Always note that this is not legal advice and
+users should consult a qualified attorney for legal decisions.
+
+Relevant legal documents:
+{context}
+
+Prior conversation:
+{chat_history}
+
+Question: {question}
+
+Legal Assistant:"""
 ```
 
-## Testing Prompts
+```python Technical documentation bot
+TECH_PROMPT = """You are a technical documentation assistant for {product_name}.
+Answer questions using only the provided documentation. If the documentation
+doesn't cover the question, say so clearly.
 
-Test your prompts with different questions:
+Documentation context:
+{context}
 
-```python
-test_questions = [
-    "What universities offer computer science?",
-    "I need help with my visa application",
-    "What's the deadline for fall intake?"
-]
+Conversation history:
+{chat_history}
 
-for question in test_questions:
-    result = await ai.chat(
-        query=question,
-        user_id="test_user"
-    )
-    print(f"Q: {question}")
-    print(f"A: {result['response']}\n")
+Developer question: {question}
+
+Documentation Assistant:"""
 ```
 
-## Next Steps
+```python E-commerce product assistant
+ECOMMERCE_PROMPT = """You are a shopping assistant. Help customers find products
+and answer questions about inventory, shipping, and returns based on the provided
+product catalog information.
 
-- **[Examples](/examples/custom-prompts)** - More prompt examples
-- **[Configuration](/guides/configuration)** - Other settings
-- **[Basic Usage](/examples/basic-usage)** - Get started
+Product catalog context:
+{context}
+
+Customer conversation:
+{chat_history}
+
+Customer: {question}
+
+Shopping Assistant:"""
+```
+</CodeGroup>
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Standalone question prompt
+
+Before searching Pinecone, LangChat reformulates the user's message to be self-contained. This handles follow-up questions like:
+
+- "What about the pricing?" → "What is Acme Corp's pricing?"
+- "Can you explain that further?" → "Can you explain Acme Corp's refund policy further?"
+
+### Default behavior
+
+The default prompt:
+1. Uses the LLM to rephrase the question
+2. Keeps greetings unchanged (hi, hello, hey)
+3. Always generates questions in English
+
+### Custom standalone question prompt
+
+```python
+STANDALONE_PROMPT = """Given the following conversation and a follow-up question,
+rephrase the follow-up as a standalone question that includes all necessary context.
+If the follow-up is a greeting, return it unchanged.
+
+Conversation:
+{chat_history}
+
+Follow-up: {question}
+
+Standalone question:"""
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    standalone_question_prompt=STANDALONE_PROMPT,
+)
+```
+
+The standalone question prompt uses two placeholders: `{chat_history}` and `{question}`.
+
+---
+
+## Prompt tips
+
+**Be specific about tone.** "Be concise and professional" produces very different results than the default.
+
+**Tell the model what to do when it doesn't know.** If you don't specify, it may hallucinate. Add: *"If the answer is not in the context, say you don't know."*
+
+**Set the output format.** If you need structured output: *"Always respond with bullet points."* or *"Answer in 2-3 sentences maximum."*
+
+**Keep `{context}` early.** Models attend more strongly to content near the start of the prompt.
+
+**Test with `verbose=True`.** See exactly what prompt is being sent:
+
+```python
+lc = LangChat(
+    ...,
+    verbose=True,  # logs the full prompt on every call
+)
+```

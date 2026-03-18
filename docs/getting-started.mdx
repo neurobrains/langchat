@@ -1,80 +1,190 @@
 ---
 title: Getting Started
-description: Build your first chatbot in minutes
+description: Build a complete RAG chatbot step by step.
 ---
 
-import { Callout } from 'mintlify';
-import { CodeGroup } from 'mintlify';
+This guide walks through building a real chatbot from scratch — a support bot that answers questions from your documents.
 
-## Quick Start
+## Step 1 — Install and configure
 
-Get your chatbot running in 5 minutes:
+Install LangChat and create your `.env` file:
 
-<CodeGroup>
-```python Complete Example
-import asyncio
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-async def main():
-    # Setup providers
-    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
-    vector_db = Pinecone(api_key="...", index_name="...")
-    db = Supabase(url="https://...", key="...")
-    
-    # Create chatbot
-    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-    
-    # Chat!
-    result = await ai.chat(
-        query="Hello! What can you help me with?",
-        user_id="user123"
-    )
-    print(result["response"])
-
-asyncio.run(main())
+```bash
+pip install langchat
 ```
 
-```python API Server
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+```bash .env
+OPENAI_API_KEY=sk-...
+PINECONE_API_KEY=pcsk-...
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=eyJhbGc...
+```
+
+## Step 2 — Index your documents
+
+Before the chatbot can answer questions, it needs to read your content. Put your documents (PDFs, text files, CSVs) in a folder and index them:
+
+```python
+# index_docs.py
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
+
+# Index a single file
+result = lc.index("docs/faq.pdf")
+print(f"Indexed {result['chunks_indexed']} chunks")
+
+# Or index an entire folder
+result = lc.index("docs/")
+print(f"Indexed {result['chunks_indexed']} chunks, skipped {result['chunks_skipped']} duplicates")
+```
+
+Run this once (or whenever your documents change):
+
+```bash
+python index_docs.py
+```
+
+<Note>
+  LangChat automatically detects duplicate chunks using a content hash, so re-running `index()` on the same files is safe.
+</Note>
+
+## Step 3 — Build the chatbot
+
+```python
+# chatbot.py
+import asyncio
+from langchat import LangChat, ChatResponse
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
+
+async def chat_with_user(user_id: str):
+    print("Support Bot ready. Type 'quit' to exit.\n")
+
+    while True:
+        query = input("You: ").strip()
+        if query.lower() == "quit":
+            break
+
+        response: ChatResponse = await lc.chat(
+            query=query,
+            user_id=user_id,
+        )
+
+        if response:
+            print(f"Bot: {response.text}")
+            print(f"     ({response.response_time:.2f}s)\n")
+        else:
+            print(f"Bot: Sorry, something went wrong. ({response.error})\n")
+
+asyncio.run(chat_with_user("alice"))
+```
+
+## Step 4 — Handle multiple users
+
+Each `user_id` gets its own conversation history. Use `platform` to separate different applications sharing the same backend:
+
+```python
+# User in mobile app
+response = await lc.chat(
+    query="What's my order status?",
+    user_id="user_123",
+    platform="mobile-app",
+)
+
+# Same user in web app — separate conversation
+response = await lc.chat(
+    query="What's my order status?",
+    user_id="user_123",
+    platform="web-app",
+)
+```
+
+## Step 5 — Add a custom persona
+
+Make the bot speak in your brand voice by customizing the prompt:
+
+```python
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    prompt_template="""You are Aria, a friendly support agent for Acme Corp.
+Always be polite and professional. If you don't know the answer, say so clearly.
+
+Context from our knowledge base:
+{context}
+
+Conversation so far:
+{chat_history}
+
+Customer question: {question}
+
+Aria's response:""",
+)
+```
+
+The three template variables `{context}`, `{chat_history}`, and `{question}` are filled in automatically.
+
+## Step 6 — Deploy as an API
+
+Turn your chatbot into a production REST API in one step:
+
+```python
+# server.py
+from langchat.api import create_app
+from langchat.providers import OpenAI, Pinecone, Supabase
 import uvicorn
 
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
 
-# Create server
-app = create_app(llm=llm, vector_db=vector_db, db=db)
-
-# Run
-uvicorn.run(app, host="0.0.0.0", port=8000)
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
-</CodeGroup>
 
-## What You Need
+```bash
+python server.py
+```
 
-Before starting, get these accounts:
+Your API exposes:
 
-1. **OpenAI** - [platform.openai.com](https://platform.openai.com) - For AI models
-2. **Pinecone** - [pinecone.io](https://pinecone.io) - For search (create an index)
-3. **Supabase** - [supabase.com](https://supabase.com) - For chat history
+| Endpoint | Description |
+|----------|-------------|
+| `POST /chat` | Send a message |
+| `GET /health` | Health check |
+| `GET /frontend` | Built-in chat UI |
 
-<Callout type="warning">
-Make sure your Pinecone index exists before running. Supabase tables are created automatically.
-</Callout>
+## What's next
 
-## Next Steps
-
-- **[Quick Start](/quick-start)** - Detailed quick start
-- **[Examples](/examples/basic-usage)** - More examples
-- **[Configuration](/guides/configuration)** - Learn configuration
-
----
-
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/guides/configuration">
+    Switch LLM providers, configure Pinecone namespaces, tune history length
+  </Card>
+  <Card title="Custom Prompts" icon="pen" href="/guides/prompts">
+    Full guide to prompt templating and standalone question customization
+  </Card>
+  <Card title="Document Indexing" icon="database" href="/guides/document-indexing">
+    Supported file formats, chunking strategy, namespace organization
+  </Card>
+  <Card title="API Server" icon="server" href="/examples/api-server">
+    Production server setup, CORS, Docker, environment configuration
+  </Card>
+</CardGroup>

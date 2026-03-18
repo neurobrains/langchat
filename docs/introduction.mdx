@@ -1,105 +1,81 @@
 ---
-title: "Introduction"
-description: "Build production-ready AI chatbots in minutes with LangChat"
+title: Introduction
+description: LangChat — production-grade RAG chatbots in minutes.
 ---
-
-import { Card, CardGroup } from 'mintlify';
-import { Callout } from 'mintlify';
 
 ## What is LangChat?
 
-**LangChat** is a Python library that lets you build production-ready AI chatbots in minutes. No complex setup, no juggling multiple tools—just one simple library that handles everything.
-
-<Callout type="info">
-Think of LangChat as your all-in-one toolkit for building intelligent chatbots. It combines AI models, search capabilities, and conversation memory into one easy package.
-</Callout>
-
-## Why Choose LangChat?
-
-Building chatbots is hard. You need AI models, databases, search engines, and memory management. LangChat does all of this for you.
-
-<CardGroup cols={2}>
-  <Card title="⚡ Fast Setup" icon="bolt" href="/quick-start">
-    Get running in minutes, not weeks
-  </Card>
-  <Card title="🔧 Easy to Use" icon="gear" href="/quick-start">
-    Simple code, powerful results
-  </Card>
-  <Card title="🔄 Smart Features" icon="arrows-rotate" href="/guides/configuration">
-    Built-in memory, search, and more
-  </Card>
-  <Card title="📊 Production Ready" icon="chart-line" href="/advanced/production">
-    Deploy with confidence
-  </Card>
-</CardGroup>
-
-## What You Get
-
-### 🤖 AI Models
-- Support for OpenAI, Anthropic, Gemini, and more
-- Automatic API key rotation
-- Smart error handling
-
-### 🔍 Smart Search
-- Vector search for finding relevant information
-- Automatic reranking for better results
-- Works with Pinecone and other databases
-
-### 💾 Memory & History
-- Automatic conversation history
-- User-specific sessions
-- Context-aware responses
-
-### 🎨 Customizable
-- Custom prompts and behavior
-- Flexible configuration
-- Easy to extend
-
-## Quick Example
-
-Here's how simple it is:
+LangChat is a Python library that turns the complex task of building a production-ready RAG chatbot into a few lines of code.
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Setup (one time)
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="my-index")
-db = Supabase(url="https://...", key="...")
-
-# Create chatbot
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Use it
-result = await ai.chat(
-    query="What can you help me with?",
-    user_id="user123"
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
 )
-print(result["response"])
+
+response = await lc.chat(query="What's our refund policy?", user_id="alice")
+print(response)  # prints the AI's answer
 ```
 
-<Callout type="success">
-That's it! In just a few lines, you have a fully functional chatbot with search, memory, and AI capabilities.
-</Callout>
-
-## Perfect For
-
-- **Customer Support**: Answer questions with your knowledge base
-- **Education**: Help students find information
-- **Business**: Internal knowledge assistants
-- **E-commerce**: Product recommendations and support
-
-## Next Steps
-
-Ready to start? Here's your path:
-
-1. **[Quick Start](/quick-start)** - Get running in 5 minutes
-2. **[Examples](/examples/basic-usage)** - See it in action
-3. **[Guides](/guides/configuration)** - Learn advanced features
+That's it. LangChat handles the RAG pipeline, session management, conversation history, document indexing, and persistence — all out of the box.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## What's included
+
+<CardGroup cols={2}>
+  <Card title="6 LLM providers" icon="robot">
+    OpenAI, Anthropic, Gemini, Mistral, Cohere, and local Ollama — all with automatic credential loading from environment variables
+  </Card>
+  <Card title="RAG pipeline" icon="magnifying-glass">
+    Pinecone vector search + Flashrank reranking + contextual conversation prompts, pre-configured and ready to use
+  </Card>
+  <Card title="Session management" icon="users">
+    Per-user, per-platform conversation history stored in Supabase — survives server restarts
+  </Card>
+  <Card title="Document indexing" icon="file">
+    Index PDFs, Markdown, CSV, and more with one call: `lc.index("docs/")`
+  </Card>
+  <Card title="REST API" icon="server">
+    One-line FastAPI server with a built-in chat UI: `create_app(llm=..., vector_db=..., db=...)`
+  </Card>
+  <Card title="Typed responses" icon="code">
+    `ChatResponse` dataclass — `response.text`, `if response:`, `print(response)`. No more dict key guessing.
+  </Card>
+</CardGroup>
+
+---
+
+## Get started
+
+<Steps>
+  <Step title="Install">
+    ```bash
+    pip install langchat
+    ```
+  </Step>
+  <Step title="Set environment variables">
+    ```bash
+    OPENAI_API_KEY=sk-...
+    PINECONE_API_KEY=pcsk-...
+    SUPABASE_URL=https://xxxx.supabase.co
+    SUPABASE_KEY=eyJhbGc...
+    ```
+  </Step>
+  <Step title="Build your chatbot">
+    See the [Quick Start](/quick-start) guide.
+  </Step>
+</Steps>
+
+---
+
+## Links
+
+- [GitHub](https://github.com/neurobrains/langchat)
+- [PyPI](https://pypi.org/project/langchat/)
+- [Quick Start](/quick-start)
+- [API Reference](/api-reference/langchat)

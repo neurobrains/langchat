@@ -1,122 +1,181 @@
 ---
 title: Custom Prompts
-description: Customize your chatbot's behavior with custom prompts
+description: Real-world examples of custom prompt templates for different use cases.
 ---
 
-import { Callout } from 'mintlify';
-
-## Basic Custom Prompt
-
-Control how your chatbot responds:
+## Support agent
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Custom system prompt
-custom_prompt = """You are a helpful assistant.
-Answer questions clearly and concisely.
-Always be friendly and professional.
+SUPPORT_PROMPT = """You are a customer support agent for Acme Corp.
+Be helpful, empathetic, and concise. If you cannot find the answer in the provided context,
+say: "I don't have that information — please contact support@acme.com."
 
-Context: {context}
-History: {chat_history}
-Question: {question}
+Knowledge base:
+{context}
 
-Answer:"""
+Previous messages:
+{chat_history}
 
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
+Customer: {question}
+Agent:"""
 
-# Create with custom prompt
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=custom_prompt
-)
-
-result = await ai.chat(
-    query="What is Python?",
-    user_id="user123"
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    prompt_template=SUPPORT_PROMPT,
 )
 ```
-
-## Education Example
-
-Specialized education assistant:
-
-```python
-EDUCATION_PROMPT = """You are an expert education consultant.
-
-Your expertise:
-- University recommendations
-- Admission requirements
-- Scholarships and funding
-- Visa requirements
-
-Be friendly, professional, and concise.
-
-Context: {context}
-History: {chat_history}
-Question: {question}
-
-Answer:"""
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=EDUCATION_PROMPT
-)
-```
-
-## Customer Support Example
-
-Professional support agent:
-
-```python
-SUPPORT_PROMPT = """You are a customer support agent.
-
-Guidelines:
-- Be professional and empathetic
-- Provide step-by-step solutions
-- Ask clarifying questions when needed
-
-Product Info: {context}
-Previous Chat: {chat_history}
-Customer Question: {question}
-
-Response:"""
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=SUPPORT_PROMPT
-)
-```
-
-<Callout type="info">
-Custom prompts let you control your chatbot's personality, tone, and expertise. Use variables like `{context}`, `{chat_history}`, and `{question}` to include dynamic content.
-</Callout>
-
-## Prompt Variables
-
-Available variables in your prompt:
-
-- `{context}` - Retrieved documents from your knowledge base
-- `{chat_history}` - Previous conversation messages
-- `{question}` - Current user question
-
-## Next Steps
-
-- **[Prompts Guide](/guides/prompts)** - Advanced prompt techniques
-- **[Basic Usage](/examples/basic-usage)** - More examples
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Technical documentation bot
+
+```python
+DOCS_PROMPT = """You are a technical assistant for developers using the Acme API.
+Provide accurate, specific answers based strictly on the official documentation below.
+Include code examples where relevant. If the documentation doesn't cover the question,
+say so clearly.
+
+Relevant documentation:
+{context}
+
+Conversation history:
+{chat_history}
+
+Developer: {question}
+Assistant:"""
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o", temperature=0.2),   # lower temperature for accuracy
+    vector_db=Pinecone("docs-index"),
+    db=Supabase(),
+    prompt_template=DOCS_PROMPT,
+)
+```
+
+---
+
+## E-commerce product assistant
+
+```python
+SHOP_PROMPT = """You are a shopping assistant for StyleStore.
+Help customers find products, check availability, and answer questions about
+shipping, returns, and sizing. Be friendly and conversational.
+
+Product catalog context:
+{context}
+
+Customer conversation:
+{chat_history}
+
+Customer: {question}
+StyleStore Assistant:"""
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini", temperature=0.8),
+    vector_db=Pinecone("products-index"),
+    db=Supabase(),
+    prompt_template=SHOP_PROMPT,
+)
+```
+
+---
+
+## Multi-language bot
+
+```python
+MULTILINGUAL_PROMPT = """You are a helpful assistant. Detect the language of the user's
+question and respond in the same language. Always provide accurate answers based on the
+provided context.
+
+Context:
+{context}
+
+History:
+{chat_history}
+
+User: {question}
+Assistant:"""
+```
+
+---
+
+## Custom standalone question prompt
+
+The standalone question prompt controls how follow-up questions are rephrased for search. Customize it to match your domain:
+
+```python
+STANDALONE_PROMPT = """Given the following conversation history and a follow-up question
+about Acme Corp products and services, rephrase the follow-up as a standalone question
+that contains all necessary context.
+
+If the follow-up is a greeting or unrelated to Acme Corp, return it unchanged.
+
+Conversation:
+{chat_history}
+
+Follow-up: {question}
+Standalone question:"""
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    standalone_question_prompt=STANDALONE_PROMPT,
+)
+```
+
+---
+
+## Formal vs. casual tone
+
+<CodeGroup>
+```python Formal
+FORMAL_PROMPT = """You are a professional financial advisor assistant.
+Provide precise, factual information based on the provided documents.
+Use formal language. Always note that this information is for educational
+purposes only and does not constitute financial advice.
+
+Documents:
+{context}
+
+Conversation:
+{chat_history}
+
+Client: {question}
+Advisor:"""
+```
+
+```python Casual
+CASUAL_PROMPT = """Hey! I'm Max, your friendly tech helper. 😊
+I'll help you figure things out using our help center articles below.
+Keep it simple, skip the jargon, and if I don't know something, I'll say so!
+
+Help articles:
+{context}
+
+Chat so far:
+{chat_history}
+
+User: {question}
+Max:"""
+```
+</CodeGroup>
+
+---
+
+## Template variable reference
+
+Your prompt template must include exactly these three placeholders:
+
+| Placeholder | What it contains |
+|-------------|-----------------|
+| `{context}` | Top 3 document chunks retrieved from Pinecone (after reranking) |
+| `{chat_history}` | Last N exchanges from the conversation (N = `max_chat_history`) |
+| `{question}` | The user's current message (original, not reformulated) |
+
+Missing any of these raises a `KeyError` at runtime.

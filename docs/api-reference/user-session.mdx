@@ -1,67 +1,91 @@
 ---
 title: UserSession
-description: User session API reference
+description: Per-user session object that manages conversation memory and history.
 ---
 
-import { ParamField } from 'mintlify';
+## Overview
 
-## Class: UserSession
+`UserSession` manages one user's conversation state. It is created automatically when `chat()` is called for the first time for a given `user_id` + `platform` combination.
 
-Manages user conversation history and context.
-
-### Properties
-
-#### `user_id`
-
-User identifier.
+Access it via `lc.get_session()`:
 
 ```python
-user_id: str
+session = lc.get_session(user_id="alice", platform="web")
 ```
 
-#### `domain`
+---
 
-Session domain.
+## Attributes
 
-```python
-domain: str
-```
+<ParamField path="user_id" type="str">
+  The user identifier this session belongs to.
+</ParamField>
 
-#### `chat_history`
+<ParamField path="platform" type="str">
+  The platform namespace for this session.
+</ParamField>
 
-Chat history as list of tuples.
+<ParamField path="chat_history" type="list[tuple[str, str]]">
+  In-memory list of `(user_message, ai_response)` tuples. Loaded from Supabase on session creation and updated after each exchange.
+</ParamField>
 
-```python
-chat_history: List[Tuple[str, str]]
-```
+<ParamField path="conversation" type="CustomConversationChain">
+  The LangChain chain that processes messages. Handles retrieval, reranking, prompt formatting, and LLM calling.
+</ParamField>
 
-Format: `[(query1, response1), (query2, response2), ...]`
+---
 
-### Methods
+## Methods
 
-#### `save_message()`
+### `save_message()`
 
-Save a message to database.
+Save a chat exchange to Supabase. Called automatically after `chat()` — you don't need to call this manually.
 
 ```python
 def save_message(self, query: str, response: str) -> None
 ```
 
-**Parameters:**
+---
 
-<ParamField path="query" type="str" required>
-  User query
-</ParamField>
+## Session lifecycle
 
-<ParamField path="response" type="str" required>
-  AI response
-</ParamField>
-
-## Next Steps
-
-- **[Session Management](/guides/sessions)** - Session guide
-- **[LangChat API](/api-reference/langchat)** - Main API
+1. **Creation** — on first `chat()` call for this user + platform
+2. **History loading** — recent messages loaded from Supabase
+3. **Processing** — each `chat()` call passes through `session.conversation.ainvoke()`
+4. **Saving** — exchange saved to Supabase in background (non-blocking)
+5. **Memory update** — in-memory `chat_history` updated
+6. **Eviction** — oldest exchanges dropped when `len(chat_history) > max_chat_history`
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Inspecting a session
+
+```python
+session = lc.get_session("alice", "web")
+
+# View conversation history
+for query, response in session.chat_history:
+    print(f"Q: {query}")
+    print(f"A: {response}")
+    print()
+
+# Check session key
+print(f"Session key: alice_web")
+```
+
+---
+
+## Session caching
+
+Sessions are cached in `LangChatEngine.sessions` as a dict:
+
+```python
+# Key format
+session_key = "{user_id}_{platform}"
+
+# Access all active sessions
+for key, session in lc.engine.sessions.items():
+    print(key, len(session.chat_history))
+```
+
+After a server restart, the cache is empty — but history is reloaded from Supabase on the first `chat()` call.

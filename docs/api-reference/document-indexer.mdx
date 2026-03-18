@@ -1,62 +1,54 @@
 ---
-title: DocumentIndexer API
-description: Standalone document indexing API reference
+title: DocumentIndexer
+description: Standalone document indexing class for advanced use cases.
 ---
 
-import { ParamField } from 'mintlify';
-import { Callout } from 'mintlify';
+## Overview
 
-## Class: DocumentIndexer
+`DocumentIndexer` is the underlying class that powers `LangChat.index()`. Use it directly only when you need to index documents outside of a `LangChat` instance — for example, in a standalone indexing script that doesn't start the full chatbot.
 
-Standalone document loader and indexer for Pinecone. Use this to index documents without full LangChat setup.
+For most use cases, use `lc.index()` instead.
 
-### Constructor
+```python
+from langchat.core.utils.document_indexer import DocumentIndexer
+```
+
+---
+
+## Constructor
 
 ```python
 DocumentIndexer(
     pinecone_api_key: str,
     pinecone_index_name: str,
     openai_api_key: str,
-    embedding_model: str = "text-embedding-3-large"
+    embedding_model: str = "text-embedding-3-large",
 )
 ```
 
-**Parameters:**
-
 <ParamField path="pinecone_api_key" type="str" required>
-  Pinecone API key
+  Pinecone API key.
 </ParamField>
 
 <ParamField path="pinecone_index_name" type="str" required>
-  Pinecone index name (must exist)
+  Pinecone index name.
 </ParamField>
 
 <ParamField path="openai_api_key" type="str" required>
-  OpenAI API key for embeddings
+  OpenAI API key for creating embeddings.
 </ParamField>
 
 <ParamField path="embedding_model" type="str" default="text-embedding-3-large">
-  Embedding model to use
+  OpenAI embedding model.
 </ParamField>
 
-**Example:**
+---
 
-```python
-from langchat.core.utils.document_indexer import DocumentIndexer
+## Methods
 
-indexer = DocumentIndexer(
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    openai_api_key="sk-...",
-    embedding_model="text-embedding-3-large"
-)
-```
+### `load_and_index_documents()`
 
-### Methods
-
-#### `load_and_index_documents()`
-
-Index a single document.
+Index a single file.
 
 ```python
 def load_and_index_documents(
@@ -64,58 +56,89 @@ def load_and_index_documents(
     file_path: str,
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
-    namespace: Optional[str] = None,
-    prevent_duplicates: bool = True
+    namespace: str | None = None,
+    prevent_duplicates: bool = True,
 ) -> dict
 ```
 
-**Returns:**
+<ParamField path="file_path" type="str" required>
+  Path to the document file.
+</ParamField>
 
-`dict` with:
-- `chunks_indexed` (int): Number of chunks indexed
-- `chunks_skipped` (int): Number of duplicates skipped
+<ParamField path="chunk_size" type="int" default="1000">
+  Characters per chunk.
+</ParamField>
 
-#### `load_and_index_multiple_documents()`
+<ParamField path="chunk_overlap" type="int" default="200">
+  Overlap between adjacent chunks.
+</ParamField>
 
-Index multiple documents.
+<ParamField path="namespace" type="str | None" default="None">
+  Pinecone namespace.
+</ParamField>
+
+<ParamField path="prevent_duplicates" type="bool" default="True">
+  Skip chunks already in Pinecone (checked by content hash).
+</ParamField>
+
+**Returns:** `dict` with `chunks_indexed`, `chunks_skipped`, and metadata.
+
+---
+
+### `load_and_index_multiple_documents()`
+
+Index multiple files.
 
 ```python
 def load_and_index_multiple_documents(
     self,
-    file_paths: List[str],
+    file_paths: list[str],
     chunk_size: int = 1000,
     chunk_overlap: int = 200,
-    namespace: Optional[str] = None,
-    prevent_duplicates: bool = True
+    namespace: str | None = None,
+    prevent_duplicates: bool = True,
 ) -> dict
 ```
 
-## Example
-
-```python
-from langchat.core.utils.document_indexer import DocumentIndexer
-
-indexer = DocumentIndexer(
-    pinecone_api_key="pcsk-...",
-    pinecone_index_name="my-index",
-    openai_api_key="sk-..."
-)
-
-# Index document
-result = indexer.load_and_index_documents(
-    file_path="document.pdf",
-    chunk_size=1000,
-    chunk_overlap=200
-)
-
-print(f"✅ Indexed {result['chunks_indexed']} chunks")
-```
-
-## Next Steps
-
-- **[Document Indexing Guide](/guides/document-indexing)** - Complete guide
-- **[Examples](/examples/document-indexing)** - More examples
+Same parameters as `load_and_index_documents()`, but accepts a list of file paths.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Standalone indexing script
+
+Use `DocumentIndexer` directly when you want to index documents independently of the chatbot:
+
+```python
+# standalone_indexer.py
+import os
+from langchat.core.utils.document_indexer import DocumentIndexer
+from dotenv import load_dotenv
+
+load_dotenv()
+
+indexer = DocumentIndexer(
+    pinecone_api_key=os.environ["PINECONE_API_KEY"],
+    pinecone_index_name="my-index",
+    openai_api_key=os.environ["OPENAI_API_KEY"],
+)
+
+# Index multiple documents
+result = indexer.load_and_index_multiple_documents(
+    file_paths=[
+        "docs/manual.pdf",
+        "docs/faq.md",
+        "docs/policies.txt",
+    ],
+    chunk_size=1000,
+    chunk_overlap=200,
+    namespace="main",
+    prevent_duplicates=True,
+)
+
+print(f"Indexed: {result['chunks_indexed']}")
+print(f"Skipped: {result['chunks_skipped']}")
+```
+
+<Note>
+  `LangChat.index()` is a convenience wrapper around `DocumentIndexer` that reads credentials from environment variables automatically. Prefer it when you already have a `LangChat` instance.
+</Note>

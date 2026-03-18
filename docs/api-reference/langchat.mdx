@@ -1,19 +1,24 @@
 ---
-title: LangChat API
-description: Main LangChat class API reference
+title: LangChat
+description: Complete API reference for the LangChat class.
 ---
 
-import { ParamField } from 'mintlify';
-import { Callout } from 'mintlify';
+## Class: `LangChat`
 
-## Class: LangChat
+The main entry point for the LangChat SDK. Wraps `LangChatEngine` and returns typed `ChatResponse` objects.
 
-Main interface for using LangChat.
+```python
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
+```
 
-### Constructor
+---
+
+## Constructor
 
 ```python
 LangChat(
+    *,
     llm,
     vector_db,
     db,
@@ -21,167 +26,221 @@ LangChat(
     prompt_template=None,
     standalone_question_prompt=None,
     verbose=False,
-    max_chat_history=20
+    max_chat_history=20,
 )
 ```
 
-**Parameters:**
+All parameters are keyword-only (note the `*`).
 
 <ParamField path="llm" type="Any" required>
-  LLM provider instance (e.g., OpenAI, Anthropic, Gemini)
+  LLM provider instance. From `langchat.providers`: `OpenAI`, `Anthropic`, `Gemini`, `Mistral`, `Cohere`, `Ollama`.
 </ParamField>
 
 <ParamField path="vector_db" type="Any" required>
-  Vector database provider (e.g., Pinecone)
+  Vector database provider. From `langchat.providers`: `Pinecone`.
 </ParamField>
 
 <ParamField path="db" type="Any" required>
-  Database provider (e.g., Supabase)
+  History database provider. From `langchat.providers`: `Supabase`.
 </ParamField>
 
-<ParamField path="reranker" type="Any" default="None">
-  Optional reranker provider (defaults to Flashrank)
+<ParamField path="reranker" type="Any | None" default="FlashrankRerankAdapter">
+  Reranker instance. Defaults to `FlashrankRerankAdapter(model_name="ms-marco-MiniLM-L-12-v2", top_n=3)`.
 </ParamField>
 
 <ParamField path="prompt_template" type="str | None" default="None">
-  Custom system prompt template
+  Custom system prompt. Must include `{context}`, `{chat_history}`, `{question}`. See [Prompts guide](/guides/prompts).
 </ParamField>
 
 <ParamField path="standalone_question_prompt" type="str | None" default="None">
-  Custom standalone question prompt
+  Custom standalone question prompt. Must include `{chat_history}` and `{question}`.
 </ParamField>
 
 <ParamField path="verbose" type="bool" default="False">
-  Enable verbose logging
+  Enable verbose LangChain logging.
 </ParamField>
 
 <ParamField path="max_chat_history" type="int" default="20">
-  Maximum chat history messages to keep
+  Number of recent exchanges to include in each prompt. One exchange = one (user, AI) pair.
 </ParamField>
 
 **Example:**
 
 ```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Create LangChat
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    max_chat_history=10,
+)
 ```
 
-### Methods
+---
 
-#### `async chat()`
+## Methods
 
-Process a chat query.
+### `chat()`
+
+Send a message and receive a typed response. Async.
 
 ```python
 async def chat(
     self,
     query: str,
     user_id: str,
-    domain: str = "default"
-) -> dict
+    platform: str = "default",
+) -> ChatResponse
 ```
 
-**Parameters:**
-
 <ParamField path="query" type="str" required>
-  User query text
+  The user's message.
 </ParamField>
 
 <ParamField path="user_id" type="str" required>
-  User identifier for session management
+  Unique identifier for the user. Scopes conversation history.
 </ParamField>
 
-<ParamField path="domain" type="str" default="default">
-  Domain for conversation context
+<ParamField path="platform" type="str" default="default">
+  Namespace for the conversation. Use different values to separate conversations for the same user across multiple apps.
 </ParamField>
 
-**Returns:**
-
-`dict` with:
-- `response` (str): AI response
-- `status` (str): "success" or "error"
-- `response_time` (float): Time in seconds
+**Returns:** [`ChatResponse`](/api-reference/langchat-config)
 
 **Example:**
 
 ```python
-result = await ai.chat(
-    query="What is Python?",
-    user_id="user123",
-    domain="default"
+response = await lc.chat(
+    query="What is our return policy?",
+    user_id="alice",
+    platform="web",
 )
-print(result["response"])
+
+if response:                                    # True when status == "success"
+    print(response.text)
+    print(f"{response.response_time:.2f}s")
+else:
+    print(f"Error: {response.error}")
 ```
 
-#### `chat_sync()`
+---
 
-Synchronous version of chat.
+### `chat_sync()`
+
+Synchronous wrapper around `chat()`. Blocks until the response is ready.
 
 ```python
 def chat_sync(
     self,
     query: str,
     user_id: str,
-    domain: str = "default"
-) -> dict
+    platform: str = "default",
+) -> ChatResponse
 ```
 
-#### `load_and_index_documents()`
+Same parameters and return type as `chat()`.
 
-Index documents to Pinecone.
+**Example:**
 
 ```python
-def load_and_index_documents(
-    self,
-    file_path: str,
-    chunk_size: int = 1000,
-    chunk_overlap: int = 200,
-    namespace: Optional[str] = None,
-    prevent_duplicates: bool = True
-) -> dict
+# Useful in scripts, notebooks, and synchronous frameworks
+response = lc.chat_sync(query="Hello!", user_id="alice")
+print(response)
 ```
-
-**Returns:**
-
-`dict` with:
-- `chunks_indexed` (int): Number of chunks indexed
-- `chunks_skipped` (int): Number of duplicates skipped
-
-#### `load_and_index_multiple_documents()`
-
-Index multiple documents.
-
-```python
-def load_and_index_multiple_documents(
-    self,
-    file_paths: List[str],
-    chunk_size: int = 1000,
-    chunk_overlap: int = 200,
-    namespace: Optional[str] = None,
-    prevent_duplicates: bool = True
-) -> dict
-```
-
-## Properties
-
-- `engine` - Access to LangChatEngine instance
-
-## Next Steps
-
-- **[Quick Start](/quick-start)** - Get started
-- **[Examples](/examples/basic-usage)** - See examples
-- **[Configuration](/guides/configuration)** - Learn configuration
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+### `index()`
+
+Index documents into Pinecone. Can accept a file path, a list of paths, or a directory.
+
+```python
+def index(
+    self,
+    paths: str | list[str],
+    *,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    namespace: str | None = None,
+    prevent_duplicates: bool = True,
+) -> dict
+```
+
+<ParamField path="paths" type="str | list[str]" required>
+  Path to a file, a list of file paths, or a directory path.
+</ParamField>
+
+<ParamField path="chunk_size" type="int" default="1000">
+  Maximum characters per chunk.
+</ParamField>
+
+<ParamField path="chunk_overlap" type="int" default="200">
+  Character overlap between adjacent chunks.
+</ParamField>
+
+<ParamField path="namespace" type="str | None" default="None">
+  Pinecone namespace to index into.
+</ParamField>
+
+<ParamField path="prevent_duplicates" type="bool" default="True">
+  Skip chunks that are already in Pinecone (detected by content hash).
+</ParamField>
+
+**Returns:** `dict` with:
+- `chunks_indexed` (`int`) — chunks added
+- `chunks_skipped` (`int`) — duplicates skipped
+- `files_processed` (`int`) — files successfully loaded
+- `errors` (`list`) — files that failed to load
+
+**Example:**
+
+```python
+result = lc.index(["docs/faq.pdf", "docs/manual.pdf"], namespace="support")
+print(f"Indexed {result['chunks_indexed']} chunks")
+```
+
+---
+
+### `get_session()`
+
+Get or create a `UserSession` for a user.
+
+```python
+def get_session(
+    self,
+    user_id: str,
+    platform: str = "default",
+) -> UserSession
+```
+
+**Example:**
+
+```python
+session = lc.get_session("alice", platform="web")
+print(session.chat_history)   # list of (query, response) tuples
+```
+
+---
+
+### `load_env()` (class method)
+
+Load a `.env` file into the environment. Call this before creating `LangChat`.
+
+```python
+@classmethod
+def load_env(cls, path: str = ".env") -> None
+```
+
+**Example:**
+
+```python
+LangChat.load_env()            # loads .env from current directory
+LangChat.load_env(".env.prod") # loads a specific file
+```
+
+---
+
+## Properties
+
+<ParamField path="engine" type="LangChatEngine">
+  Access to the underlying `LangChatEngine` instance.
+</ParamField>

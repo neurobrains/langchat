@@ -1,179 +1,142 @@
 ---
 title: Session Management
-description: How LangChat manages user sessions and chat history
+description: How LangChat tracks conversations per user and per platform.
 ---
 
-import { Callout } from 'mintlify';
+## How sessions work
 
-## What are Sessions?
+Every `chat()` call is tied to a `user_id` and an optional `platform`. Together they form a session key:
 
-Sessions track each user's conversation history and context. They're:
-
-- **User-specific** - Each user has separate sessions
-- **Domain-specific** - Different domains = different sessions
-- **Automatic** - Created and managed automatically
-- **Persistent** - Saved to database
-
-## Automatic Session Management
-
-Sessions are created automatically:
-
-```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# First chat creates session automatically
-result = await ai.chat(
-    query="Hello!",
-    user_id="user123",
-    domain="default"
-)
+```
+session_key = "{user_id}_{platform}"
 ```
 
-## Conversation History
+LangChat maintains one `UserSession` per key. Within a session:
 
-LangChat remembers previous messages:
-
-```python
-# First message
-result1 = await ai.chat(
-    query="What universities offer computer science?",
-    user_id="user123"
-)
-
-# Second message (remembers context)
-result2 = await ai.chat(
-    query="What about in Europe?",
-    user_id="user123"
-)
-# AI knows "What about in Europe?" refers to CS programs
-```
-
-## Accessing Sessions
-
-Get session information:
-
-```python
-# Get session
-session = ai.engine.get_session(user_id="user123", domain="default")
-
-# Access history
-print(session.chat_history)  # List of (query, response) tuples
-print(session.domain)  # "default"
-print(session.user_id)  # "user123"
-```
-
-## Multi-Domain Sessions
-
-Separate sessions for different domains:
-
-```python
-# Education domain
-result1 = await ai.chat(
-    query="What universities offer CS?",
-    user_id="user123",
-    domain="education"
-)
-
-# Travel domain (separate history)
-result2 = await ai.chat(
-    query="What are good travel destinations?",
-    user_id="user123",
-    domain="travel"
-)
-```
-
-<Callout type="info">
-Each domain maintains separate chat history. Messages in one domain don't affect another.
-</Callout>
-
-## History Limits
-
-Control how much history to keep:
-
-```python
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    max_chat_history=50  # Keep last 50 messages
-)
-```
-
-**Recommendations:**
-- **Short conversations**: `max_chat_history=10`
-- **Normal use**: `max_chat_history=20` (default)
-- **Long conversations**: `max_chat_history=50`
-
-## Best Practices
-
-### 1. Use Consistent User IDs
-
-```python
-# ✅ Good: Stable user ID
-user_id = "user_12345"
-
-# ❌ Bad: Random IDs
-user_id = str(uuid.uuid4())  # Creates new session each time
-```
-
-### 2. Choose Appropriate Domains
-
-```python
-# Separate contexts
-domain = "education"  # For education queries
-domain = "travel"     # For travel queries
-domain = "support"    # For support queries
-```
-
-### 3. Monitor History Size
-
-```python
-session = ai.engine.get_session("user123", "default")
-print(f"History length: {len(session.chat_history)}")
-```
-
-## Troubleshooting
-
-### History Not Persisting
-
-Check database configuration:
-
-```python
-db = Supabase(
-    url="https://...",  # Verify URL
-    key="..."  # Verify key
-)
-```
-
-### Context Lost Between Messages
-
-Ensure same user_id and domain:
-
-```python
-# ✅ Same session
-await ai.chat(query="Q1", user_id="user123", domain="default")
-await ai.chat(query="Q2", user_id="user123", domain="default")
-
-# ❌ Different sessions
-await ai.chat(query="Q1", user_id="user123", domain="default")
-await ai.chat(query="Q2", user_id="user456", domain="default")  # Different user
-```
-
-## Next Steps
-
-- **[Configuration](/guides/configuration)** - Learn about settings
-- **[Basic Usage](/examples/basic-usage)** - See examples
-- **[API Reference](/api-reference/user-session)** - Full API docs
+- The last N exchanges are kept in memory (default: 20, configured via `max_chat_history`)
+- Full history is loaded from Supabase when the session is first accessed
+- Each new exchange is saved to Supabase in the background (non-blocking)
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## user_id
+
+Identifies the person chatting. Use any stable, unique identifier — a database UUID, an email address, or a session token.
+
+```python
+response = await lc.chat(
+    query="What's my account balance?",
+    user_id="user_abc123",
+)
+```
+
+Each `user_id` has its own isolated conversation history. User A never sees User B's messages.
+
+---
+
+## platform
+
+Groups conversations by application or context. Use it when multiple apps or surfaces share the same LangChat backend.
+
+```python
+# Web app conversation
+response = await lc.chat(
+    query="Help me track my order",
+    user_id="user_123",
+    platform="web",
+)
+
+# Mobile app — same user, completely separate conversation
+response = await lc.chat(
+    query="Help me track my order",
+    user_id="user_123",
+    platform="mobile",
+)
+
+# Internal admin tool — separate again
+response = await lc.chat(
+    query="Show me the user report",
+    user_id="user_123",
+    platform="admin",
+)
+```
+
+If you don't pass `platform`, it defaults to `"default"`.
+
+---
+
+## History window
+
+`max_chat_history` controls how many past exchanges are included in each prompt. One exchange = one user message + one AI response.
+
+```python
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    max_chat_history=10,   # include last 10 exchanges in each prompt
+)
+```
+
+**Trade-offs:**
+
+| Setting | Context quality | Token cost | Speed |
+|---------|-----------------|------------|-------|
+| Higher (e.g. 50) | Better memory of the conversation | Higher | Slower |
+| Lower (e.g. 5) | May forget earlier context | Lower | Faster |
+| Default (20) | Good balance | Moderate | Normal |
+
+---
+
+## Get a session object
+
+Access the underlying `UserSession` directly if you need to inspect or manipulate it:
+
+```python
+session = lc.get_session(user_id="alice", platform="web")
+
+print(session.user_id)          # "alice"
+print(session.platform)         # "web"
+print(session.chat_history)     # list of (query, response) tuples
+```
+
+---
+
+## How history is loaded
+
+When you first call `chat()` for a user:
+
+1. LangChat checks the in-memory session cache — if the session exists, it uses that
+2. If not, it creates a new `UserSession` which loads recent messages from Supabase
+3. The loaded history is stored in memory for subsequent calls
+
+This means after a server restart, users can continue where they left off.
+
+---
+
+## Database schema
+
+Chat history is stored in the `chat_history` table:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `bigint` | Auto-incrementing primary key |
+| `user_id` | `text` | User identifier |
+| `platform` | `text` | Platform namespace (default: `"default"`) |
+| `message` | `text` | User's message |
+| `response` | `text` | AI's response |
+| `created_at` | `timestamptz` | UTC timestamp |
+
+LangChat creates this table automatically on first run.
+
+---
+
+## Multi-tenant isolation
+
+When running LangChat as a shared API, conversations are naturally isolated because:
+
+- Each `user_id` + `platform` combination is a separate session
+- History queries always filter by both `user_id` and `platform`
+- In-memory session cache is keyed by `"{user_id}_{platform}"`
+
+No extra configuration is needed for multi-tenant use.

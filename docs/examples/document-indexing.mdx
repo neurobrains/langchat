@@ -1,122 +1,180 @@
 ---
 title: Document Indexing Examples
-description: Examples of indexing documents for your chatbot
+description: Practical examples for indexing documents into your Pinecone vector store.
 ---
 
-import { CodeGroup } from 'mintlify';
-import { Callout } from 'mintlify';
-
-## Index Single Document
-
-<CodeGroup>
-```python Using LangChat
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Index document
-result = ai.load_and_index_documents(
-    file_path="company-handbook.pdf",
-    chunk_size=1000,
-    chunk_overlap=200
-)
-
-print(f"✅ Indexed {result['chunks_indexed']} chunks")
-```
-</CodeGroup>
-
-## Index Multiple Documents
-
-```python
-result = ai.load_and_index_multiple_documents(
-    file_paths=[
-        "product-catalog.pdf",
-        "faq-document.txt",
-        "pricing-guide.csv"
-    ],
-    chunk_size=1000,
-    chunk_overlap=200
-)
-
-print(f"✅ Total chunks: {result['total_chunks_indexed']}")
-print(f"⏭️  Skipped: {result['total_chunks_skipped']}")
-```
-
-## Using Namespaces
-
-Organize documents by topic:
-
-```python
-# Education documents
-ai.load_and_index_documents(
-    file_path="universities.pdf",
-    namespace="education"
-)
-
-# Travel documents
-ai.load_and_index_documents(
-    file_path="destinations.pdf",
-    namespace="travel"
-)
-```
-
-## Complete Example
+## Index a single PDF
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-import os
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Setup
-llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-vector_db = Pinecone(
-    api_key=os.getenv("PINECONE_API_KEY"),
-    index_name=os.getenv("PINECONE_INDEX_NAME")
-)
-db = Supabase(
-    url=os.getenv("SUPABASE_URL"),
-    key=os.getenv("SUPABASE_KEY")
+LangChat.load_env()
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
 )
 
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Index documents
-documents = [
-    "company-handbook.pdf",
-    "product-catalog.pdf",
-    "faq-document.txt"
-]
-
-for doc in documents:
-    if os.path.exists(doc):
-        result = ai.load_and_index_documents(
-            file_path=doc,
-            chunk_size=1000,
-            chunk_overlap=200
-        )
-        print(f"✅ {doc}: {result['chunks_indexed']} chunks")
+result = lc.index("docs/user-manual.pdf")
+print(f"Indexed {result['chunks_indexed']} chunks")
 ```
-
-<Callout type="success">
-Your documents are now searchable by your chatbot!
-</Callout>
-
-## Next Steps
-
-- **[Document Indexing Guide](/guides/document-indexing)** - Complete guide
-- **[Vector Search](/guides/vector-search)** - Understand search
-- **[Basic Usage](/examples/basic-usage)** - Test your chatbot
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Index multiple files
+
+```python
+result = lc.index([
+    "content/faq.pdf",
+    "content/pricing.md",
+    "content/terms.txt",
+    "content/products.csv",
+])
+
+print(f"Files processed: {result['files_processed']}")
+print(f"Chunks indexed:  {result['chunks_indexed']}")
+print(f"Chunks skipped:  {result['chunks_skipped']}")  # duplicates
+
+if result.get("errors"):
+    for err in result["errors"]:
+        print(f"  Error: {err}")
+```
+
+---
+
+## Index a directory
+
+```python
+# Index everything in the docs/ folder
+result = lc.index("docs/")
+```
+
+---
+
+## Custom chunking
+
+For long-form content (legal documents, books), larger chunks preserve more context:
+
+```python
+result = lc.index(
+    "docs/legal-contracts.pdf",
+    chunk_size=2000,
+    chunk_overlap=400,
+)
+```
+
+For short Q&A content (FAQs, product specs), smaller chunks improve precision:
+
+```python
+result = lc.index(
+    "content/faq.md",
+    chunk_size=500,
+    chunk_overlap=50,
+)
+```
+
+---
+
+## Using namespaces
+
+Namespaces let a single Pinecone index serve multiple document collections:
+
+```python
+# Index different content into separate namespaces
+lc.index("products/", namespace="products")
+lc.index("support/", namespace="support")
+lc.index("policies/", namespace="policies")
+
+print("All namespaces indexed")
+```
+
+---
+
+## Build a knowledge base script
+
+A complete script to build a fresh knowledge base:
+
+```python
+#!/usr/bin/env python
+# build_knowledge_base.py
+
+import sys
+from pathlib import Path
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+DOCS_PATH = "content/"
+NAMESPACE = "main"
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
+
+print(f"Indexing {DOCS_PATH}...")
+
+result = lc.index(
+    DOCS_PATH,
+    chunk_size=1000,
+    chunk_overlap=200,
+    namespace=NAMESPACE,
+    prevent_duplicates=True,
+)
+
+print(f"✓ Done")
+print(f"  Chunks indexed:   {result['chunks_indexed']}")
+print(f"  Chunks skipped:   {result['chunks_skipped']}")
+print(f"  Files processed:  {result['files_processed']}")
+
+if result.get("errors"):
+    print(f"\n  Errors ({len(result['errors'])}):")
+    for err in result["errors"]:
+        print(f"    {err}")
+    sys.exit(1)
+```
+
+Run with:
+
+```bash
+python build_knowledge_base.py
+```
+
+---
+
+## Watch for changes (polling)
+
+For development, re-index when files change:
+
+```python
+import time
+import hashlib
+from pathlib import Path
+
+def file_hash(path: str) -> str:
+    return hashlib.md5(Path(path).read_bytes()).hexdigest()
+
+# Track file hashes
+hashes = {}
+docs_path = "content/"
+
+while True:
+    changed = []
+    for f in Path(docs_path).rglob("*"):
+        if f.is_file():
+            h = file_hash(str(f))
+            if hashes.get(str(f)) != h:
+                hashes[str(f)] = h
+                changed.append(str(f))
+
+    if changed:
+        print(f"Detected changes in {len(changed)} file(s), re-indexing...")
+        result = lc.index(changed, prevent_duplicates=False)
+        print(f"  Re-indexed {result['chunks_indexed']} chunks")
+
+    time.sleep(30)  # check every 30 seconds
+```

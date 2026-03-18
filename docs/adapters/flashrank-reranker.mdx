@@ -1,101 +1,96 @@
 ---
 title: Flashrank Reranker
-description: Improve search results with reranking
+description: Cross-encoder reranker that improves search result quality.
 ---
 
-import { Callout } from 'mintlify';
+## What it does
 
-## Overview
+After Pinecone returns the top-k chunks by cosine similarity, the Flashrank reranker re-scores them using a cross-encoder model. Cross-encoders jointly encode the query and each document together, giving a much more accurate relevance score than the embedding similarity alone.
 
-The Flashrank reranker improves search result relevance by re-scoring retrieved documents.
+Result: fewer but better chunks reach the LLM prompt.
 
-## Features
+```
+Pinecone: 5 candidates (by cosine similarity)
+           ↓
+Flashrank: re-scores all 5
+           ↓
+Top 3 most relevant chunks → LLM prompt
+```
 
-- ✅ **Better Relevance** - Improves search accuracy
-- ✅ **Fast Performance** - Optimized ONNX models
-- ✅ **Automatic Download** - Models downloaded automatically
-- ✅ **Easy Setup** - Simple configuration
+---
 
-## Basic Usage
+## Default configuration
+
+LangChat uses Flashrank automatically — no setup required:
 
 ```python
-from langchat.reranker import Flashrank
+# This is what LangChat uses by default (you don't need to write this):
+from langchat.adapters.reranker import FlashrankRerankAdapter
 
-reranker = Flashrank(
+reranker = FlashrankRerankAdapter(
     model_name="ms-marco-MiniLM-L-12-v2",
-    top_n=3  # Keep top 3 after reranking
+    cache_dir="rerank_models",
+    top_n=3,
 )
 ```
 
-## Configuration
+---
 
-```python
-reranker = Flashrank(
-    model_name="ms-marco-MiniLM-L-12-v2",  # Model name
-    top_n=3,  # Number of documents to keep
-    cache_dir="rerank_models"  # Where to store models
-)
-```
+## Custom configuration
 
-<Callout type="info">
-Reranker models are automatically downloaded on first use (~50MB).
-</Callout>
-
-## Using with LangChat
+Pass a custom reranker to `LangChat` to change the model or `top_n`:
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-from langchat.reranker import Flashrank
+from langchat.providers import OpenAI, Pinecone, Supabase
+from langchat.adapters.reranker import FlashrankRerankAdapter
 
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-reranker = Flashrank(top_n=3)
+reranker = FlashrankRerankAdapter(
+    model_name="ms-marco-MiniLM-L-12-v2",
+    cache_dir="rerank_models",
+    top_n=5,   # pass more chunks to the LLM
+)
 
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    reranker=reranker
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    reranker=reranker,
 )
 ```
 
-## How It Works
+---
 
-1. Vector search retrieves K documents
-2. Reranker re-scores documents for relevance
-3. Top N documents selected
-4. Used as context for LLM response
+## Parameters
 
-## Best Practices
+<ParamField path="model_name" type="str" default="ms-marco-MiniLM-L-12-v2">
+  Flashrank cross-encoder model. The default is a good balance of speed and accuracy.
+</ParamField>
 
-### 1. Balance Retrieval and Reranking
+<ParamField path="cache_dir" type="str" default="rerank_models">
+  Directory where the model is cached after first download.
+</ParamField>
 
-```python
-# Retrieve more, rerank to fewer
-retriever = vector_db.get_retriever(k=10)  # Retrieve 10
-reranker = Flashrank(top_n=3)  # Keep top 3
-```
-
-### 2. Use Appropriate Top N
-
-```python
-# Precise queries
-reranker = Flashrank(top_n=3)
-
-# Broad queries
-reranker = Flashrank(top_n=5)
-```
-
-## Next Steps
-
-- **[Vector Search Guide](/guides/vector-search)** - Learn about search
-- **[Configuration](/guides/configuration)** - Configuration options
-- **[Performance](/advanced/performance)** - Optimization tips
+<ParamField path="top_n" type="int" default="3">
+  Number of reranked chunks to include in the LLM prompt.
+</ParamField>
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Model download
+
+The Flashrank model is downloaded automatically on first use (about 100MB). It's cached locally in `cache_dir` and reused on subsequent runs.
+
+No API key or external service is required — reranking runs entirely locally.
+
+---
+
+## Trade-offs
+
+| `top_n` | LLM context quality | Token cost | Latency |
+|---------|---------------------|------------|---------|
+| 1–2 | Focused but may miss context | Lowest | Fastest |
+| 3 | Good balance (default) | Moderate | Fast |
+| 5–10 | Rich context | Higher | Slower |
+
+For long, complex documents where multiple chunks may be needed to answer a question, increase `top_n` to 5 or more.

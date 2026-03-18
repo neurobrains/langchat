@@ -1,172 +1,220 @@
 ---
 title: Production Deployment
-description: Deploy your LangChat chatbot to production
+description: Deploy LangChat reliably to production.
 ---
 
-import { Callout } from 'mintlify';
-import { CodeGroup } from 'mintlify';
+## Checklist
 
-## Quick Deploy
+Before going live, verify:
 
-Deploy your chatbot as an API server:
+- [ ] All API keys are in environment variables (not hardcoded)
+- [ ] `.env` is in `.gitignore`
+- [ ] Documents are indexed in Pinecone
+- [ ] Supabase tables exist (created automatically on first run)
+- [ ] Server uses `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS)
+- [ ] Multiple workers configured (uvicorn `--workers`)
+- [ ] Health check endpoint responding at `/health`
 
-<CodeGroup>
-```python Basic Server
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-import uvicorn
+---
 
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
+## Environment variables
 
-# Create server
-app = create_app(llm=llm, vector_db=vector_db, db=db)
+In production, set environment variables via your hosting platform (not a `.env` file):
 
-# Run
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+```bash
+# Heroku
+heroku config:set OPENAI_API_KEY=sk-...
+
+# Railway
+railway variables set OPENAI_API_KEY=sk-...
+
+# Docker / Kubernetes — pass via -e flags or secrets
 ```
 
-```python With Environment Variables
-import os
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-import uvicorn
+---
 
-# Load from environment
-llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-vector_db = Pinecone(
-    api_key=os.getenv("PINECONE_API_KEY"),
-    index_name=os.getenv("PINECONE_INDEX_NAME")
-)
-db = Supabase(
-    url=os.getenv("SUPABASE_URL"),
-    key=os.getenv("SUPABASE_KEY")
-)
+## Uvicorn configuration
 
-app = create_app(llm=llm, vector_db=vector_db, db=db)
+```bash
+# Single process (development)
+uvicorn server:app --host 0.0.0.0 --port 8000 --reload
 
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+# Multi-process (production) — use number of CPU cores
+uvicorn server:app --host 0.0.0.0 --port 8000 --workers 4
+
+# With Gunicorn (more robust process management)
+pip install gunicorn
+gunicorn server:app \
+  --worker-class uvicorn.workers.UvicornWorker \
+  --workers 4 \
+  --bind 0.0.0.0:8000 \
+  --timeout 120 \
+  --keep-alive 5
 ```
-</CodeGroup>
 
-## Docker Deployment
+---
 
-### Dockerfile
+## Docker deployment
 
 ```dockerfile
-FROM python:3.10-slim
+# Dockerfile
+FROM python:3.11-slim
 
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml .
+RUN pip install langchat uvicorn gunicorn
 
 # Copy application
-COPY . .
+COPY server.py .
 
-# Expose port
+# Build UI (if using the built-in frontend)
+COPY src/langchat/core/ui /app/ui
+RUN cd /app/ui && npm ci && npm run build
+
 EXPOSE 8000
 
-# Run
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["gunicorn", "server:app", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--workers", "4", \
+     "--bind", "0.0.0.0:8000"]
 ```
-
-### requirements.txt
-
-```txt
-langchat>=2.0.0
-uvicorn[standard]>=0.34.3
-```
-
-### Build and Run
 
 ```bash
-# Build
-docker build -t langchat-chatbot .
+docker build -t my-chatbot .
 
-# Run
-docker run -p 8000:8000 \
-  -e OPENAI_API_KEY="sk-..." \
-  -e PINECONE_API_KEY="..." \
-  -e PINECONE_INDEX_NAME="..." \
-  -e SUPABASE_URL="https://..." \
-  -e SUPABASE_KEY="..." \
-  langchat-chatbot
+docker run -d \
+  -p 8000:8000 \
+  -e OPENAI_API_KEY=sk-... \
+  -e PINECONE_API_KEY=pcsk-... \
+  -e SUPABASE_URL=https://xxxx.supabase.co \
+  -e SUPABASE_SERVICE_ROLE_KEY=eyJ... \
+  --name my-chatbot \
+  my-chatbot
 ```
-
-## Cloud Deployment
-
-### Google Cloud Run
-
-1. Build and push image
-2. Deploy to Cloud Run
-3. Set environment variables
-4. Done!
-
-### Other Platforms
-
-Works on:
-- AWS Lambda
-- Azure Container Instances
-- Heroku
-- Railway
-- Any Docker-compatible platform
-
-## Environment Variables
-
-Set these in production:
-
-```bash
-OPENAI_API_KEY=sk-...
-PINECONE_API_KEY=pcsk-...
-PINECONE_INDEX_NAME=your-index
-SUPABASE_URL=https://...supabase.co
-SUPABASE_KEY=eyJ...
-PORT=8000
-```
-
-<Callout type="warning">
-Never commit API keys to code. Always use environment variables or secrets management.
-</Callout>
-
-## Best Practices
-
-### 1. Use Multiple API Keys
-
-```python
-llm = OpenAI(api_keys=["key1", "key2", "key3"])
-```
-
-### 2. Monitor Performance
-
-Track response times and errors in production.
-
-### 3. Set Up Health Checks
-
-```python
-# Health endpoint available at /health
-```
-
-### 4. Use Production Database
-
-Ensure Supabase is configured for production use.
-
-## Next Steps
-
-- **[API Server](/examples/api-server)** - Server setup
-- **[Troubleshooting](/advanced/troubleshooting)** - Common issues
-- **[Performance](/advanced/performance)** - Optimization tips
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Health checks
+
+Use the `/health` endpoint for load balancer and uptime monitor health checks:
+
+```bash
+curl http://your-server/health
+# {"status":"healthy","timestamp":"...","version":"1.0.1"}
+```
+
+In Docker Compose:
+
+```yaml
+services:
+  chatbot:
+    image: my-chatbot
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+---
+
+## API key rotation
+
+For high-traffic deployments, use multiple OpenAI keys to stay within rate limits:
+
+```python
+from langchat.providers import OpenAI
+
+llm = OpenAI(
+    "gpt-4o-mini",
+    api_keys=[
+        os.environ["OPENAI_KEY_1"],
+        os.environ["OPENAI_KEY_2"],
+        os.environ["OPENAI_KEY_3"],
+    ],
+    max_retries_per_key=2,
+)
+```
+
+---
+
+## Monitoring
+
+LangChat saves request metrics to Supabase automatically. Query them to monitor:
+
+```sql
+-- Average response time (last 24 hours)
+SELECT AVG(response_time) as avg_latency
+FROM request_metrics
+WHERE request_time > NOW() - INTERVAL '24 hours'
+  AND success = true;
+
+-- Error rate
+SELECT
+  COUNT(*) FILTER (WHERE success = false) as errors,
+  COUNT(*) as total,
+  ROUND(COUNT(*) FILTER (WHERE success = false)::numeric / COUNT(*) * 100, 2) as error_rate
+FROM request_metrics
+WHERE request_time > NOW() - INTERVAL '1 hour';
+
+-- Slowest queries
+SELECT user_id, response_time, request_time
+FROM request_metrics
+ORDER BY response_time DESC
+LIMIT 20;
+```
+
+---
+
+## Supabase connection pooling
+
+For high concurrency, use Supabase's connection pooler (Transaction mode via port 6543):
+
+```bash
+# Use the pooler URL instead of direct connection
+SUPABASE_URL=https://xxxx.supabase.co  # standard — works for most cases
+```
+
+Supabase handles connection pooling internally for the REST API (which LangChat uses via the Python client). No extra configuration needed.
+
+---
+
+## Security
+
+**Never expose raw API keys.** Always use environment variables or a secrets manager (AWS Secrets Manager, GCP Secret Manager, HashiCorp Vault).
+
+**CORS** is enabled for all origins by default (`allow_origins=["*"]`). To restrict in production:
+
+```python
+# Access the underlying FastAPI app after creation
+from langchat.api import get_app
+from fastapi.middleware.cors import CORSMiddleware
+
+app = create_app(...)
+
+# Remove the permissive CORS middleware and add a restrictive one
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-frontend.com"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+```
+
+**Rate limiting** — add rate limiting middleware to prevent abuse:
+
+```bash
+pip install slowapi
+```
+
+```python
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+```

@@ -1,104 +1,152 @@
 ---
-title: Performance Optimization
-description: Optimize LangChat for better performance
+title: Performance
+description: Optimize LangChat for lower latency, higher throughput, and lower cost.
 ---
 
-import { Callout } from 'mintlify';
+## Response time breakdown
 
-## Quick Optimizations
+A typical LangChat `chat()` call involves:
 
-### Use Faster Models
+| Step | Typical latency |
+|------|-----------------|
+| Standalone question generation (LLM call) | 300–800ms |
+| Pinecone embedding + search | 100–300ms |
+| Flashrank reranking | 50–150ms |
+| LLM response generation | 500–3000ms |
+| Supabase save (background, non-blocking) | — |
+| **Total** | **~1–4s** |
+
+The two LLM calls dominate. Everything else is fast.
+
+---
+
+## Use a faster model
+
+The single highest-impact change. `gpt-4o-mini` is ~5× faster and ~20× cheaper than `gpt-4o`:
 
 ```python
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
+# Slower and expensive
+llm = OpenAI("gpt-4o")
 
-# Faster LLM
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")  # Fastest
+# Faster and cheap — good for most use cases
+llm = OpenAI("gpt-4o-mini")
+```
 
-# Faster embeddings
-vector_db = Pinecone(
-    api_key="...",
-    index_name="...",
-    embedding_model="text-embedding-3-small"  # Faster than large
+For even faster responses at lower quality, try Mistral's small models or Gemini Flash:
+
+```python
+llm = Gemini("gemini-2.0-flash")         # very fast
+llm = Mistral("mistral-small-latest")    # fast and cheap
+```
+
+---
+
+## Reduce context size
+
+Smaller prompts = faster LLM calls + lower cost.
+
+**Reduce history window:**
+
+```python
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    max_chat_history=5,   # default: 20
 )
 ```
 
-### Reduce Retrieval Count
+**Reduce reranker top_n:**
 
 ```python
-# Get retriever with fewer documents
-retriever = vector_db.get_retriever(k=5)  # Instead of k=10
+from langchat.adapters.reranker import FlashrankRerankAdapter
+
+reranker = FlashrankRerankAdapter(top_n=2)   # default: 3
 ```
 
-### Limit Chat History
+**Use smaller chunks:**
 
 ```python
+result = lc.index("docs/", chunk_size=600, chunk_overlap=100)
+```
+
+Smaller chunks mean shorter context per retrieved document.
+
+---
+
+## Use smaller embedding model
+
+Switch to `text-embedding-3-small` for faster, cheaper embeddings:
+
+```python
+from langchat.providers import Pinecone
+
+vector_db = Pinecone("my-index", embedding_model="text-embedding-3-small")
+```
+
+<Warning>
+  You must re-create your Pinecone index (1536 dimensions) and re-index all documents when switching embedding models.
+</Warning>
+
+---
+
+## Concurrent users
+
+LangChat's `chat()` is async and non-blocking. Run multiple chats concurrently:
+
+```python
+import asyncio
 from langchat import LangChat
 
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    max_chat_history=10  # Less history = faster
-)
+lc = LangChat(...)
+
+async def handle_concurrent_users():
+    # These run in parallel
+    results = await asyncio.gather(
+        lc.chat(query="Question 1", user_id="alice"),
+        lc.chat(query="Question 2", user_id="bob"),
+        lc.chat(query="Question 3", user_id="carol"),
+    )
+    for r in results:
+        print(r.text)
 ```
 
-## Best Practices
+For the API server, use multiple uvicorn workers:
 
-### 1. Balance Speed and Quality
-
-```python
-# Fast but less accurate
-llm = OpenAI(model="gpt-4o-mini")
-vector_db = Pinecone(embedding_model="text-embedding-3-small")
-retriever = vector_db.get_retriever(k=3)
-
-# Slower but more accurate
-llm = OpenAI(model="gpt-4o")
-vector_db = Pinecone(embedding_model="text-embedding-3-large")
-retriever = vector_db.get_retriever(k=10)
+```bash
+uvicorn server:app --workers 4 --host 0.0.0.0 --port 8000
 ```
-
-### 2. Use Multiple API Keys
-
-```python
-# Distribute load
-llm = OpenAI(api_keys=["key1", "key2", "key3"])
-```
-
-### 3. Optimize Reranking
-
-```python
-from langchat.reranker import Flashrank
-
-# Smaller model = faster
-reranker = Flashrank(
-    model_name="ms-marco-MiniLM-L-6-v2",  # Faster model
-    top_n=3  # Fewer documents
-)
-```
-
-## Monitoring
-
-Track performance in production:
-
-```python
-import time
-
-start = time.time()
-result = await ai.chat(query="...", user_id="...")
-elapsed = time.time() - start
-
-print(f"Response time: {elapsed:.2f}s")
-```
-
-## Next Steps
-
-- **[Configuration](/guides/configuration)** - All settings
-- **[Production](/advanced/production)** - Production deployment
-- **[Troubleshooting](/advanced/troubleshooting)** - Common issues
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Session caching
+
+Sessions are cached in memory. The first call for a user loads history from Supabase; subsequent calls use the in-memory cache. No extra configuration needed.
+
+After a server restart, the cache is empty — first calls incur a Supabase query. For large-scale deployments with many unique users, the history loading is fast (Supabase queries are indexed by `user_id` and `platform`).
+
+---
+
+## Cost optimization
+
+| Change | Savings |
+|--------|---------|
+| Switch `gpt-4o` → `gpt-4o-mini` | ~20× cheaper per query |
+| Reduce `max_chat_history` 20 → 5 | ~30% fewer tokens |
+| Reduce `top_n` 3 → 2 | ~15% fewer tokens |
+| Switch to `text-embedding-3-small` | ~5× cheaper embeddings |
+| Use Ollama for dev/testing | Free (runs locally) |
+
+---
+
+## Background operations
+
+LangChat saves chat history and metrics to Supabase in background threads — these never block the response:
+
+```python
+# This returns immediately after getting the LLM response
+# Supabase saving happens in the background
+response = await lc.chat(query="Hello", user_id="alice")
+```
+
+This design means your users get responses as fast as the LLM allows, without waiting for database writes.

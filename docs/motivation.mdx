@@ -1,77 +1,78 @@
 ---
 title: Why LangChat?
-description: Why we built LangChat and how it helps you
+description: The problem LangChat solves and the time it saves.
 ---
 
-import { Callout } from 'mintlify';
+## The problem
 
-## The Problem
+Building a production-grade RAG chatbot requires integrating many moving parts:
 
-Building AI chatbots is harder than it should be. You need:
+- An LLM provider (and handling retries, key rotation, rate limits)
+- A vector database for semantic search
+- An embedding pipeline to index your documents
+- A reranker to improve search precision
+- A conversation memory system
+- A database to persist chat history
+- A REST API to expose it all
+- Session management per user and per application
 
-- Multiple APIs to integrate (OpenAI, Pinecone, Supabase)
-- Complex error handling and retries
-- Chat history management
-- Vector search setup
-- Days or weeks of development time
+Done from scratch, this takes **weeks**. LangChat does it in minutes.
 
-## The Solution
+## What LangChat gives you
 
-**LangChat handles all of this for you.**
+```python
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-Instead of weeks of work, get a production-ready chatbot in minutes.
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
 
-## Time Saved
+response = await lc.chat(query="What's our refund policy?", user_id="alice")
+print(response)
+```
 
-| Task | Without LangChat | With LangChat |
-|------|-----------------|---------------|
-| Setup | Days/Weeks | Minutes |
-| Integration | Manual | Automatic |
-| Error Handling | Custom Code | Built-in |
-| Chat History | Manual | Automatic |
+That single `chat()` call:
 
-## Real Examples
+1. Rephrases the question as a standalone query (handles "it", "that", follow-ups)
+2. Embeds the question and searches Pinecone
+3. Reranks the top results with Flashrank
+4. Builds a prompt combining context + conversation history
+5. Calls the LLM
+6. Saves the exchange to Supabase (non-blocking, in the background)
+7. Returns a typed `ChatResponse` with `.text`, `.status`, `.response_time`
 
-### Customer Support Bot
+## Compared to alternatives
 
-**Without LangChat:** 10 weeks  
-**With LangChat:** 3 days
+| Feature | LangChat | Raw LangChain | LlamaIndex | Building from scratch |
+|---------|----------|---------------|------------|-----------------------|
+| RAG pipeline | Built-in | Manual | Manual | Manual |
+| Session management | Built-in | Manual | Manual | Manual |
+| Multiple LLM providers | 6 built-in | Via community | Via community | Manual |
+| API server | One function call | Manual | Manual | Manual |
+| Chat history storage | Built-in | Manual | Manual | Manual |
+| Reranking | Built-in | Manual | Manual | Manual |
+| Document indexing | `lc.index(path)` | Manual | Manual | Manual |
+| Typed responses | `ChatResponse` | dict | dict | Manual |
+| Time to first chatbot | **5 minutes** | Days | Days | Weeks |
 
-### Education Platform
+## Design principles
 
-**Without LangChat:** 2-3 weeks  
-**With LangChat:** 2-3 hours
+**Environment variables first.** Every provider reads credentials from the environment. No keys in code, no keys in config files.
 
-<Callout type="success">
-LangChat saves you 80%+ of development time by handling the complex parts automatically.
-</Callout>
+**Sensible defaults.** Flashrank reranker, `text-embedding-3-large`, 20-message history window — everything works without any configuration.
 
-## What You Get
+**Hexagonal architecture.** Core logic is isolated from adapters. Swap out any provider without touching business logic.
 
-✅ **Complete Solution** - Everything you need in one library  
-✅ **Easy to Use** - Simple API, clear documentation  
-✅ **Production Ready** - Built-in error handling, retries, and monitoring  
-✅ **Flexible** - Customize and extend as needed
+**Async-first, sync available.** All chat methods are async for high-throughput APIs, with sync wrappers for scripts and notebooks.
 
-## Perfect For
+**Typed responses.** `ChatResponse` is a dataclass — use `response.text`, `if response:`, `print(response)`. No more `result["response"]` dict access.
 
-- **Developers** who want to build faster
-- **Non-developers** who want to build chatbots
-- **Startups** who need to move quickly
-- **Companies** who need production-ready solutions
+## Who uses LangChat
 
-## Get Started
-
-Ready to save time? Start here:
-
-1. **[Quick Start](/quick-start)** - Get running in 5 minutes
-2. **[Examples](/examples/basic-usage)** - See it in action
-3. **[Installation](/installation)** - Set up LangChat
-
-<Callout type="info">
-**Questions?** Join our [Discord community](https://discord.gg/v9rqMDR2) for help and support.
-</Callout>
-
----
-
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+- **SaaS companies** — add AI chat to their product without a dedicated ML team
+- **Enterprise teams** — chatbots over internal documents, wikis, and knowledge bases
+- **Agencies** — spin up white-label chatbots for clients in hours
+- **Solo developers** — ship RAG products without deep ML knowledge

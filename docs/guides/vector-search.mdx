@@ -1,187 +1,130 @@
 ---
-title: Vector Search
-description: How vector search and RAG work in LangChat
+title: Vector Search & RAG
+description: How LangChat retrieves relevant context using Pinecone and reranking.
 ---
 
-import { Callout } from 'mintlify';
+## What is RAG?
 
-## What is Vector Search?
+**Retrieval-Augmented Generation (RAG)** combines a vector search step with an LLM generation step:
 
-Vector search lets your chatbot find relevant documents from your knowledge base to answer questions accurately.
+1. **Retrieve** — find document chunks most relevant to the user's question
+2. **Augment** — inject those chunks into the LLM prompt as context
+3. **Generate** — the LLM answers based on the retrieved context, not just its training data
 
-**How it works:**
-
-1. User asks a question
-2. Question converted to vector embedding
-3. Similar vectors found in Pinecone
-4. Relevant documents retrieved
-5. Results reranked for relevance
-6. Documents used as context for response
-
-## The Flow
-
-```
-User Question
-    ↓
-Query Embedding
-    ↓
-Vector Search (Pinecone)
-    ↓
-Retrieve Documents
-    ↓
-Rerank Results
-    ↓
-Use as Context
-    ↓
-Generate Response
-```
-
-## Configuration
-
-### Basic Setup
-
-```python
-from langchat.vector_db import Pinecone
-
-vector_db = Pinecone(
-    api_key="pcsk-...",
-    index_name="your-index",
-    embedding_model="text-embedding-3-large"  # Optional
-)
-```
-
-### Retrieval Settings
-
-Control how many documents to retrieve:
-
-```python
-# Access retriever directly
-retriever = vector_db.get_retriever(k=10)  # Retrieve 10 documents
-```
-
-**Recommendations:**
-- **Small index** (< 1000 docs): `k=5`
-- **Medium index** (1000-10000 docs): `k=10`
-- **Large index** (> 10000 docs): `k=20`
-
-## Embedding Models
-
-### text-embedding-3-large (Recommended)
-
-```python
-vector_db = Pinecone(
-    api_key="...",
-    index_name="...",
-    embedding_model="text-embedding-3-large"
-)
-```
-
-**Advantages:**
-- Highest quality
-- Best for semantic search
-- Good for complex queries
-
-### text-embedding-3-small
-
-```python
-vector_db = Pinecone(
-    api_key="...",
-    index_name="...",
-    embedding_model="text-embedding-3-small"
-)
-```
-
-**Advantages:**
-- Faster and cheaper
-- Good for simple queries
-- Lower latency
-
-## Reranking
-
-Reranking improves search result relevance:
-
-```python
-from langchat.reranker import Flashrank
-
-reranker = Flashrank(
-    model_name="ms-marco-MiniLM-L-12-v2",
-    top_n=3  # Keep top 3 after reranking
-)
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    reranker=reranker
-)
-```
-
-<Callout type="info">
-Reranking models are automatically downloaded on first use.
-</Callout>
-
-## Best Practices
-
-### 1. Balance Retrieval Count
-
-```python
-# Too small: Might miss relevant docs
-k = 3
-
-# Too large: Too many irrelevant docs
-k = 50
-
-# Optimal: Depends on your index
-k = 10  # Good for most cases
-```
-
-### 2. Always Use Reranking
-
-Reranking improves relevance:
-
-```python
-reranker = Flashrank(top_n=3)  # Rerank and keep top 3
-```
-
-### 3. Choose Right Embedding Model
-
-```python
-# High quality (recommended)
-embedding_model="text-embedding-3-large"
-
-# Faster and cheaper
-embedding_model="text-embedding-3-small"
-```
-
-## Troubleshooting
-
-### No Relevant Results
-
-**Solutions:**
-- Increase retrieval count: `k=20`
-- Check Pinecone index has documents
-- Try different embedding model
-
-### Too Many Irrelevant Results
-
-**Solutions:**
-- Use reranking: `top_n=3`
-- Improve document quality
-- Use better embedding model
-
-### Slow Search
-
-**Solutions:**
-- Reduce retrieval count: `k=5`
-- Use smaller embedding model
-- Optimize Pinecone index
-
-## Next Steps
-
-- **[Document Indexing](/guides/document-indexing)** - Build your knowledge base
-- **[Configuration](/guides/configuration)** - Learn about settings
-- **[Examples](/examples/basic-usage)** - See it in action
+This lets your chatbot answer questions about your specific documents — product manuals, FAQs, legal documents, internal wikis — without retraining any model.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## How LangChat's pipeline works
+
+```
+User question
+     │
+     ▼
+Standalone question reformulation (via LLM)
+     │
+     ▼
+OpenAI Embeddings (text-embedding-3-large)
+     │
+     ▼
+Pinecone similarity search (top-k chunks)
+     │
+     ▼
+Flashrank reranking (top-3 from top-k)
+     │
+     ▼
+LLM prompt: context + history + question
+     │
+     ▼
+AI response
+```
+
+### 1. Standalone question reformulation
+
+Before searching, LangChat uses the LLM to rewrite the user's message as a standalone query. This resolves pronouns and references to earlier messages:
+
+```
+User: "What is our return policy?"
+Bot: "You can return items within 30 days."
+User: "What about damaged items?"
+
+→ Reformulated: "What is Acme Corp's return policy for damaged items?"
+```
+
+The reformulated question is then embedded and searched.
+
+### 2. Embedding
+
+The question is embedded using OpenAI's `text-embedding-3-large` model (3072 dimensions). The same model must be used when indexing documents — mixing models produces incorrect results.
+
+### 3. Pinecone similarity search
+
+LangChat queries Pinecone for the top-k most similar chunks (`k=5` by default via the retriever). The similarity metric is cosine distance.
+
+### 4. Flashrank reranking
+
+The top-k Pinecone results are reranked by Flashrank, a fast cross-encoder model that more accurately scores relevance than cosine similarity alone. The default model is `ms-marco-MiniLM-L-12-v2`, keeping the top 3 results.
+
+Reranking improves answer quality significantly — especially for long documents where many chunks may be superficially similar but only a few are truly relevant.
+
+---
+
+## Pinecone namespaces
+
+Use namespaces to partition documents within a single index. Searches are scoped to the namespace you configure:
+
+```python
+# Index documents in separate namespaces
+lc.index("products/", namespace="products")
+lc.index("policies/", namespace="policies")
+
+# Search only the products namespace
+vector_db = Pinecone("my-index")
+# (namespace is set at indexing time; retrieval uses the same namespace)
+```
+
+Namespaces are useful for:
+- Separating different clients in a multi-tenant app
+- Partitioning by language or region
+- Separating document types (e.g., products vs. policies)
+
+---
+
+## Changing the retriever depth
+
+The default retriever fetches `k=5` chunks before reranking. To fetch more candidates before reranking (improves recall at the cost of latency):
+
+This is controlled by the `PineconeVectorAdapter` internals. For advanced customization, see [Extending Adapters](/advanced/extending-adapters).
+
+---
+
+## Embedding model choice
+
+| Model | Dimensions | Quality | Cost |
+|-------|-----------|---------|------|
+| `text-embedding-3-large` | 3072 | Highest | ~2× more than small |
+| `text-embedding-3-small` | 1536 | Good | Lower |
+| `text-embedding-ada-002` | 1536 | Older baseline | Similar to small |
+
+Configure the embedding model on the `Pinecone` provider:
+
+```python
+from langchat.providers import Pinecone
+
+vector_db = Pinecone("my-index", embedding_model="text-embedding-3-small")
+```
+
+<Warning>
+  You must use the same embedding model for both indexing and retrieval. If you change the model, re-index all documents with the new model in a fresh Pinecone index.
+</Warning>
+
+---
+
+## When there's no relevant context
+
+If Pinecone returns no relevant results (low similarity scores), the LLM still receives the prompt — but the `{context}` placeholder will be empty or contain low-quality chunks. This can lead to hallucinated answers.
+
+Best practices:
+- Always tell the model what to do when context is missing: *"If the answer is not in the context, say you don't know."*
+- Ensure documents are indexed before going live
+- Monitor queries that return empty context (visible in Supabase `request_metrics`)

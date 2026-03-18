@@ -1,71 +1,71 @@
 ---
 title: API Server
-description: Run LangChat as a web API server
+description: Expose your chatbot as a REST API with a built-in web UI.
 ---
 
-import { CodeGroup } from 'mintlify';
-import { Callout } from 'mintlify';
+## Minimal server
 
-## Basic Server
-
-Run LangChat as a FastAPI server:
-
-<CodeGroup>
-```python Basic
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+```python
+# server.py
+from langchat import LangChat
+from langchat.api import create_app
+from langchat.providers import OpenAI, Pinecone, Supabase
 import uvicorn
 
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
+LangChat.load_env()
 
-# Create server
-app = create_app(llm=llm, vector_db=vector_db, db=db)
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
 
-# Run
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-```python With Options
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-import uvicorn
-
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-app = create_app(llm=llm, vector_db=vector_db, db=db)
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+```bash
+python server.py
 ```
-</CodeGroup>
 
-## API Endpoints
+---
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Redirects to `/frontend/` |
+| `GET` | `/health` | Health check — returns status and version |
+| `GET` | `/frontend/` | Built-in chat UI (served from Vite build) |
+| `POST` | `/chat` | Send a message |
 
 ### POST /chat
 
-Send a message:
+Accepts `multipart/form-data`:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `query` | `string` | ✓ | User message |
+| `userId` | `string` | ✓ | User identifier |
+| `platform` | `string` | ✓ | Platform namespace (e.g. `"web"`) |
+| `image` | `file` | — | Optional image attachment |
+
+**Example with curl:**
 
 ```bash
 curl -X POST http://localhost:8000/chat \
-  -d "query=Hello!" \
-  -d "userId=user123" \
-  -d "domain=default"
+  -F "query=What is our return policy?" \
+  -F "userId=alice" \
+  -F "platform=web"
 ```
 
 **Response:**
+
 ```json
 {
-  "response": "Hello! How can I help you?",
+  "response": "You can return items within 30 days...",
+  "user_id": "alice",
+  "timestamp": "2025-01-15T10:30:00.123Z",
   "status": "success",
   "response_time": 1.23
 }
@@ -73,25 +73,150 @@ curl -X POST http://localhost:8000/chat \
 
 ### GET /health
 
-Check server status:
-
 ```bash
 curl http://localhost:8000/health
 ```
 
-### GET /frontend
-
-Access the web interface at `http://localhost:8000/frontend`
-
-<Callout type="info">
-The frontend interface is automatically available when you run the server.
-</Callout>
-
-## Next Steps
-
-- **[Basic Usage](/examples/basic-usage)** - More examples
-- **[Production](/advanced/production)** - Deploy to production
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-15T10:30:00.123Z",
+  "version": "1.0.1"
+}
+```
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Custom prompt in API server
+
+```python
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    prompt_template="""You are Aria, support agent for Acme Corp.
+
+Context:
+{context}
+
+History:
+{chat_history}
+
+Customer: {question}
+Aria:""",
+)
+```
+
+---
+
+## Production server
+
+For production, disable auto-reload and run multiple workers:
+
+```python
+# server.py
+from langchat import LangChat
+from langchat.api import create_app
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    max_chat_history=20,
+)
+```
+
+```bash
+# Production: multiple workers, no reload
+uvicorn server:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+---
+
+## Frontend build
+
+The built-in UI is served from `src/langchat/core/ui/dist/`. Build it with:
+
+```bash
+cd src/langchat/core/ui
+npm install
+npm run build
+```
+
+The UI is then available at `http://localhost:8000/frontend/`.
+
+---
+
+## Docker
+
+LangChat can auto-generate a Dockerfile:
+
+```python
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    auto_generate_docker=True,   # generates Dockerfile + .dockerignore
+)
+```
+
+Or write your own:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY . .
+
+RUN pip install langchat uvicorn
+
+ENV OPENAI_API_KEY=""
+ENV PINECONE_API_KEY=""
+ENV SUPABASE_URL=""
+ENV SUPABASE_KEY=""
+
+EXPOSE 8000
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+```bash
+docker build -t my-chatbot .
+docker run -p 8000:8000 \
+  -e OPENAI_API_KEY=sk-... \
+  -e PINECONE_API_KEY=pcsk-... \
+  -e SUPABASE_URL=https://xxxx.supabase.co \
+  -e SUPABASE_KEY=eyJ... \
+  my-chatbot
+```
+
+---
+
+## Adding custom routes
+
+Inject your own FastAPI routes alongside LangChat's:
+
+```python
+from fastapi import APIRouter
+from langchat.api import create_app
+
+my_router = APIRouter()
+
+@my_router.get("/status")
+async def status():
+    return {"my_service": "running"}
+
+@my_router.post("/feedback")
+async def feedback(message_id: str, rating: int):
+    # save feedback to your DB
+    return {"saved": True}
+
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    custom_routes=[my_router],
+)
+```

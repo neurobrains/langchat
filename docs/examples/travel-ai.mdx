@@ -1,106 +1,180 @@
 ---
-title: Travel AI Example
-description: Complete travel assistant chatbot example
+title: Travel Assistant
+description: A complete travel AI assistant built with LangChat — with documents, custom persona, and an API server.
 ---
 
-import { Callout } from 'mintlify';
+This example builds a complete travel assistant called **Voyager** that answers questions about destinations, booking, and travel tips from a knowledge base of travel guides.
 
-## Travel Assistant
+---
 
-Complete example of a travel assistant chatbot:
+## Project structure
+
+```
+travel-bot/
+├── .env
+├── content/
+│   ├── destinations.pdf      # destination guides
+│   ├── booking-guide.md      # how to book
+│   ├── travel-tips.txt       # general travel advice
+│   └── faqs.md               # frequently asked questions
+├── build_index.py            # one-time indexing script
+└── server.py                 # API server
+```
+
+---
+
+## Step 1 — Environment setup
+
+```bash .env
+OPENAI_API_KEY=sk-...
+PINECONE_API_KEY=pcsk-...
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=eyJhbGc...
+```
+
+---
+
+## Step 2 — Index travel documents
 
 ```python
-import asyncio
+# build_index.py
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Custom travel prompt
-TRAVEL_PROMPT = """You are a helpful travel assistant.
+LangChat.load_env()
 
-Your expertise:
-- Destination recommendations
-- Flight and hotel booking
-- Local attractions
-- Travel tips and safety
-
-Be friendly, concise, and helpful.
-
-Context: {context}
-History: {chat_history}
-Question: {question}
-
-Answer:"""
-
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="travel-index")
-db = Supabase(url="https://...", key="...")
-
-# Create chatbot
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=TRAVEL_PROMPT
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("travel-index"),
+    db=Supabase(),
 )
 
-# Chat
+result = lc.index(
+    "content/",
+    chunk_size=800,
+    chunk_overlap=150,
+    namespace="travel",
+)
+
+print(f"✓ Indexed {result['chunks_indexed']} chunks from {result['files_processed']} files")
+```
+
+```bash
+python build_index.py
+# ✓ Indexed 342 chunks from 4 files
+```
+
+---
+
+## Step 3 — Build the API server
+
+```python
+# server.py
+from langchat import LangChat
+from langchat.api import create_app
+from langchat.providers import OpenAI, Pinecone, Supabase
+import uvicorn
+
+LangChat.load_env()
+
+VOYAGER_PROMPT = """You are Voyager, an expert travel assistant with deep knowledge of
+destinations, travel logistics, culture, and local tips.
+
+Use the travel guides below to give accurate, inspiring, and practical advice.
+Be enthusiastic and helpful. If the information isn't in the guides, draw on your
+general knowledge but make clear you're doing so.
+
+Travel knowledge:
+{context}
+
+Conversation history:
+{chat_history}
+
+Traveler: {question}
+Voyager:"""
+
+app = create_app(
+    llm=OpenAI("gpt-4o-mini", temperature=0.8),
+    vector_db=Pinecone("travel-index"),
+    db=Supabase(),
+    prompt_template=VOYAGER_PROMPT,
+    max_chat_history=15,
+)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+```
+
+```bash
+python server.py
+```
+
+---
+
+## Step 4 — Test it
+
+```bash
+# Ask about a destination
+curl -X POST http://localhost:8000/chat \
+  -F "query=What's the best time to visit Japan?" \
+  -F "userId=traveler_001" \
+  -F "platform=web"
+
+# Follow-up question (references previous answer)
+curl -X POST http://localhost:8000/chat \
+  -F "query=What about cherry blossom season?" \
+  -F "userId=traveler_001" \
+  -F "platform=web"
+```
+
+---
+
+## Adding a Python client
+
+```python
+# client.py
+import asyncio
+from langchat import LangChat, ChatResponse
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+VOYAGER_PROMPT = """..."""  # same prompt as above
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini", temperature=0.8),
+    vector_db=Pinecone("travel-index"),
+    db=Supabase(),
+    prompt_template=VOYAGER_PROMPT,
+)
+
 async def main():
-    queries = [
-        "What are the best travel destinations in Europe?",
-        "What about budget-friendly options?",
-        "Which one has the best beaches?"
+    user_id = "traveler_001"
+    print("🌍 Voyager — Your AI Travel Assistant")
+    print("Type 'quit' to exit\n")
+
+    questions = [
+        "What's the best time to visit Kyoto?",
+        "What should I pack for that trip?",
+        "How far is it from Tokyo to Kyoto?",
+        "What's the cheapest way to get there?",
     ]
-    
-    for query in queries:
-        result = await ai.chat(
-            query=query,
-            user_id="traveler123",
-            domain="travel"
-        )
-        print(f"Q: {query}")
-        print(f"A: {result['response']}\n")
+
+    for q in questions:
+        print(f"You: {q}")
+        response: ChatResponse = await lc.chat(query=q, user_id=user_id)
+        print(f"Voyager: {response.text}")
+        print(f"         [{response.response_time:.2f}s]\n")
 
 asyncio.run(main())
 ```
 
-## As API Server
-
-```python
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-import uvicorn
-
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="travel-index")
-db = Supabase(url="https://...", key="...")
-
-# Create server
-app = create_app(
-    llm=llm,
-    vector_db=vector_db,
-    db=db
-)
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-```
-
-<Callout type="info">
-Index travel documents first using `load_and_index_documents()` for best results.
-</Callout>
-
-## Next Steps
-
-- **[Custom Prompts](/examples/custom-prompts)** - More prompt examples
-- **[API Server](/examples/api-server)** - Server setup
-- **[Basic Usage](/examples/basic-usage)** - More examples
-
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## What this demonstrates
+
+- **Document indexing** — PDFs, Markdown, and text files indexed together
+- **Custom persona** — Voyager has a distinct, enthusiastic personality
+- **Conversation memory** — follow-up questions about "that trip" work correctly
+- **Platform separation** — web and mobile users have separate conversation threads
+- **API deployment** — the same chatbot as both a Python library and a REST API

@@ -1,131 +1,93 @@
 ---
 title: OpenAI Provider
-description: OpenAI LLM integration with automatic key rotation
+description: OpenAI LLM integration with automatic API key rotation.
 ---
 
-import { Callout } from 'mintlify';
-
-## Overview
-
-The OpenAI provider gives you access to OpenAI's language models with automatic key rotation and fault tolerance.
-
-## Features
-
-- ✅ **Multiple API Keys** - Automatic rotation
-- ✅ **Fault Tolerance** - Automatic retry on failures
-- ✅ **Error Recovery** - Handles rate limits gracefully
-- ✅ **Easy Setup** - Simple initialization
-
-## Basic Usage
+## Usage
 
 ```python
-from langchat.llm import OpenAI
+from langchat.providers import OpenAI
 
-# Single key
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
-
-# Multiple keys (automatic rotation)
-llm = OpenAI(api_keys=["sk-1", "sk-2", "sk-3"], model="gpt-4o-mini")
+llm = OpenAI("gpt-4o-mini")              # reads OPENAI_API_KEY
+llm = OpenAI("gpt-4o", temperature=0.3)  # explicit model + temp
 ```
 
-## Configuration Options
-
-```python
-llm = OpenAI(
-    api_key="sk-...",  # Single key
-    # OR
-    api_keys=["sk-1", "sk-2"],  # Multiple keys
-    
-    model="gpt-4o-mini",  # Model name
-    temperature=0.7,  # 0.0-2.0
-    max_tokens=1000  # Optional
-)
-```
-
-## Available Models
-
-- `gpt-4o-mini` (recommended)
-- `gpt-4o`
-- `gpt-4-turbo`
-- `gpt-3.5-turbo`
-
-## Multiple API Keys
-
-Use multiple keys for better reliability:
-
-```python
-llm = OpenAI(
-    api_keys=[
-        "sk-org1-key1",
-        "sk-org1-key2",
-        "sk-org2-key1"
-    ],
-    model="gpt-4o-mini"
-)
-```
-
-**Benefits:**
-- Handle rate limits automatically
-- Distribute load
-- Improve fault tolerance
-
-<Callout type="info">
-The provider automatically rotates between keys on failures or rate limits.
-</Callout>
-
-## Using with LangChat
+Pass to `LangChat`:
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
 ```
-
-## Error Handling
-
-The provider handles errors automatically:
-
-- **Rate Limits** - Rotates to next key
-- **API Errors** - Retries with different key
-- **Network Errors** - Automatic retry
-
-## Best Practices
-
-### 1. Use Multiple Keys
-
-```python
-# ✅ Good: Multiple keys
-llm = OpenAI(api_keys=["key1", "key2", "key3"])
-
-# ⚠️ OK: Single key
-llm = OpenAI(api_key="key1")
-```
-
-### 2. Store Keys Securely
-
-```python
-import os
-
-# ✅ Good: From environment
-llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# ❌ Bad: Hardcoded
-llm = OpenAI(api_key="sk-abc123...")
-```
-
-## Next Steps
-
-- **[Configuration](/guides/configuration)** - Learn configuration
-- **[Basic Usage](/examples/basic-usage)** - See examples
-- **[Other LLMs](/adapters/overview)** - Other providers
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Parameters
+
+<ParamField path="model" type="str" default="gpt-4o-mini">
+  OpenAI model name. First positional argument.
+</ParamField>
+
+<ParamField path="api_key" type="str | None" default="None">
+  Single API key. Falls back to `OPENAI_API_KEY` environment variable.
+</ParamField>
+
+<ParamField path="api_keys" type="list[str] | None" default="None">
+  Multiple API keys for automatic rotation. Takes precedence over `api_key`.
+</ParamField>
+
+<ParamField path="temperature" type="float" default="1.0">
+  Sampling temperature. `0.0` = deterministic. `1.0` = creative.
+</ParamField>
+
+<ParamField path="max_retries_per_key" type="int" default="2">
+  Number of retries per key before rotating to the next one.
+</ParamField>
+
+---
+
+## API key rotation
+
+When you have multiple API keys (e.g., to handle rate limits across multiple OpenAI projects), pass them as a list:
+
+```python
+llm = OpenAI(
+    "gpt-4o-mini",
+    api_keys=[
+        "sk-proj-key1...",
+        "sk-proj-key2...",
+        "sk-proj-key3...",
+    ],
+    max_retries_per_key=2,
+)
+```
+
+If a request fails on `key1`, LangChat retries up to `max_retries_per_key` times, then rotates to `key2`, and so on. Total maximum attempts = `len(api_keys) × max_retries_per_key`.
+
+---
+
+## Environment variable
+
+Set `OPENAI_API_KEY` in your `.env`:
+
+```bash
+OPENAI_API_KEY=sk-...
+```
+
+---
+
+## Available models
+
+| Model | Context | Speed | Quality |
+|-------|---------|-------|---------|
+| `gpt-4o-mini` | 128k | Fast | Good — recommended default |
+| `gpt-4o` | 128k | Medium | High |
+| `gpt-4-turbo` | 128k | Medium | High |
+| `gpt-3.5-turbo` | 16k | Fastest | Basic |
+
+Any valid OpenAI chat completion model name is accepted.

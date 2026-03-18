@@ -27,11 +27,13 @@
   },
   "navigation": [
     {
-      "group": "Quick Start",
+      "group": "Getting Started",
       "pages": [
+        "introduction",
         "quick-start",
-        "motivation",
-        "getting-started"
+        "installation",
+        "getting-started",
+        "motivation"
       ]
     },
     {

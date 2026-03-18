@@ -1,163 +1,85 @@
 ---
 title: Adapters Overview
-description: Overview of LangChat adapters and providers
+description: How LangChat's provider and adapter system works.
 ---
 
-import { Card, CardGroup } from 'mintlify';
-import { Callout } from 'mintlify';
+## Architecture
 
-## What are Adapters?
+LangChat uses a **hexagonal architecture** (Ports and Adapters). This separates the core chatbot logic from the specific tools it uses:
 
-Adapters are modular components that connect LangChat to external services. They provide:
+```
+langchat.providers        ← public API (what you use)
+      │
+langchat.adapters         ← implementations (OpenAI, Pinecone, Supabase, Flashrank)
+      │
+langchat.core             ← business logic (engine, sessions, chains)
+```
 
-- **Unified Interface** - Consistent API across services
-- **Error Handling** - Robust retry logic
-- **Easy Setup** - Simple initialization
-- **Flexible** - Easy to extend or replace
+You always interact with `langchat.providers`. The adapters are implementation details.
 
-## Available Providers
+---
+
+## Available providers
+
+| Provider | Import | Replaces |
+|----------|--------|----------|
+| `OpenAI` | `langchat.providers` | `langchat.adapters.llm.OpenAIAdapter` |
+| `Anthropic` | `langchat.providers` | `langchat.adapters.llm.AnthropicAdapter` |
+| `Gemini` | `langchat.providers` | `langchat.adapters.llm.GeminiAdapter` |
+| `Mistral` | `langchat.providers` | `langchat.adapters.llm.MistralAdapter` |
+| `Cohere` | `langchat.providers` | `langchat.adapters.llm.CohereAdapter` |
+| `Ollama` | `langchat.providers` | `langchat.adapters.llm.OllamaAdapter` |
+| `Pinecone` | `langchat.providers` | `langchat.adapters.vector_db.PineconeAdapter` |
+| `Supabase` | `langchat.providers` | `langchat.adapters.database.SupabaseAdapter` |
+
+---
+
+## Import patterns
+
+```python
+# Recommended — use providers
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+# All at once via the module
+import langchat.providers as providers
+llm = providers.OpenAI("gpt-4o-mini")
+```
+
+---
+
+## Environment variable convention
+
+Every provider follows the same pattern:
+
+1. Check for explicit `api_key` parameter
+2. Fall back to a named environment variable
+3. Raise `ValueError` with the exact variable name if neither is set
+
+```python
+# These are equivalent:
+llm = OpenAI("gpt-4o-mini", api_key="sk-...")         # explicit
+llm = OpenAI("gpt-4o-mini")                           # reads OPENAI_API_KEY
+
+# If OPENAI_API_KEY is not set and no api_key is passed:
+# ValueError: OpenAI API key is required. Set OPENAI_API_KEY environment variable
+#             or pass api_key parameter.
+```
+
+---
+
+## Detailed reference
 
 <CardGroup cols={2}>
-  <Card
-    title="LLM Providers"
-    icon="brain"
-    href="/adapters/openai-service"
-  >
-    OpenAI, Anthropic, Gemini, and more
+  <Card title="OpenAI" icon="robot" href="/adapters/openai-service">
+    LLM provider with multi-key rotation
   </Card>
-  <Card
-    title="Vector Database"
-    icon="database"
-    href="/adapters/pinecone-adapter"
-  >
-    Pinecone integration for search
+  <Card title="Pinecone" icon="database" href="/adapters/pinecone-adapter">
+    Vector database with OpenAI embeddings
   </Card>
-  <Card
-    title="Reranker"
-    icon="ranking-star"
-    href="/adapters/flashrank-reranker"
-  >
-    Flashrank for better results
+  <Card title="Supabase" icon="table" href="/adapters/supabase-adapter">
+    Postgres history and metrics storage
   </Card>
-  <Card
-    title="Database"
-    icon="database"
-    href="/adapters/supabase-adapter"
-  >
-    Supabase for chat history
+  <Card title="Flashrank" icon="ranking-star" href="/adapters/flashrank-reranker">
+    Cross-encoder reranker for better search results
   </Card>
 </CardGroup>
-
-## Quick Setup
-
-Initialize providers directly:
-
-```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Create chatbot
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-```
-
-<Callout type="info">
-All providers are initialized automatically when you create LangChat. No manual setup needed!
-</Callout>
-
-## LLM Providers
-
-### OpenAI
-
-```python
-from langchat.llm import OpenAI
-
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
-```
-
-### Other LLMs
-
-```python
-from langchat.llm import Anthropic, Gemini, Ollama, Cohere, Mistral
-
-# Anthropic
-llm = Anthropic(api_key="...", model="claude-3-5-sonnet-20241022")
-
-# Gemini
-llm = Gemini(api_key="...", model="gemini-1.5-flash")
-
-# Ollama (local)
-llm = Ollama(model="llama2", base_url="http://localhost:11434")
-```
-
-## Vector Database
-
-### Pinecone
-
-```python
-from langchat.vector_db import Pinecone
-
-vector_db = Pinecone(
-    api_key="pcsk-...",
-    index_name="your-index",
-    embedding_model="text-embedding-3-large"
-)
-```
-
-## Database
-
-### Supabase
-
-```python
-from langchat.database import Supabase
-
-db = Supabase(
-    url="https://xxxxx.supabase.co",
-    key="eyJhbGc..."
-)
-```
-
-## Reranker
-
-### Flashrank
-
-```python
-from langchat.reranker import Flashrank
-
-reranker = Flashrank(
-    model_name="ms-marco-MiniLM-L-12-v2",
-    top_n=3
-)
-```
-
-## Accessing Providers
-
-Access providers from the engine:
-
-```python
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Access providers
-engine = ai.engine
-print(engine.llm)  # LLM provider
-print(engine.vector_adapter)  # Vector database
-print(engine.reranker_adapter)  # Reranker
-print(engine.history_store)  # Database
-```
-
-## Next Steps
-
-- **[OpenAI Service](/adapters/openai-service)** - LLM provider details
-- **[Pinecone Adapter](/adapters/pinecone-adapter)** - Vector database
-- **[Supabase Adapter](/adapters/supabase-adapter)** - Database
-- **[Configuration](/guides/configuration)** - Learn configuration
-
----
-
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**

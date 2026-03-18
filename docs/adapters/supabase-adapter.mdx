@@ -1,118 +1,110 @@
 ---
 title: Supabase Provider
-description: Supabase database integration for chat history
+description: Supabase PostgreSQL integration for chat history and metrics storage.
 ---
 
-import { Callout } from 'mintlify';
-
-## Overview
-
-The Supabase provider stores chat history, metrics, and feedback in your Supabase database.
-
-## Features
-
-- ✅ **Chat History** - Automatic conversation storage
-- ✅ **Metrics Tracking** - Request performance data
-- ✅ **Feedback Collection** - User feedback storage
-- ✅ **Auto Setup** - Tables created automatically
-
-## Basic Usage
+## Usage
 
 ```python
-from langchat.database import Supabase
+from langchat.providers import Supabase
 
-db = Supabase(
-    url="https://xxxxx.supabase.co",
-    key="eyJhbGc..."
-)
+db = Supabase()                                              # reads from env
+db = Supabase(url="https://xxxx.supabase.co", key="eyJ...")  # explicit
 ```
-
-## Configuration
-
-```python
-db = Supabase(
-    url="https://xxxxx.supabase.co",  # Required
-    key="eyJhbGc..."  # Required (anon or service role key)
-)
-```
-
-<Callout type="info">
-LangChat automatically creates database tables on first run if they don't exist.
-</Callout>
-
-## Using with LangChat
-
-```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-```
-
-## Database Tables
-
-LangChat uses these tables:
-
-- **chat_history** - User conversation history
-- **request_metrics** - Request performance metrics
-- **feedback** - User feedback on responses
-
-## Table Setup
-
-Tables are created automatically. You can also get the SQL:
-
-```python
-db = Supabase(url="...", key="...")
-sql = db.get_create_tables_sql()
-print(sql)  # SQL to create tables manually
-```
-
-## Best Practices
-
-### 1. Use Service Role Key for Setup
-
-For initial setup, use service role key:
-
-```python
-# Setup (service role key)
-db = Supabase(url="...", key="service_role_key")
-db.create_tables_if_not_exist()
-
-# Runtime (anon key)
-db = Supabase(url="...", key="anon_key")
-```
-
-### 2. Monitor Database
-
-Check table status:
-
-```python
-# Tables are checked automatically
-# You can verify in Supabase dashboard
-```
-
-## Troubleshooting
-
-### Tables Not Created
-
-**Solution:** Run `create_tables_if_not_exist()` or use the SQL from `get_create_tables_sql()`.
-
-### Permission Errors
-
-**Solution:** Ensure your key has proper permissions. Use service role key for setup.
-
-## Next Steps
-
-- **[Session Management](/guides/sessions)** - Learn about sessions
-- **[Configuration](/guides/configuration)** - Configuration options
-- **[Basic Usage](/examples/basic-usage)** - See examples
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Parameters
+
+<ParamField path="url" type="str | None" default="None">
+  Supabase project URL. Falls back to `SUPABASE_URL`.
+</ParamField>
+
+<ParamField path="key" type="str | None" default="None">
+  Supabase API key. Falls back to `SUPABASE_KEY` or `SUPABASE_SERVICE_ROLE_KEY`.
+</ParamField>
+
+---
+
+## Environment variables
+
+```bash
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=eyJhbGc...
+# or
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...   # for server-side use (bypasses RLS)
+```
+
+<Note>
+  Use `SUPABASE_SERVICE_ROLE_KEY` for server deployments where you need to bypass Row Level Security. Use `SUPABASE_KEY` (anon key) for client-side or restricted access.
+</Note>
+
+---
+
+## Tables created automatically
+
+LangChat creates these tables on first run:
+
+### `chat_history`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `bigint` | Primary key (auto-increment) |
+| `user_id` | `text` | User identifier |
+| `platform` | `text` | Platform namespace |
+| `message` | `text` | User message |
+| `response` | `text` | AI response |
+| `created_at` | `timestamptz` | UTC timestamp |
+
+### `request_metrics`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `bigint` | Primary key (auto-increment) |
+| `user_id` | `text` | User identifier |
+| `request_time` | `text` | ISO 8601 UTC timestamp |
+| `response_time` | `float` | Latency in seconds |
+| `success` | `boolean` | Whether the request succeeded |
+| `error_message` | `text | null` | Error details on failure |
+
+---
+
+## Querying your data
+
+You can use the Supabase dashboard or the Python client directly to query these tables:
+
+```python
+from supabase import create_client
+
+client = create_client(url, key)
+
+# Get all conversations for a user
+history = (
+    client
+    .table("chat_history")
+    .select("*")
+    .eq("user_id", "alice")
+    .order("created_at", desc=True)
+    .execute()
+)
+
+# Get average response time
+metrics = (
+    client
+    .table("request_metrics")
+    .select("response_time")
+    .eq("success", True)
+    .execute()
+)
+```
+
+---
+
+## Row Level Security (RLS)
+
+If you enable RLS on Supabase tables, you must either:
+
+1. Use the `service_role` key (bypasses RLS entirely)
+2. Add appropriate RLS policies for the `langchat` operations
+
+For most server-side deployments, using `SUPABASE_SERVICE_ROLE_KEY` is the simplest approach.

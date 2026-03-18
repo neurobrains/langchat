@@ -1,120 +1,205 @@
 ---
 title: Troubleshooting
-description: Common issues and solutions
+description: Solutions to common LangChat issues.
 ---
 
-import { Callout } from 'mintlify';
+## Installation issues
 
-## Configuration Issues
+### `pip install langchat` fails
 
-### Missing API Keys
+```bash
+# Upgrade pip first
+pip install --upgrade pip
+pip install langchat
 
-**Error:** `At least one OpenAI API key is required`
-
-**Solution:**
-```python
-from langchat.llm import OpenAI
-
-# ✅ Provide API key
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
+# Or use uv
+uv pip install langchat
 ```
 
-### Missing Database Credentials
+### Python version error
 
-**Error:** `Supabase URL and key must be provided`
+LangChat requires Python 3.9+. Check your version:
 
-**Solution:**
-```python
-from langchat.database import Supabase
-
-# ✅ Provide credentials
-db = Supabase(url="https://...", key="...")
+```bash
+python --version
 ```
 
-### Missing Pinecone Index
-
-**Error:** `Index not found`
-
-**Solution:**
-- Create index in Pinecone console first
-- Verify index name is correct
-- Check API key permissions
-
-## Runtime Issues
-
-### Rate Limit Errors
-
-**Error:** `Rate limit exceeded`
-
-**Solutions:**
-- Use multiple API keys: `OpenAI(api_keys=["key1", "key2"])`
-- Reduce request frequency
-- Upgrade OpenAI plan
-
-### No Search Results
-
-**Solutions:**
-- Check Pinecone index has documents
-- Verify documents are indexed
-- Increase retrieval count: `k=10`
-- Try different embedding model
-
-### Context Lost Between Messages
-
-**Solution:**
-Ensure same user_id and domain:
-
-```python
-# ✅ Same session
-await ai.chat(query="Q1", user_id="user123", domain="default")
-await ai.chat(query="Q2", user_id="user123", domain="default")
-
-# ❌ Different sessions
-await ai.chat(query="Q1", user_id="user123", domain="default")
-await ai.chat(query="Q2", user_id="user456", domain="default")
-```
-
-## Vector Search Issues
-
-### Dimension Mismatch
-
-**Error:** `Dimension mismatch`
-
-**Solution:**
-Ensure index dimensions match embedding model:
-- `text-embedding-3-large`: 3072 dimensions
-- `text-embedding-3-small`: 1536 dimensions
-
-### Slow Search
-
-**Solutions:**
-- Reduce retrieval count: `k=5`
-- Use smaller embedding model
-- Optimize Pinecone index
-
-## Document Indexing Issues
-
-### No Chunks Indexed
-
-**Check:**
-- All chunks were duplicates? (check `chunks_skipped`)
-- Document is empty?
-- File path correct?
-
-### Unsupported File Type
-
-**Solution:**
-- Check file extension (PDF, TXT, CSV supported)
-- Convert to supported format
-
-## Getting Help
-
-If you're still stuck:
-
-1. Check [Configuration Guide](/guides/configuration)
-2. Review [Examples](/examples/basic-usage)
-3. Join [Discord community](https://discord.gg/v9rqMDR2)
+If below 3.9, install a newer Python from [python.org](https://python.org) or via `pyenv`.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## API key errors
+
+### `ValueError: OpenAI API key is required. Set OPENAI_API_KEY...`
+
+Your API key is not set. Fix with one of:
+
+```bash
+# Option 1: .env file (recommended)
+echo "OPENAI_API_KEY=sk-..." >> .env
+```
+
+```python
+# Option 2: load .env explicitly
+from langchat import LangChat
+LangChat.load_env()
+```
+
+```python
+# Option 3: pass directly
+from langchat.providers import OpenAI
+llm = OpenAI("gpt-4o-mini", api_key="sk-...")
+```
+
+### Same error for Pinecone / Supabase
+
+Check these environment variables:
+
+| Service | Variable |
+|---------|----------|
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Gemini | `GEMINI_API_KEY` or `GOOGLE_API_KEY` |
+| Mistral | `MISTRAL_API_KEY` |
+| Cohere | `COHERE_API_KEY` |
+| Pinecone | `PINECONE_API_KEY` |
+| Supabase | `SUPABASE_URL` and `SUPABASE_KEY` |
+
+---
+
+## Pinecone issues
+
+### `Index not found` or connection error
+
+1. Verify the index name matches exactly (case-sensitive)
+2. Confirm the index exists in [app.pinecone.io](https://app.pinecone.io)
+3. Check `PINECONE_API_KEY` is set and valid
+
+```python
+from langchat.providers import Pinecone
+vector_db = Pinecone("my-exact-index-name")
+```
+
+### `Dimension mismatch` error
+
+Your index dimensions don't match the embedding model. Common cases:
+
+| Model | Required dimensions |
+|-------|---------------------|
+| `text-embedding-3-large` | 3072 |
+| `text-embedding-3-small` | 1536 |
+
+Create a new index with the correct dimensions or switch embedding models.
+
+### No relevant results / poor answers
+
+1. Verify documents are indexed: check chunk count in your indexing script output
+2. Try a more specific query
+3. Check `verbose=True` to see what context is being retrieved
+4. Increase `top_n` in the reranker (default: 3)
+
+---
+
+## Supabase issues
+
+### Tables not created
+
+Tables are created on first use. If they're missing, run a test `chat()` call or check that `SUPABASE_KEY` has write permissions (use `service_role` key for server-side).
+
+### `Row Level Security policy violation`
+
+Use the `service_role` key instead of the `anon` key:
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...  # use this instead of SUPABASE_KEY
+```
+
+---
+
+## Chat issues
+
+### Empty or very short responses
+
+The LLM returned a minimal response. Try:
+
+1. More specific query
+2. Verify documents are indexed and relevant
+3. Check `verbose=True` to see the full prompt being sent
+4. Try a different model (e.g., `gpt-4o` instead of `gpt-4o-mini`)
+
+### Responses ignore context
+
+The prompt template may be misconfigured. Ensure `{context}` appears in your template:
+
+```python
+prompt = """Answer questions using this context:
+{context}
+
+History: {chat_history}
+Question: {question}
+Answer:"""
+```
+
+### Conversation history not working
+
+History is per `user_id` + `platform`. If you're using different values between calls, each call starts fresh:
+
+```python
+# ✓ Same user_id and platform — maintains history
+await lc.chat(query="Hello", user_id="alice", platform="web")
+await lc.chat(query="What did I just say?", user_id="alice", platform="web")
+
+# ✗ Different platform — different conversation
+await lc.chat(query="Hello", user_id="alice", platform="web")
+await lc.chat(query="What did I just say?", user_id="alice", platform="mobile")
+```
+
+---
+
+## Performance issues
+
+### Slow response times
+
+1. **Reduce `max_chat_history`** — fewer messages = smaller prompt = faster LLM call
+2. **Use a faster model** — `gpt-4o-mini` is ~5× faster than `gpt-4o`
+3. **Reduce `top_n` in reranker** — default is 3; try 2
+4. **Use `text-embedding-3-small`** instead of `text-embedding-3-large` for Pinecone
+
+### High token costs
+
+1. Use `gpt-4o-mini` instead of `gpt-4o`
+2. Reduce `max_chat_history` (each extra exchange costs tokens)
+3. Reduce `chunk_size` to keep context chunks shorter
+4. Reduce reranker `top_n` to pass fewer chunks to the LLM
+
+---
+
+## Import errors
+
+### `ModuleNotFoundError: No module named 'langchat'`
+
+```bash
+pip install langchat
+# Verify you're in the correct virtual environment
+which python
+```
+
+### `ImportError` when importing a provider
+
+Some providers have optional dependencies. Install the extras:
+
+```bash
+pip install langchat
+pip install anthropic           # for Anthropic
+pip install google-generativeai # for Gemini
+pip install mistralai           # for Mistral
+pip install cohere              # for Cohere
+```
+
+---
+
+## Still stuck?
+
+1. Enable verbose logging: `LangChat(..., verbose=True)`
+2. Check the [GitHub Issues](https://github.com/neurobrains/langchat/issues)
+3. Open a new issue with your error message, Python version, and minimal reproduction

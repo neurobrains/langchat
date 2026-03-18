@@ -1,209 +1,169 @@
 ---
 title: Document Indexing
-description: Load and index documents for your chatbot
+description: Load PDFs, text files, CSVs, and more into your Pinecone vector store.
 ---
 
-import { Callout } from 'mintlify';
+## The index() method
 
-## What is Document Indexing?
-
-Document indexing loads your documents, splits them into chunks, converts them to vectors, and stores them in Pinecone so your chatbot can find and use them.
-
-**The Process:**
-
-```
-Document (PDF/TXT/CSV)
-    ↓
-Load & Split into Chunks
-    ↓
-Convert to Embeddings
-    ↓
-Store in Pinecone
-    ↓
-Ready for Search!
-```
-
-## Quick Start
-
-Index your first document:
+`LangChat.index()` indexes one file, multiple files, or an entire directory into Pinecone:
 
 ```python
+# Single file
+result = lc.index("docs/manual.pdf")
+
+# Multiple files
+result = lc.index(["docs/faq.pdf", "docs/policies.txt", "data/products.csv"])
+
+# Entire directory (recursive)
+result = lc.index("docs/")
+
+print(result["chunks_indexed"])  # chunks added
+print(result["chunks_skipped"])  # duplicates skipped
+```
+
+---
+
+## Supported file formats
+
+LangChat uses [docsuite](https://pypi.org/project/docsuite/) for file loading, which supports:
+
+| Format | Extension |
+|--------|-----------|
+| PDF | `.pdf` |
+| Plain text | `.txt` |
+| Markdown | `.md` |
+| CSV | `.csv` |
+| Word | `.docx` |
+| PowerPoint | `.pptx` |
+| HTML | `.html`, `.htm` |
+| JSON | `.json` |
+
+---
+
+## Chunking
+
+Documents are split into overlapping chunks before indexing. Configure chunk size and overlap:
+
+```python
+result = lc.index(
+    "docs/",
+    chunk_size=1000,     # characters per chunk (default: 1000)
+    chunk_overlap=200,   # overlap between adjacent chunks (default: 200)
+)
+```
+
+**Choosing chunk size:**
+
+| Chunk size | Best for | Trade-off |
+|------------|----------|-----------|
+| 500–800 | FAQs, short paragraphs | More chunks, lower cost per query |
+| 1000–1500 | Documentation, articles | Balanced |
+| 2000+ | Long-form prose, legal text | Fewer chunks, richer context per chunk |
+
+Overlap ensures sentences aren't cut off at chunk boundaries. A 200-character overlap on 1000-character chunks means adjacent chunks share roughly their last/first 200 characters.
+
+---
+
+## Duplicate prevention
+
+By default, `index()` skips chunks it has already indexed. It detects duplicates by hashing each chunk's content and checking Pinecone metadata:
+
+```python
+# Safe to run repeatedly — won't re-index the same content
+result = lc.index("docs/")
+# chunks_skipped will increase on subsequent runs
+```
+
+To force re-indexing (e.g., after updating documents):
+
+```python
+result = lc.index("docs/", prevent_duplicates=False)
+```
+
+---
+
+## Namespaces
+
+Use Pinecone namespaces to separate document collections:
+
+```python
+# Index different document types separately
+lc.index("products/", namespace="products")
+lc.index("support/", namespace="support")
+lc.index("legal/", namespace="legal")
+```
+
+Namespaces allow a single Pinecone index to serve multiple use cases.
+
+---
+
+## Full example: build a knowledge base
+
+```python
+# build_kb.py
+import os
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
+LangChat.load_env()
 
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Index document
-result = ai.load_and_index_documents(
-    file_path="my-document.pdf",
-    chunk_size=1000,
-    chunk_overlap=200
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
 )
 
-print(f"✅ Indexed {result['chunks_indexed']} chunks")
-```
+# Index all documents
+paths = [
+    "content/product-manual.pdf",
+    "content/faq.md",
+    "content/pricing.csv",
+]
 
-<Callout type="success">
-That's it! Your document is now searchable.
-</Callout>
-
-## Chunk Size and Overlap
-
-### Chunk Size
-
-How many characters in each piece:
-
-```python
-# Small chunks (500) - Precise answers
-chunk_size=500
-
-# Medium chunks (1000) - RECOMMENDED
-chunk_size=1000
-
-# Large chunks (2000) - More context
-chunk_size=2000
-```
-
-### Chunk Overlap
-
-How much text is shared between chunks:
-
-```python
-# Default: 200 (20% of 1000 chunk size)
-chunk_overlap=200
-```
-
-**Why overlap?**
-- Prevents losing context at boundaries
-- Keeps related information together
-- Improves search accuracy
-
-## Preventing Duplicates
-
-LangChat automatically prevents duplicate documents:
-
-```python
-# First time
-result = ai.load_and_index_documents("document.pdf")
-# Result: Indexed 50 chunks, Skipped 0
-
-# Try again (safe!)
-result = ai.load_and_index_documents("document.pdf")
-# Result: Indexed 0 chunks, Skipped 50 ✅
-```
-
-<Callout type="info">
-Safe to run multiple times! Duplicates are automatically skipped.
-</Callout>
-
-## Multiple Documents
-
-Index multiple files at once:
-
-```python
-result = ai.load_and_index_multiple_documents(
-    file_paths=[
-        "doc1.pdf",
-        "doc2.txt",
-        "data.csv"
-    ],
-    chunk_size=1000,
-    chunk_overlap=200
+result = lc.index(
+    paths,
+    chunk_size=800,
+    chunk_overlap=150,
+    prevent_duplicates=True,
 )
 
-print(f"✅ Total chunks: {result['total_chunks_indexed']}")
-print(f"⏭️  Skipped: {result['total_chunks_skipped']}")
+print(f"✓ Indexed {result['chunks_indexed']} chunks")
+print(f"  Skipped {result['chunks_skipped']} duplicates")
 ```
 
-## Using Namespaces
-
-Organize documents into groups:
-
-```python
-# Education documents
-ai.load_and_index_documents(
-    file_path="universities.pdf",
-    namespace="education"
-)
-
-# Travel documents
-ai.load_and_index_documents(
-    file_path="destinations.pdf",
-    namespace="travel"
-)
-```
-
-## Best Practices
-
-### 1. Choose Right Chunk Size
-
-```python
-# ✅ Good: Balanced
-chunk_size=1000, chunk_overlap=200
-
-# ❌ Too small: Loses context
-chunk_size=200
-
-# ❌ Too large: Less precise
-chunk_size=5000
-```
-
-### 2. Always Use Duplicate Prevention
-
-```python
-# ✅ Good: Prevents duplicates
-prevent_duplicates=True  # Default
-
-# ❌ Bad: Can create duplicates
-prevent_duplicates=False
-```
-
-### 3. Organize with Namespaces
-
-```python
-# ✅ Good: Organized
-namespace="product-docs"
-namespace="support-articles"
-
-# ❌ Bad: Everything mixed
-# (No namespace)
-```
-
-## Troubleshooting
-
-### No Chunks Indexed
-
-**Check:**
-- All chunks were duplicates? (check `chunks_skipped`)
-- Document is empty?
-- File path correct?
-
-### Unsupported File Type
-
-**Solution:**
-- Check file extension (PDF, TXT, CSV supported)
-- Convert to supported format
-
-### Error Indexing
-
-**Check:**
-- Pinecone API key valid?
-- Index name exists?
-- Network connection?
-
-## Next Steps
-
-- **[Vector Search](/guides/vector-search)** - Understand search
-- **[Examples](/examples/basic-usage)** - See it in action
-- **[Configuration](/guides/configuration)** - Learn settings
+Run it once to build the index, then run your chatbot normally.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Return value
+
+`index()` returns a dict with indexing statistics:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `chunks_indexed` | `int` | Number of chunks added to Pinecone |
+| `chunks_skipped` | `int` | Number of duplicate chunks skipped |
+| `files_processed` | `int` | Number of files successfully processed |
+| `errors` | `list` | Any files that failed to load |
+
+---
+
+## Re-indexing after document updates
+
+When documents change, re-index them with `prevent_duplicates=False` to replace the old content:
+
+```python
+# After updating docs/manual.pdf:
+result = lc.index("docs/manual.pdf", prevent_duplicates=False)
+```
+
+Or delete the old vectors from Pinecone and re-index from scratch via the Pinecone dashboard.
+
+---
+
+## Performance tips
+
+- Index documents **once** at setup time, not on every server start
+- For large document collections (thousands of files), index in batches
+- Use smaller `chunk_size` for large collections to stay within Pinecone's metadata limits
+- Monitor `errors` in the return value to catch files that failed to load

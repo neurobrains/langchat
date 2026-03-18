@@ -1,188 +1,273 @@
 ---
 title: Configuration
-description: Configure LangChat providers and settings
+description: Configure LLM providers, vector databases, and all LangChat settings.
 ---
 
-import { Callout } from 'mintlify';
+## The pattern
 
-## Quick Setup
-
-Initialize providers directly:
+All providers live in `langchat.providers`. Every provider reads credentials from environment variables automatically — you don't pass keys in code.
 
 ```python
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-# Setup providers
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Create chatbot
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),      # reads OPENAI_API_KEY
+    vector_db=Pinecone("my-index"), # reads PINECONE_API_KEY
+    db=Supabase(),                  # reads SUPABASE_URL + SUPABASE_KEY
+)
 ```
 
-## LLM Configuration
+You can also pass credentials explicitly when environment variables aren't available:
+
+```python
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini", api_key="sk-..."),
+    vector_db=Pinecone("my-index", api_key="pcsk-..."),
+    db=Supabase(url="https://xxxx.supabase.co", key="eyJ..."),
+)
+```
+
+---
+
+## LLM providers
 
 ### OpenAI
 
 ```python
-from langchat.llm import OpenAI
+from langchat.providers import OpenAI
 
-# Basic
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-
-# With options
-llm = OpenAI(
-    api_key="sk-...",
-    model="gpt-4o-mini",
-    temperature=0.7,
-    max_tokens=1000
-)
+llm = OpenAI("gpt-4o-mini")                    # default
+llm = OpenAI("gpt-4o", temperature=0.3)        # more deterministic
+llm = OpenAI("gpt-4o-mini", temperature=1.0)   # more creative (default)
 ```
 
-**Available Models:**
-- `gpt-4o-mini` (recommended)
-- `gpt-4o`
-- `gpt-4-turbo`
-- `gpt-3.5-turbo`
+**Environment variable:** `OPENAI_API_KEY`
 
-### Other LLMs
+**Available models:** `gpt-4o-mini` · `gpt-4o` · `gpt-4-turbo` · `gpt-3.5-turbo` · any valid OpenAI chat model
+
+**Multiple API keys** (automatic rotation on failure):
 
 ```python
-from langchat.llm import Anthropic, Gemini, Ollama
-
-# Anthropic
-llm = Anthropic(api_key="...", model="claude-3-5-sonnet-20241022")
-
-# Gemini
-llm = Gemini(api_key="...", model="gemini-1.5-flash")
-
-# Ollama (local)
-llm = Ollama(model="llama2", base_url="http://localhost:11434")
+llm = OpenAI("gpt-4o-mini", api_keys=["sk-key1", "sk-key2", "sk-key3"])
 ```
 
-## Vector Database
+<ParamField path="model" type="str" default="gpt-4o-mini">
+  OpenAI model name. First positional argument.
+</ParamField>
+
+<ParamField path="api_key" type="str | None" default="None">
+  API key. Defaults to `OPENAI_API_KEY` environment variable.
+</ParamField>
+
+<ParamField path="api_keys" type="list[str] | None" default="None">
+  Multiple API keys for automatic rotation. Takes precedence over `api_key`.
+</ParamField>
+
+<ParamField path="temperature" type="float" default="1.0">
+  Sampling temperature. Lower = more deterministic.
+</ParamField>
+
+<ParamField path="max_retries_per_key" type="int" default="2">
+  Retries per key before rotating to the next one.
+</ParamField>
+
+---
+
+### Anthropic
+
+```python
+from langchat.providers import Anthropic
+
+llm = Anthropic("claude-3-5-sonnet-20241022")
+llm = Anthropic("claude-3-5-haiku-20241022")   # faster, cheaper
+llm = Anthropic("claude-3-opus-20240229")       # most capable
+```
+
+**Environment variable:** `ANTHROPIC_API_KEY`
+
+---
+
+### Google Gemini
+
+```python
+from langchat.providers import Gemini
+
+llm = Gemini("gemini-1.5-flash")   # fast and efficient
+llm = Gemini("gemini-1.5-pro")     # higher quality
+llm = Gemini("gemini-2.0-flash")   # latest
+```
+
+**Environment variables:** `GEMINI_API_KEY` or `GOOGLE_API_KEY` (either works)
+
+---
+
+### Mistral
+
+```python
+from langchat.providers import Mistral
+
+llm = Mistral("mistral-large-latest")
+llm = Mistral("mistral-small-latest")   # faster, cheaper
+```
+
+**Environment variable:** `MISTRAL_API_KEY`
+
+---
+
+### Cohere
+
+```python
+from langchat.providers import Cohere
+
+llm = Cohere("command-r-plus")
+llm = Cohere("command-r")        # faster, cheaper
+```
+
+**Environment variable:** `COHERE_API_KEY`
+
+---
+
+### Ollama (local)
+
+No API key required. Ollama runs on your own machine.
+
+```python
+from langchat.providers import Ollama
+
+llm = Ollama("llama3.2")                                  # default endpoint
+llm = Ollama("llama3.2", base_url="http://192.168.1.5:11434")  # remote instance
+```
+
+[Install Ollama](https://ollama.ai) and pull a model first:
+
+```bash
+ollama pull llama3.2
+```
+
+---
+
+## Vector database
 
 ### Pinecone
 
 ```python
-from langchat.vector_db import Pinecone
+from langchat.providers import Pinecone
 
-vector_db = Pinecone(
-    api_key="pcsk-...",
-    index_name="your-index",
-    embedding_model="text-embedding-3-large"  # Optional
-)
+vector_db = Pinecone("my-index")                              # default embedding model
+vector_db = Pinecone("my-index", embedding_model="text-embedding-3-small")  # smaller, cheaper
 ```
 
-<Callout type="warning">
-Make sure your Pinecone index exists before using it.
-</Callout>
+**Environment variables:** `PINECONE_API_KEY` and `OPENAI_API_KEY` (for embeddings)
 
-## Database
+<ParamField path="index" type="str" required>
+  Pinecone index name. First positional argument.
+</ParamField>
+
+<ParamField path="api_key" type="str | None" default="None">
+  Pinecone API key. Defaults to `PINECONE_API_KEY`.
+</ParamField>
+
+<ParamField path="embedding_api_key" type="str | None" default="None">
+  OpenAI API key for embeddings. Defaults to `OPENAI_API_KEY`.
+</ParamField>
+
+<ParamField path="embedding_model" type="str" default="text-embedding-3-large">
+  OpenAI embedding model. Use `text-embedding-3-small` for lower cost.
+</ParamField>
+
+<Warning>
+  Your Pinecone index dimensions must match the embedding model:
+  - `text-embedding-3-large` → **3072** dimensions
+  - `text-embedding-3-small` → **1536** dimensions
+</Warning>
+
+---
+
+## History database
 
 ### Supabase
 
 ```python
-from langchat.database import Supabase
+from langchat.providers import Supabase
 
-db = Supabase(
-    url="https://xxxxx.supabase.co",
-    key="eyJhbGc..."
-)
+db = Supabase()                                              # reads from env
+db = Supabase(url="https://xxxx.supabase.co", key="eyJ...")  # explicit
 ```
 
-<Callout type="info">
-LangChat automatically creates database tables on first run.
-</Callout>
+**Environment variables:** `SUPABASE_URL` and `SUPABASE_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`)
 
-## Advanced Configuration
-
-### Custom Prompts
-
-```python
-custom_prompt = """You are a helpful assistant.
-Use this context: {context}
-History: {chat_history}
-Question: {question}
-Answer:"""
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=custom_prompt
-)
-```
-
-### Reranker
-
-```python
-from langchat.reranker import Flashrank
-
-reranker = Flashrank(
-    model_name="ms-marco-MiniLM-L-12-v2",
-    top_n=3
-)
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    reranker=reranker
-)
-```
-
-### Session Settings
-
-```python
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    max_chat_history=50  # Keep last 50 messages
-)
-```
-
-## Best Practices
-
-### 1. Use Environment Variables
-
-```python
-import os
-
-llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-vector_db = Pinecone(
-    api_key=os.getenv("PINECONE_API_KEY"),
-    index_name=os.getenv("PINECONE_INDEX_NAME")
-)
-```
-
-### 2. Multiple API Keys
-
-```python
-# OpenAI supports multiple keys for rotation
-llm = OpenAI(api_keys=["key1", "key2", "key3"])
-```
-
-### 3. Error Handling
-
-```python
-try:
-    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-except ValueError as e:
-    print(f"Configuration error: {e}")
-```
-
-## Next Steps
-
-- **[Prompts Guide](/guides/prompts)** - Customize prompts
-- **[Examples](/examples/basic-usage)** - See examples
-- **[API Reference](/api-reference/langchat)** - Full API docs
+LangChat creates the required tables automatically on first run.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## LangChat settings
+
+Pass these to `LangChat(...)` as keyword arguments:
+
+<ParamField path="llm" type="Any" required>
+  LLM provider instance.
+</ParamField>
+
+<ParamField path="vector_db" type="Any" required>
+  Vector database provider instance.
+</ParamField>
+
+<ParamField path="db" type="Any" required>
+  History database provider instance.
+</ParamField>
+
+<ParamField path="reranker" type="Any | None" default="None">
+  Reranker instance. Defaults to `FlashrankRerankAdapter` with `ms-marco-MiniLM-L-12-v2`.
+</ParamField>
+
+<ParamField path="prompt_template" type="str | None" default="None">
+  System prompt template. Must contain `{context}`, `{chat_history}`, `{question}`. See [Prompts guide](/guides/prompts).
+</ParamField>
+
+<ParamField path="standalone_question_prompt" type="str | None" default="None">
+  Prompt for reformulating follow-up questions. Must contain `{chat_history}` and `{question}`.
+</ParamField>
+
+<ParamField path="verbose" type="bool" default="False">
+  Enable verbose LangChain chain logging.
+</ParamField>
+
+<ParamField path="max_chat_history" type="int" default="20">
+  Number of past exchanges to include in each prompt. One exchange = one user message + one AI response.
+</ParamField>
+
+---
+
+## Complete example
+
+```python
+import asyncio
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini", temperature=0.7),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+    max_chat_history=10,
+    prompt_template="""You are a helpful assistant.
+
+Context:
+{context}
+
+Conversation history:
+{chat_history}
+
+User: {question}
+Assistant:""",
+)
+
+async def main():
+    response = await lc.chat(query="Hello!", user_id="alice")
+    print(response)
+
+asyncio.run(main())
+```

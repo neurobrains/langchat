@@ -1,75 +1,65 @@
 ---
 title: ID Manager
-description: Automatic ID generation for database tables
+description: Internal sequential ID management for Supabase tables.
 ---
-
-import { Callout } from 'mintlify';
 
 ## Overview
 
-The ID Manager automatically generates sequential IDs for database records with conflict resolution.
+`IDManager` maintains auto-incrementing ID sequences for LangChat's Supabase tables. It handles concurrent inserts gracefully by using a retry-with-conflict-resolution strategy.
 
-## Features
-
-- ✅ **Sequential IDs** - Automatic integer ID generation
-- ✅ **Conflict Resolution** - Handles ID conflicts automatically
-- ✅ **Database Sync** - Stays in sync with database
-- ✅ **Error Recovery** - Robust retry logic
-
-## Automatic Usage
-
-The ID Manager is used automatically by LangChat:
-
-```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# ID Manager is automatically used when saving chat history
-```
-
-<Callout type="info">
-You don't need to use ID Manager directly - it works automatically behind the scenes.
-</Callout>
-
-## How It Works
-
-1. **Check Database** - Finds highest existing ID
-2. **Generate Next ID** - Creates next sequential ID
-3. **Insert with Retry** - Inserts with conflict resolution
-4. **Handle Conflicts** - Automatically retries on conflicts
-
-## Advanced Usage
-
-Access ID Manager directly:
+This is an internal component — you don't interact with it directly under normal use.
 
 ```python
 from langchat.adapters.database.id_manager import IDManager
-
-# Initialize
-id_manager = IDManager(supabase_client)
-
-# Generate ID for table
-next_id = id_manager.get_next_id("chat_history")
 ```
-
-## Best Practices
-
-The ID Manager handles everything automatically. No manual configuration needed.
-
-## Next Steps
-
-- **[Supabase Adapter](/adapters/supabase-adapter)** - Database provider
-- **[Session Management](/guides/sessions)** - Learn about sessions
-- **[Configuration](/guides/configuration)** - Configuration options
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## How it works
+
+1. On initialization, `IDManager` reads the current maximum ID from each table
+2. IDs are assigned from an in-memory counter
+3. When two concurrent requests try to insert with the same ID, the retry logic increments and retries automatically
+4. This avoids database sequences while maintaining consistent IDs
+
+---
+
+## Constructor
+
+```python
+IDManager(
+    supabase_client,
+    initial_value: int = 1,
+    retry_attempts: int = 3,
+)
+```
+
+<ParamField path="supabase_client" type="Client">
+  Supabase client instance.
+</ParamField>
+
+<ParamField path="initial_value" type="int" default="1">
+  Starting ID value for new tables.
+</ParamField>
+
+<ParamField path="retry_attempts" type="int" default="3">
+  Number of retry attempts on ID conflict before raising an error.
+</ParamField>
+
+---
+
+## Methods
+
+### `insert_with_retry()`
+
+Insert a record with automatic ID assignment and conflict retry.
+
+```python
+def insert_with_retry(
+    self,
+    table: str,
+    data: dict,
+) -> dict | None
+```
+
+Used internally by `session.save_message()` and metrics recording. You only need this if building a custom adapter.

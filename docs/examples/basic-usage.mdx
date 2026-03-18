@@ -1,177 +1,180 @@
 ---
 title: Basic Usage
-description: Simple examples to get you started
+description: Common patterns and examples for building chatbots with LangChat.
 ---
 
-import { CodeGroup } from 'mintlify';
-import { Callout } from 'mintlify';
+## Minimal chatbot
 
-## Simple Chat
+The smallest working example:
 
-Basic example:
-
-<CodeGroup>
-```python Basic
+```python
 import asyncio
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
 
 async def main():
-    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-    vector_db = Pinecone(api_key="...", index_name="...")
-    db = Supabase(url="https://...", key="...")
-    
-    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-    
-    result = await ai.chat(
-        query="Hello! What can you help me with?",
-        user_id="user123"
-    )
-    print(result["response"])
+    response = await lc.chat(query="Hello!", user_id="alice")
+    print(response)
 
 asyncio.run(main())
 ```
 
-```python Synchronous
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+---
 
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-
-# Synchronous version
-result = ai.chat_sync(
-    query="Hello!",
-    user_id="user123"
-)
-print(result["response"])
-```
-</CodeGroup>
-
-## Conversation
-
-LangChat remembers previous messages:
+## Interactive terminal chat
 
 ```python
 import asyncio
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat import LangChat, ChatResponse
+from langchat.providers import OpenAI, Pinecone, Supabase
 
-async def main():
-    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-    vector_db = Pinecone(api_key="...", index_name="...")
-    db = Supabase(url="https://...", key="...")
-    
-    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-    user_id = "user123"
-    
-    # First message
-    result1 = await ai.chat(
-        query="What universities offer computer science?",
-        user_id=user_id
-    )
-    
-    # Second message (remembers context)
-    result2 = await ai.chat(
-        query="What about in Europe?",
-        user_id=user_id
-    )
-    
-    # Third message (continues conversation)
-    result3 = await ai.chat(
-        query="Which accept IELTS 6.5?",
-        user_id=user_id
-    )
+LangChat.load_env()
 
-asyncio.run(main())
-```
-
-<Callout type="info">
-LangChat automatically maintains conversation history for each user. No manual memory management needed!
-</Callout>
-
-## Custom Prompts
-
-Control how your chatbot responds:
-
-```python
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-# Custom system prompt
-custom_prompt = """You are a helpful assistant. 
-Answer questions clearly and concisely.
-Always be friendly and professional."""
-
-ai = LangChat(
-    llm=llm,
-    vector_db=vector_db,
-    db=db,
-    prompt_template=custom_prompt
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
 )
 
-result = await ai.chat(
-    query="What is Python?",
-    user_id="user123"
-)
-```
-
-## Error Handling
-
-Handle errors gracefully:
-
-```python
-import asyncio
-from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
-
 async def main():
-    try:
-        llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-        vector_db = Pinecone(api_key="...", index_name="...")
-        db = Supabase(url="https://...", key="...")
-        
-        ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-        
-        result = await ai.chat(
-            query="Hello!",
-            user_id="user123"
-        )
-        
-        if result["status"] == "success":
-            print(result["response"])
+    user_id = "alice"
+    print("LangChat — type 'exit' to quit\n")
+
+    while True:
+        query = input("You: ").strip()
+        if query.lower() in ("exit", "quit", "q"):
+            break
+        if not query:
+            continue
+
+        response: ChatResponse = await lc.chat(query=query, user_id=user_id)
+
+        if response:
+            print(f"Bot: {response.text}")
+            print(f"     [{response.response_time:.2f}s]\n")
         else:
-            print(f"Error: {result.get('error')}")
-            
-    except Exception as e:
-        print(f"Error: {e}")
+            print(f"Bot: Error — {response.error}\n")
 
 asyncio.run(main())
 ```
 
-## Next Steps
+---
 
-- **[Custom Prompts](/examples/custom-prompts)** - Advanced prompt customization
-- **[API Server](/examples/api-server)** - Run as web API
-- **[Document Indexing](/guides/document-indexing)** - Add your own knowledge base
+## Sync (no async)
+
+Use `chat_sync()` when you don't want to deal with asyncio:
+
+```python
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+LangChat.load_env()
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
+
+response = lc.chat_sync(query="What is LangChat?", user_id="alice")
+print(response)
+```
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Multiple users
+
+Each `user_id` gets separate conversation history:
+
+```python
+async def handle_user(lc: LangChat, user_id: str, query: str):
+    response = await lc.chat(query=query, user_id=user_id)
+    return response.text
+
+async def main():
+    # These are completely separate conversations
+    r1 = await handle_user(lc, "alice", "What's our refund policy?")
+    r2 = await handle_user(lc, "bob", "How do I reset my password?")
+    print(r1)
+    print(r2)
+```
+
+---
+
+## Multiple platforms
+
+Use `platform` to separate conversations from different surfaces:
+
+```python
+# Web app
+web_response = await lc.chat(
+    query="Show me my order history",
+    user_id="alice",
+    platform="web",
+)
+
+# Mobile app — same user, separate conversation
+mobile_response = await lc.chat(
+    query="Show me my order history",
+    user_id="alice",
+    platform="mobile",
+)
+```
+
+---
+
+## Checking the response
+
+`ChatResponse` supports bool and string protocols:
+
+```python
+response = await lc.chat(query="Hello", user_id="alice")
+
+# Check success
+if response:
+    print("Success!")
+
+# Print the text
+print(response)         # same as print(response.text)
+print(str(response))    # explicit cast
+
+# Access all fields
+print(response.text)
+print(response.status)         # "success" or "error"
+print(response.user_id)
+print(response.platform)
+print(response.response_time)  # seconds as float
+print(response.timestamp)      # ISO 8601 UTC string
+print(response.error)          # None on success
+```
+
+---
+
+## Different LLM providers
+
+```python
+from langchat.providers import Anthropic, Gemini, Mistral, Cohere, Ollama
+
+# Anthropic Claude
+lc = LangChat(llm=Anthropic("claude-3-5-sonnet-20241022"), vector_db=..., db=...)
+
+# Google Gemini
+lc = LangChat(llm=Gemini("gemini-1.5-flash"), vector_db=..., db=...)
+
+# Mistral
+lc = LangChat(llm=Mistral("mistral-large-latest"), vector_db=..., db=...)
+
+# Cohere
+lc = LangChat(llm=Cohere("command-r-plus"), vector_db=..., db=...)
+
+# Ollama (local, no API key)
+lc = LangChat(llm=Ollama("llama3.2"), vector_db=..., db=...)
+```

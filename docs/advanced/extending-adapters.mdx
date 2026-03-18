@@ -1,78 +1,154 @@
 ---
 title: Extending Adapters
-description: Create custom adapters for LangChat
+description: Build custom LLM, vector database, or reranker adapters for LangChat.
 ---
 
-import { Callout } from 'mintlify';
+## When to extend
 
-## Custom LLM Provider
+The built-in providers cover the most common cases. Build a custom adapter when you need:
 
-Extend existing providers:
+- A different LLM not yet supported (e.g., a private model, Azure OpenAI)
+- A different vector database (e.g., Weaviate, Qdrant, Chroma)
+- A different reranker
+- Custom pre/post processing in any adapter layer
 
-```python
-from langchat.llm import OpenAI
+---
 
-class CustomOpenAI(OpenAI):
-    def ainvoke(self, messages, **kwargs):
-        # Custom preprocessing
-        processed = self.preprocess(messages)
-        
-        # Call parent
-        response = await super().ainvoke(processed, **kwargs)
-        
-        # Custom postprocessing
-        return self.postprocess(response)
-    
-    def preprocess(self, messages):
-        # Your custom logic
-        return messages
-    
-    def postprocess(self, response):
-        # Your custom logic
-        return response
-```
+## Custom LLM provider
 
-## Custom Vector Adapter
-
-Extend Pinecone adapter:
+LangChat's engine expects an LLM that implements `invoke()` and `ainvoke()` methods returning an object with a `.content` attribute.
 
 ```python
-from langchat.vector_db import Pinecone
+from langchat.adapters.llm._base_llm import BaseLLM, AIMessage
+from typing import Any
 
-class CustomPinecone(Pinecone):
-    def get_retriever(self, k=5):
-        retriever = super().get_retriever(k=k)
-        # Add custom filtering or logic
-        return retriever
-```
+def my_model_call(messages: list[Any]) -> str:
+    """Call your model and return the response text."""
+    # Extract the last user message
+    last_message = messages[-1].content if hasattr(messages[-1], "content") else str(messages[-1])
 
-## Using Custom Adapters
+    # Call your custom model here
+    response = my_custom_api.generate(last_message)
+    return response.text
 
-```python
+# Wrap in BaseLLM
+llm = BaseLLM(invoke_func=my_model_call)
+
+# Use like any other provider
 from langchat import LangChat
+from langchat.providers import Pinecone, Supabase
 
-# Use custom adapters
-custom_llm = CustomOpenAI(api_key="sk-...", model="gpt-4o-mini")
-custom_vector = CustomPinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
-
-ai = LangChat(
-    llm=custom_llm,
-    vector_db=custom_vector,
-    db=db
+lc = LangChat(
+    llm=llm,
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
 )
 ```
 
-<Callout type="info">
-Custom adapters must implement the same interface as the base adapters.
-</Callout>
+### Azure OpenAI example
 
-## Next Steps
+```python
+from openai import AzureOpenAI
+from langchat.adapters.llm._base_llm import BaseLLM
 
-- **[Customization](/advanced/customization)** - More customization options
-- **[Adapters Overview](/adapters/overview)** - All adapters
-- **[Configuration](/guides/configuration)** - Configuration guide
+azure_client = AzureOpenAI(
+    api_key=os.environ["AZURE_OPENAI_KEY"],
+    api_version="2024-02-01",
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+)
+
+def azure_call(messages: list) -> str:
+    formatted = [{"role": "user", "content": m.content} for m in messages]
+    response = azure_client.chat.completions.create(
+        model="gpt-4o",
+        messages=formatted,
+    )
+    return response.choices[0].message.content
+
+llm = BaseLLM(invoke_func=azure_call)
+```
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Custom vector database
+
+LangChat's engine calls `vector_adapter.get_retriever()` to get a LangChain retriever. Any LangChain-compatible vector store retriever works.
+
+```python
+import os
+from langchain_community.vectorstores import Chroma
+from langchain_openai import OpenAIEmbeddings
+
+class ChromaAdapter:
+    """Custom Chroma vector database adapter."""
+
+    def __init__(self, collection_name: str, persist_dir: str = "./chroma_db"):
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        self.store = Chroma(
+            collection_name=collection_name,
+            embedding_function=self.embeddings,
+            persist_directory=persist_dir,
+        )
+
+    def get_retriever(self, k: int = 5):
+        return self.store.as_retriever(search_kwargs={"k": k})
+
+# Use with LangChat
+from langchat import LangChat
+from langchat.providers import OpenAI, Supabase
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=ChromaAdapter("my-collection"),
+    db=Supabase(),
+)
+```
+
+---
+
+## Custom database adapter
+
+LangChat calls `db.client` to get the Supabase client. For a different database backend, implement the same interface.
+
+```python
+class MockDatabaseAdapter:
+    """In-memory database adapter for testing."""
+
+    def __init__(self):
+        self._data = {}
+
+    @property
+    def client(self):
+        return self  # return self as the "client"
+
+    def table(self, name: str):
+        return self
+
+    def insert(self, data: dict):
+        return self
+
+    def select(self, cols: str = "*"):
+        return self
+
+    def eq(self, col: str, val):
+        return self
+
+    def execute(self):
+        class Result:
+            data = []
+        return Result()
+```
+
+---
+
+## Contributing a new provider
+
+If your adapter could benefit other users, consider contributing it to LangChat:
+
+1. Add the adapter in `src/langchat/adapters/<category>/`
+2. Add the provider wrapper in `src/langchat/providers/__init__.py`
+3. Add tests in `tests/adapters/<category>/`
+4. Update the documentation in `docs/adapters/`
+5. Open a PR on [GitHub](https://github.com/neurobrains/langchat)
+
+See [CONTRIBUTING.md](https://github.com/neurobrains/langchat/blob/develop/CONTRIBUTING.md) for the full contribution guide.

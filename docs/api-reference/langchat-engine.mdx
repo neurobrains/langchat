@@ -1,18 +1,25 @@
 ---
 title: LangChatEngine
-description: Core engine API reference
+description: Internal engine API reference. Advanced use only.
 ---
 
-import { ParamField } from 'mintlify';
+## Overview
 
-## Class: LangChatEngine
+`LangChatEngine` is the internal engine that powers `LangChat`. In most cases you don't interact with it directly — use the `LangChat` SDK class instead.
 
-Core orchestrator for LangChat components.
+Access it via `lc.engine` when you need low-level control.
 
-### Constructor
+```python
+from langchat.core.engine import LangChatEngine
+```
+
+---
+
+## Constructor
 
 ```python
 LangChatEngine(
+    *,
     llm,
     vector_db,
     db,
@@ -20,85 +27,103 @@ LangChatEngine(
     prompt_template=None,
     standalone_question_prompt=None,
     verbose=False,
-    max_chat_history=20
+    max_chat_history=20,
 )
 ```
 
-**Parameters:**
+Same parameters as `LangChat`. All are keyword-only.
 
-<ParamField path="llm" type="Any" required>
-  LLM provider instance
-</ParamField>
+---
 
-<ParamField path="vector_db" type="Any" required>
-  Vector database provider
-</ParamField>
+## Methods
 
-<ParamField path="db" type="Any" required>
-  Database provider
-</ParamField>
+### `async chat()`
 
-<ParamField path="reranker" type="Any" default="None">
-  Optional reranker provider
-</ParamField>
-
-<ParamField path="prompt_template" type="str | None" default="None">
-  Custom system prompt template
-</ParamField>
-
-<ParamField path="standalone_question_prompt" type="str | None" default="None">
-  Custom standalone question prompt
-</ParamField>
-
-<ParamField path="verbose" type="bool" default="False">
-  Enable verbose logging
-</ParamField>
-
-<ParamField path="max_chat_history" type="int" default="20">
-  Maximum chat history messages
-</ParamField>
-
-### Methods
-
-#### `async chat()`
-
-Process a chat query.
+Process a chat query. Returns a raw dict (not a `ChatResponse`).
 
 ```python
 async def chat(
     self,
     query: str,
     user_id: str,
-    domain: str = "default",
-    standalone_question: Optional[str] = None
+    platform: str = "default",
+    standalone_question: str | None = None,
 ) -> dict
 ```
 
-#### `get_session()`
+<ParamField path="standalone_question" type="str | None" default="None">
+  If provided, skips the standalone question generation step and uses this value directly. Useful for pre-processing.
+</ParamField>
 
-Get or create a user session.
+**Returns:**
+
+```python
+{
+    "response": str,           # AI response text
+    "user_id": str,            # echoed user_id
+    "timestamp": str,          # ISO 8601 UTC
+    "status": "success"|"error",
+    "response_time": float,    # seconds
+    "error": str | None,       # error message on failure
+}
+```
+
+---
+
+### `get_session()`
+
+Get or create a `UserSession`.
 
 ```python
 def get_session(
     self,
     user_id: str,
-    domain: str = "default"
+    platform: str = "default",
 ) -> UserSession
 ```
 
-### Properties
-
-- `llm` - LLM provider instance
-- `vector_adapter` - Vector database adapter
-- `reranker_adapter` - Reranker adapter
-- `history_store` - Database adapter
-- `sessions` - Active user sessions
-
-## Next Steps
-
-- **[LangChat API](/api-reference/langchat)** - Main API
-- **[Adapters](/adapters/overview)** - Adapter docs
+Sessions are cached in `self.sessions` dict keyed by `"{user_id}_{platform}"`.
 
 ---
 
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+## Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `llm` | Any | LLM provider instance |
+| `vector_adapter` | Any | Vector DB provider instance |
+| `history_store` | Any | Database provider instance |
+| `reranker_adapter` | Any | Reranker instance |
+| `sessions` | `dict[str, UserSession]` | In-memory session cache |
+| `id_manager` | `IDManager` | Database ID sequence manager |
+| `prompt_template` | `str` | System prompt template |
+| `verbose` | `bool` | Verbose logging flag |
+| `max_chat_history` | `int` | History window size |
+
+---
+
+## Advanced: skip standalone question generation
+
+If you're building a pipeline that pre-processes questions, you can skip the standalone question step:
+
+```python
+# Pre-process the question yourself
+standalone = f"Question about Acme Corp: {user_query}"
+
+result = await lc.engine.chat(
+    query=user_query,
+    user_id="alice",
+    standalone_question=standalone,
+)
+```
+
+---
+
+## API server mode
+
+When running as an API server, the engine suppresses Rich console output (the formatted response panel):
+
+```python
+from langchat.core.engine import set_api_server_mode
+set_api_server_mode(True)   # called automatically by create_app()
+```

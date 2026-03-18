@@ -1,106 +1,144 @@
 ---
 title: Quick Start
-description: Get your first chatbot running in 5 minutes
+description: Build your first RAG chatbot in under 5 minutes.
 ---
 
-import { Callout } from 'mintlify';
-import { CodeGroup } from 'mintlify';
-
-## Install LangChat
+## Install
 
 ```bash
 pip install langchat
 ```
 
-<Callout type="info">
-Requires Python 3.8 or higher.
-</Callout>
+<Note>
+  Requires **Python 3.9 or higher**.
+</Note>
 
-## Your First Chatbot
+## Set environment variables
 
-Copy this code and run it:
+All providers read credentials from the environment automatically. Create a `.env` file:
 
-<CodeGroup>
-```python Complete Example
+```bash
+OPENAI_API_KEY=sk-...
+PINECONE_API_KEY=pcsk-...
+PINECONE_INDEX=my-index
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=eyJhbGc...
+```
+
+## Your first chatbot
+
+```python
 import asyncio
 from langchat import LangChat
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+from langchat.providers import OpenAI, Pinecone, Supabase
 
 async def main():
-    # Setup providers
-    llm = OpenAI(api_key="sk-...", model="gpt-4o-mini", temperature=0.7)
-    vector_db = Pinecone(api_key="your-key", index_name="your-index")
-    db = Supabase(url="https://xxxxx.supabase.co", key="your-key")
-    
-    # Create chatbot
-    ai = LangChat(llm=llm, vector_db=vector_db, db=db)
-    
-    # Chat!
-    result = await ai.chat(
-        query="Hello! What can you help me with?",
-        user_id="guest",
-        domain="default"
+    lc = LangChat(
+        llm=OpenAI("gpt-4o-mini"),      # reads OPENAI_API_KEY
+        vector_db=Pinecone("my-index"), # reads PINECONE_API_KEY
+        db=Supabase(),                  # reads SUPABASE_URL + SUPABASE_KEY
     )
-    print(result["response"])
+
+    response = await lc.chat(
+        query="What can you help me with?",
+        user_id="alice",
+    )
+
+    print(response)        # prints response text
+    print(response.text)   # same — explicit access
+    print(response.status) # "success" or "error"
 
 asyncio.run(main())
 ```
 
-```python API Server
-from langchat.api.app import create_app
-from langchat.llm import OpenAI
-from langchat.vector_db import Pinecone
-from langchat.database import Supabase
+## Sync alternative
+
+Don't want `async`? Use the sync wrapper:
+
+```python
+from langchat import LangChat
+from langchat.providers import OpenAI, Pinecone, Supabase
+
+lc = LangChat(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
+
+response = lc.chat_sync(query="Hello!", user_id="alice")
+print(response)
+```
+
+## What LangChat does automatically
+
+When you call `chat()`:
+
+1. Reformulates the question as a standalone query (resolves "it", "that", etc.)
+2. Searches your Pinecone index for relevant context
+3. Reranks results with Flashrank for better precision
+4. Calls the LLM with context + conversation history
+5. Saves the exchange to Supabase
+6. Returns a typed `ChatResponse` object
+
+No configuration needed for any of this — it all works out of the box.
+
+## What you get back
+
+`chat()` returns a [`ChatResponse`](/api-reference/langchat-config) dataclass:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | `str` | The AI's response |
+| `status` | `"success" \| "error"` | Whether the call succeeded |
+| `user_id` | `str` | Echo of the user ID you passed |
+| `platform` | `str` | Platform namespace (default: `"default"`) |
+| `response_time` | `float` | Latency in seconds |
+| `timestamp` | `str` | ISO 8601 UTC timestamp |
+| `error` | `str \| None` | Error message if `status == "error"` |
+
+```python
+response = await lc.chat(query="Hello", user_id="alice")
+
+if response:                        # True when status == "success"
+    print(response.text)
+    print(f"Answered in {response.response_time:.2f}s")
+else:
+    print(f"Error: {response.error}")
+```
+
+## Launch as an API server
+
+One line to expose a full REST API with a built-in chat UI:
+
+```python
+from langchat.api import create_app
+from langchat.providers import OpenAI, Pinecone, Supabase
 import uvicorn
 
-# Setup
-llm = OpenAI(api_key="sk-...", model="gpt-4o-mini")
-vector_db = Pinecone(api_key="...", index_name="...")
-db = Supabase(url="https://...", key="...")
+app = create_app(
+    llm=OpenAI("gpt-4o-mini"),
+    vector_db=Pinecone("my-index"),
+    db=Supabase(),
+)
 
-# Create server
-app = create_app(llm=llm, vector_db=vector_db, db=db)
-
-# Run
 uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
-</CodeGroup>
 
-## What You Need
+Open `http://localhost:8000/frontend` to use the built-in chat interface.
 
-Before running, get these:
+## Next steps
 
-1. **OpenAI API Key**: Get from [platform.openai.com](https://platform.openai.com)
-2. **Pinecone Account**: Sign up at [pinecone.io](https://pinecone.io) and create an index
-3. **Supabase Project**: Create at [supabase.com](https://supabase.com)
-
-<Callout type="warning">
-Make sure your Pinecone index exists before running. Supabase tables are created automatically.
-</Callout>
-
-## What Happens?
-
-When you run the code:
-
-1. ✅ LangChat connects to your AI model
-2. ✅ Sets up search capabilities
-3. ✅ Creates database tables (if needed)
-4. ✅ Starts your chatbot
-
-Everything happens automatically—no manual setup required!
-
-## Next Steps
-
-- **[Installation Guide](/installation)** - Detailed setup instructions
-- **[Examples](/examples/basic-usage)** - More code examples
-- **[Configuration](/guides/configuration)** - Customize your chatbot
-
-<Callout type="success">
-🎉 Congratulations! You just built your first AI chatbot!
-</Callout>
-
----
-
-**Built with ❤️ by [NeuroBrain](https://neurobrain.co)**
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Virtual environments, uv, and dependency setup
+  </Card>
+  <Card title="Configuration" icon="gear" href="/guides/configuration">
+    All providers and configuration options
+  </Card>
+  <Card title="Document Indexing" icon="database" href="/guides/document-indexing">
+    Load PDFs, CSVs, and other documents into Pinecone
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/langchat">
+    Complete method and parameter reference
+  </Card>
+</CardGroup>
