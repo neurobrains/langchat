@@ -3,7 +3,6 @@
 
 import asyncio
 from pathlib import Path
-from typing import Optional, Union
 
 from dotenv import load_dotenv
 
@@ -20,7 +19,7 @@ class LangChat:
     a production-ready RAG chat application in a few lines of code.
 
     Args:
-        llm: LLM provider instance (required).
+        llm: LLM platform instance (required).
         vector_db: Vector database adapter (required).
         db: Database adapter for chat-history storage (required).
         reranker: Reranker adapter (optional, defaults to Flashrank).
@@ -31,9 +30,9 @@ class LangChat:
 
     Examples::
 
-        # Recommended — use langchat.providers for automatic env-var loading
+        # Recommended — use langchat.platforms for automatic env-var loading
         from langchat import LangChat
-        from langchat.providers import OpenAI, Pinecone, Supabase
+        from langchat.platforms import OpenAI, Pinecone, Supabase
 
         lc = LangChat(
             llm=OpenAI("gpt-4o"),
@@ -61,9 +60,9 @@ class LangChat:
         vector_db=None,
         db=None,
         reranker=None,
-        prompt_template: Optional[str] = None,
-        standalone_question_prompt: Optional[str] = None,
-        verbose: Optional[bool] = None,
+        prompt_template: str | None = None,
+        standalone_question_prompt: str | None = None,
+        verbose: bool | None = None,
         max_chat_history: int = 20,
     ):
         self.engine = LangChatEngine(
@@ -86,14 +85,14 @@ class LangChat:
         self,
         query: str,
         user_id: str,
-        domain: str = "default",
+        platform: str = "default",
     ) -> ChatResponse:
         """Send a message and receive a typed response.
 
         Args:
             query: The user's message.
             user_id: Identifier for the user (used to isolate chat history).
-            domain: Logical namespace for the conversation (default: ``"default"``).
+            platform: Logical namespace for the conversation (default: ``"default"``).
 
         Returns:
             :class:`~langchat.types.ChatResponse` with ``.text``, ``.status``,
@@ -110,11 +109,11 @@ class LangChat:
             else:
                 print("Error:", response.error)
         """
-        raw = await self.engine.chat(query=query, user_id=user_id, domain=domain)
+        raw = await self.engine.chat(query=query, user_id=user_id, platform=platform)
         return ChatResponse(
             text=raw.get("response", ""),
             user_id=raw.get("user_id", user_id),
-            domain=domain,
+            platform=platform,
             status=raw.get("status", "error"),
             response_time=raw.get("response_time", 0.0),
             timestamp=raw.get("timestamp", ""),
@@ -125,14 +124,14 @@ class LangChat:
         self,
         query: str,
         user_id: str,
-        domain: str = "default",
+        platform: str = "default",
     ) -> ChatResponse:
         """Synchronous version of :meth:`chat`. No ``asyncio`` boilerplate needed.
 
         Args:
             query: The user's message.
             user_id: Identifier for the user.
-            domain: Logical namespace (default: ``"default"``).
+            platform: Logical namespace (default: ``"default"``).
 
         Returns:
             :class:`~langchat.types.ChatResponse`.
@@ -142,21 +141,21 @@ class LangChat:
             response = lc.chat_sync("Hello", user_id="bob")
             print(response.text)
         """
-        return asyncio.run(self.chat(query, user_id, domain))
+        return asyncio.run(self.chat(query, user_id, platform))
 
     # ------------------------------------------------------------------
     # Sessions
     # ------------------------------------------------------------------
 
-    def get_session(self, user_id: str, domain: str = "default"):
+    def get_session(self, user_id: str, platform: str = "default"):
         """Return (or create) the :class:`~langchat.core.session.UserSession`
-        for this ``user_id`` / ``domain`` pair.
+        for this ``user_id`` / ``platform`` pair.
 
         Args:
             user_id: User identifier.
-            domain: Logical namespace (default: ``"default"``).
+            platform: Logical namespace (default: ``"default"``).
         """
-        return self.engine.get_session(user_id, domain)
+        return self.engine.get_session(user_id, platform)
 
     # ------------------------------------------------------------------
     # Document indexing
@@ -164,11 +163,11 @@ class LangChat:
 
     def index(
         self,
-        paths: Union[str, list[str]],
+        paths: str | list[str],
         *,
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         prevent_duplicates: bool = True,
     ) -> dict:
         """Load and index one or more documents into the vector store.
@@ -261,7 +260,6 @@ class LangChat:
         llm = self.engine.llm
 
         if hasattr(llm, "api_keys") and llm.api_keys:
-            # cycle() object — peek at the current key stored separately
             key = getattr(llm, "_current_key", None)
             if key:
                 return key
@@ -271,6 +269,6 @@ class LangChat:
 
         raise ValueError(
             "Could not resolve an OpenAI API key for embeddings from the LLM adapter. "
-            "Ensure your LLM provider has API keys configured, or pass embedding_api_key "
-            "directly to the Pinecone provider."
+            "Ensure your LLM platform has API keys configured, or pass embedding_api_key "
+            "directly to the Pinecone platform."
         )

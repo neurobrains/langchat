@@ -122,11 +122,11 @@ class TestLangChatAsyncChat:
             mock_engine_cls.return_value = mock_engine
 
             lc = LangChat(llm=mock_llm, vector_db=mock_vector_db, db=mock_db)
-            response = await lc.chat("What is the answer?", user_id="bob", domain="science")
+            response = await lc.chat("What is the answer?", user_id="bob", platform="science")
 
             assert response.text == "The answer is 42."
             assert response.user_id == "bob"
-            assert response.domain == "science"
+            assert response.platform == "science"
             assert response.status == "success"
             assert response.response_time == 1.23
             assert response.timestamp == "2025-06-01T12:00:00Z"
@@ -177,7 +177,7 @@ class TestLangChatAsyncChat:
             assert response.error == "oops"
 
     @pytest.mark.asyncio
-    async def test_chat_default_domain_is_default(self, mock_llm, mock_vector_db, mock_db):
+    async def test_chat_default_platform_is_default(self, mock_llm, mock_vector_db, mock_db):
         with patch("langchat.sdk.LangChatEngine") as mock_engine_cls:
             mock_engine = MagicMock()
             received = {}
@@ -197,7 +197,7 @@ class TestLangChatAsyncChat:
 
             lc = LangChat(llm=mock_llm, vector_db=mock_vector_db, db=mock_db)
             response = await lc.chat("hi", user_id="u")
-            assert response.domain == "default"
+            assert response.platform == "default"
 
 
 # ---------------------------------------------------------------------------

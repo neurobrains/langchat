@@ -10,7 +10,7 @@ def _make_response(**overrides) -> ChatResponse:
     return ChatResponse(
         text=overrides.get("text", "Hello!"),
         user_id=overrides.get("user_id", "alice"),
-        domain=overrides.get("domain", "default"),
+        platform=overrides.get("platform", "default"),
         status=overrides.get("status", "success"),
         response_time=overrides.get("response_time", 1.23),
         timestamp=overrides.get("timestamp", "2025-01-01T00:00:00Z"),
@@ -32,9 +32,9 @@ class TestChatResponseFields:
         r = _make_response(user_id="bob")
         assert r.user_id == "bob"
 
-    def test_domain_field(self):
-        r = _make_response(domain="science")
-        assert r.domain == "science"
+    def test_platform_field(self):
+        r = _make_response(platform="science")
+        assert r.platform == "science"
 
     def test_status_success(self):
         r = _make_response(status="success")
@@ -132,10 +132,10 @@ class TestChatResponseDataclass:
         assert "ChatResponse" in repr(r)
 
     def test_fields_are_accessible_by_name(self):
-        r = _make_response(text="hi", user_id="u", domain="d")
+        r = _make_response(text="hi", user_id="u", platform="d")
         assert r.text == "hi"
         assert r.user_id == "u"
-        assert r.domain == "d"
+        assert r.platform == "d"
 
 
 # ---------------------------------------------------------------------------

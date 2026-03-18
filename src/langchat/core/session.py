@@ -27,7 +27,7 @@ class UserSession:
 
     def __init__(
         self,
-        domain: str,
+        platform: str,
         user_id: str,
         llm: Any,
         vector_adapter: Any,
@@ -43,9 +43,9 @@ class UserSession:
         Initialize user session.
 
         Args:
-            domain: User domain
+            platform: Session namespace
             user_id: User ID
-            llm: LLM provider instance
+            llm: LLM platform instance
             vector_adapter: Vector database adapter
             reranker_adapter: Reranker adapter
             history_store: History storage adapter
@@ -55,7 +55,7 @@ class UserSession:
             max_chat_history: Maximum number of chat messages to load from history
             retrieval_k: Number of documents to retrieve from vector DB
         """
-        self.domain = domain
+        self.platform = platform
         self.user_id = user_id
         self.llm = llm
         self.vector_adapter = vector_adapter
@@ -100,7 +100,7 @@ class UserSession:
                 self.history_store.client.table("chat_history")
                 .select("query, response")
                 .eq("user_id", self.user_id)
-                .eq("domain", self.domain)
+                .eq("platform", self.platform)
                 .order("timestamp", desc=True)
                 .limit(self.max_chat_history)
                 .execute()
@@ -128,12 +128,12 @@ class UserSession:
             response: AI response
         """
         try:
-            logger.info(f"Attempting to save message for user {self.user_id}, domain {self.domain}")
+            logger.info(f"Attempting to save message for user {self.user_id}, platform {self.platform}")
             result = self.id_manager.insert_with_retry(
                 "chat_history",
                 {
                     "user_id": self.user_id,
-                    "domain": self.domain,
+                    "platform": self.platform,
                     "query": query,
                     "response": response,
                     "timestamp": datetime.now(timezone.utc).isoformat(),

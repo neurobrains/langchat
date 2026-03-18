@@ -108,7 +108,7 @@ class TestChatResponseType:
         r = ChatResponse(
             text="hello",
             user_id="alice",
-            domain="default",
+            platform="default",
             status="success",
             response_time=0.5,
             timestamp="2025-01-01T00:00:00Z",
@@ -123,7 +123,7 @@ class TestChatResponseType:
         ok = ChatResponse(
             text="ok",
             user_id="u",
-            domain="d",
+            platform="d",
             status="success",
             response_time=0.1,
             timestamp="t",
@@ -131,7 +131,7 @@ class TestChatResponseType:
         fail = ChatResponse(
             text="",
             user_id="u",
-            domain="d",
+            platform="d",
             status="error",
             response_time=0.0,
             timestamp="t",
@@ -145,7 +145,7 @@ class TestChatResponseType:
         r = ChatResponse(
             text="The answer.",
             user_id="u",
-            domain="d",
+            platform="d",
             status="success",
             response_time=0.1,
             timestamp="t",

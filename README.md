@@ -173,14 +173,14 @@ Supabase(url="https://yourproject.supabase.co", key="your-key")
 `chat()` returns a `ChatResponse` dataclass — no more `result["response"]` key lookups.
 
 ```python
-response = await lc.chat("Summarise the docs", user_id="alice", domain="docs")
+response = await lc.chat("Summarise the docs", user_id="alice", platform="docs")
 
 response.text           # str   — the answer
 response.status         # "success" | "error"
 response.response_time  # float — wall-clock seconds
 response.timestamp      # str   — ISO-8601
 response.user_id        # str
-response.domain         # str
+response.platform       # str
 response.error          # str | None — set when status == "error"
 
 # Boolean protocol
@@ -220,7 +220,7 @@ lc.index(
 ## Custom prompt
 
 ```python
-PROMPT = """You are a helpful assistant for {domain}.
+PROMPT = """You are a helpful assistant for {platform}.
 Use only the provided context to answer questions.
 
 Context:

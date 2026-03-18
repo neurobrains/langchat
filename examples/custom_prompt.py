@@ -79,7 +79,7 @@ async def hr_chat(employee_id: str):
     for q in questions:
         print(f"Employee : {q}")
 
-        response = await lc.chat(q, user_id=employee_id, domain="hr")
+        response = await lc.chat(q, user_id=employee_id, platform="hr")
 
         if response:
             print(f"Aria     : {response.text}\n")

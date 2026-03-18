@@ -33,7 +33,7 @@ def session(mock_adapters):
 
     with patch("langchat.core.session.ConversationBufferWindowMemory"):
         session = UserSession(
-            domain="test-domain",
+            platform="test-platform",
             user_id="test-user",
             llm=mock_adapters["llm"],
             vector_adapter=mock_adapters["vector_adapter"],
@@ -50,7 +50,7 @@ class TestUserSession:
 
     def test_session_initialization(self, session):
         """Test session initialization."""
-        assert session.domain == "test-domain"
+        assert session.platform == "test-platform"
         assert session.user_id == "test-user"
 
     def test_session_has_create_conversation_method(self, session):

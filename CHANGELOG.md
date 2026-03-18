@@ -21,7 +21,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 **`langchat.types.ChatResponse` — typed return value**
 - `LangChat.chat()` now returns a `ChatResponse` dataclass instead of a raw `dict`
-- Fields: `text`, `user_id`, `domain`, `status`, `response_time`, `timestamp`, `error`
+- Fields: `text`, `user_id`, `platform`, `status`, `response_time`, `timestamp`, `error`
 - `bool(response)` → `True` when success, `False` on error
 - `str(response)` → `response.text` (works directly with `print()` and f-strings)
 - `response.error` is `str | None`, populated only on failure

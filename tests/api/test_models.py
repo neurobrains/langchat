@@ -12,29 +12,29 @@ class TestModels:
         request = QueryRequest(
             query="test query",
             userId="test-user",
-            domain="default",
+            platform="default",
         )
 
         assert request.query == "test query"
         assert request.userId == "test-user"
-        assert request.domain == "default"
+        assert request.platform == "default"
 
-    def test_query_request_with_domain(self):
-        """Test QueryRequest model with custom domain."""
+    def test_query_request_with_platform(self):
+        """Test QueryRequest model with custom platform."""
         request = QueryRequest(
             query="test query",
             userId="test-user",
-            domain="custom-domain",
+            platform="custom-platform",
         )
 
-        assert request.domain == "custom-domain"
+        assert request.platform == "custom-platform"
 
     def test_query_request_optional_image(self):
         """Test QueryRequest model with optional image."""
         request = QueryRequest(
             query="test query",
             userId="test-user",
-            domain="default",
+            platform="default",
             image=None,
         )
 
@@ -45,7 +45,7 @@ class TestModels:
         request = QueryRequest(
             query="test query",
             userId="test-user",
-            domain="default",
+            platform="default",
             image="base64encodedimage",
         )
 

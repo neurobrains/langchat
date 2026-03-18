@@ -62,7 +62,7 @@ function saveSessions(sessions: ChatSession[], activeId: string) {
 }
 
 function buildSessionKey(baseUserId: string, sessionId: string) {
-  // Backend session key is `${userId}_${domain}`. We keep domain constant and encode
+  // Backend session key is `${userId}_${platform}`. We keep platform constant and encode
   // conversation id into userId so each conversation becomes a separate backend session.
   return `${baseUserId}:${sessionId}`;
 }

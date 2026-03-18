@@ -26,7 +26,7 @@ Run
 
 Endpoints
 ---------
-    POST /chat      { "query": "...", "userId": "...", "domain": "..." }
+    POST /chat      { "query": "...", "userId": "...", "platform": "..." }
     GET  /health    returns service status
     GET  /frontend  serves the built-in chat UI
 """

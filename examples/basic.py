@@ -73,7 +73,7 @@ async def chat_session(user_id: str):
     for question in questions:
         print(f"Customer : {question}")
 
-        response = await lc.chat(question, user_id=user_id, domain="support")
+        response = await lc.chat(question, user_id=user_id, platform="support")
 
         if response:
             print(f"Assistant: {response.text}")

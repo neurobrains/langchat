@@ -5,7 +5,6 @@ import asyncio
 import threading
 import time
 from datetime import datetime, timezone
-from typing import Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -39,16 +38,16 @@ class LangChatEngine:
         vector_db=None,
         db=None,
         reranker=None,
-        prompt_template: Optional[str] = None,
-        standalone_question_prompt: Optional[str] = None,
-        verbose: Optional[bool] = False,
+        prompt_template: str | None = None,
+        standalone_question_prompt: str | None = None,
+        verbose: bool | None = False,
         max_chat_history: int = 20,
     ):
         """
         Initialize LangChat engine.
 
         Args:
-            llm: LLM provider instance (required)
+            llm: LLM platform instance (required)
             vector_db: Vector database adapter (required)
             db: Database adapter for history storage (required)
             reranker: Reranker adapter (optional, defaults to FlashrankRerankAdapter)
@@ -99,22 +98,22 @@ User question: {question}
 
 Your response:"""
 
-    def get_session(self, user_id: str, domain: str = "default") -> UserSession:
+    def get_session(self, user_id: str, platform: str = "default") -> UserSession:
         """
         Get or create a user session.
 
         Args:
             user_id: User ID
-            domain: User domain
+            platform: Session namespace
 
         Returns:
             UserSession instance
         """
-        session_key = f"{user_id}_{domain}"
+        session_key = f"{user_id}_{platform}"
 
         if session_key not in self.sessions:
             self.sessions[session_key] = UserSession(
-                domain=domain,
+                platform=platform,
                 user_id=user_id,
                 llm=self.llm,
                 vector_adapter=self.vector_adapter,
@@ -130,8 +129,8 @@ Your response:"""
         self,
         query: str,
         user_id: str,
-        domain: str = "default",
-        standalone_question: Optional[str] = None,
+        platform: str = "default",
+        standalone_question: str | None = None,
     ) -> dict:
         """
         Process a chat query.
@@ -139,7 +138,7 @@ Your response:"""
         Args:
             query: User query
             user_id: User ID
-            domain: User domain
+            platform: Session namespace
             standalone_question: Optional standalone question (if already generated)
 
         Returns:
@@ -149,7 +148,7 @@ Your response:"""
 
         try:
             # Get or create session
-            session = self.get_session(user_id, domain)
+            session = self.get_session(user_id, platform)
 
             # Generate standalone question if not provided
             if not standalone_question:

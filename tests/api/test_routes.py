@@ -48,13 +48,13 @@ class TestRoutes:
             # Mock Form data
             mock_query = "test query"
             mock_user_id = "test-user"
-            mock_domain = "default"
+            mock_platform = "default"
 
             # Call the chat endpoint with mocked form data
             result = await chat(
                 query=mock_query,
                 userId=mock_user_id,
-                domain=mock_domain,
+                platform=mock_platform,
                 image=None,
                 background_tasks=MagicMock(),
             )

@@ -16,7 +16,7 @@ class ChatResponse:
     Attributes:
         text: The assistant's reply text.
         user_id: The user identifier that was passed to :meth:`~LangChat.chat`.
-        domain: The domain that was passed to :meth:`~LangChat.chat`.
+        platform: The platform that was passed to :meth:`~LangChat.chat`.
         status: ``"success"`` or ``"error"``.
         response_time: Wall-clock seconds the request took.
         timestamp: ISO-8601 timestamp of when the response was generated.
@@ -34,7 +34,7 @@ class ChatResponse:
 
     text: str
     user_id: str
-    domain: str
+    platform: str
     status: Literal["success", "error"]
     response_time: float
     timestamp: str

@@ -8,7 +8,7 @@ export async function sendChat(params: {
   const form = new FormData();
   form.append("query", params.query);
   form.append("userId", params.sessionKey);
-  form.append("domain", "default");
+  form.append("platform", "default");
   if (params.image) form.append("image", params.image);
 
   try {

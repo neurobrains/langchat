@@ -60,7 +60,7 @@ def _build(llm) -> LangChat:
 
 
 async def run_provider(name: str, lc: LangChat) -> None:
-    response = await lc.chat(QUERY, user_id=f"demo-{name}", domain="ai-research")
+    response = await lc.chat(QUERY, user_id=f"demo-{name}", platform="ai-research")
     status = "✓" if response else "✗"
     print(f"\n[{name}] {status}  ({response.response_time:.2f}s)")
     print(f"  {response.text[:200]}{'...' if len(response.text) > 200 else ''}")

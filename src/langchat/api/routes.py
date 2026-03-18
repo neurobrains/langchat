@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, File, Form, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -33,8 +32,8 @@ async def health_check():
 async def chat(
     query: str = Form(...),
     userId: str = Form(...),
-    domain: str = Form(...),
-    image: Optional[UploadFile] = File(
+    platform: str = Form(...),
+    image: UploadFile | None = File(
         default=None, description="Image file to upload", media_type="image/*"
     ),
     background_tasks: BackgroundTasks = BackgroundTasks(),
@@ -45,7 +44,7 @@ async def chat(
     Args:
         query: User query text
         userId: User ID
-        domain: User domain
+        platform: User platform
         image: Optional image file
         background_tasks: Background tasks
 
@@ -63,7 +62,7 @@ async def chat(
         result = await engine.chat(
             query=query,
             user_id=userId,
-            domain=domain,
+            platform=platform,
             standalone_question=standalone_question,
         )
 

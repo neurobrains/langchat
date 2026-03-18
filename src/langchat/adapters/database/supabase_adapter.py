@@ -73,7 +73,7 @@ class SupabaseAdapter:
 CREATE TABLE IF NOT EXISTS public.chat_history (
     id BIGSERIAL PRIMARY KEY,
     user_id TEXT NOT NULL,
-    domain TEXT NOT NULL DEFAULT 'default',
+    platform TEXT NOT NULL DEFAULT 'default',
     query TEXT NOT NULL,
     response TEXT NOT NULL,
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS public.request_metrics (
 );
 
 -- Create indexes
-CREATE INDEX IF NOT EXISTS idx_chat_history_user_domain ON public.chat_history(user_id, domain);
+CREATE INDEX IF NOT EXISTS idx_chat_history_user_platform ON public.chat_history(user_id, platform);
 CREATE INDEX IF NOT EXISTS idx_chat_history_timestamp ON public.chat_history(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON public.chat_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_request_metrics_user_id ON public.request_metrics(user_id);
