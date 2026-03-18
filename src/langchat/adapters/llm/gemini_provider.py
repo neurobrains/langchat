@@ -1,4 +1,4 @@
-# Copyright (c) 2025 NeuroBrain Co Ltd.
+# Copyright (c) 2026 NeuroBrain Co Ltd.
 # Licensed under the MIT License.
 
 """Google Gemini LLM Provider."""
